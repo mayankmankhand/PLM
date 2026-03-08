@@ -5,10 +5,26 @@
 <!-- See README.md > "How It Works" for details on how these files connect. -->
 
 ## About This Project
-<!-- Describe your project: what it is, what it does, what tech stack it uses -->
+
+**PLM** - Product Lifecycle Management system for managing requirements, test procedures, and test cases.
+
+- **Stack**: Next.js 16 (App Router) + TypeScript + Prisma ORM + Neon PostgreSQL + Zod + Vitest
+- **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/publish`
+- **Auth**: 3 hardcoded demo users via Edge Middleware (V1)
+- **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
+- **Audit**: Every mutation logged in same Prisma transaction
 
 ## Who I Am
-<!-- Describe yourself or your team: experience level, how you like to work -->
+
+PM learning to code. Explain things simply. Show your work.
 
 ## My Preferences
-<!-- Add project-specific rules, coding conventions, or preferences here -->
+
+- Domain commands over generic CRUD endpoints
+- Service layer owns lifecycle rules and transaction boundaries
+- Route handlers stay thin (parse, delegate, respond)
+- Centralized error handling via `handleApiError()` in `src/lib/api-utils.ts`
+- Zod schemas shared between API validation and (future) LLM tool definitions
+- No hard deletes - use obsolete/invalidate status transitions
+- Exclusive Arc pattern for polymorphic ownership (attachments)
+- Single-draft-per-procedure enforced at service layer
