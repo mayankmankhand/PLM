@@ -28,14 +28,10 @@ Based on their answer, gather the relevant context:
 - **Feature**: Ask which files are involved, then read them
 - **Other**: Ask clarifying questions until you understand the scope
 
-Save all gathered context to a temporary file:
+Save all gathered context to a temporary file using the **Write tool** (not Bash):
 
-```bash
-# Create context file with the content to review
-cat > /tmp/ask-gpt-context.md << 'CONTEXT_EOF'
-[PASTE THE GATHERED CONTEXT HERE]
-CONTEXT_EOF
-```
+- **File path:** `/tmp/ask-gpt-context.md`
+- **Content:** The gathered context to review
 
 ## Step 3: Get Initial Review from ChatGPT
 
@@ -68,16 +64,12 @@ Clarifications needed from the reviewer
 
 ### 4b. Save the Debate History
 
-Append your response to a debate file:
+Append your response to the debate file using the **Edit tool** (append to `/tmp/ask-gpt-debate.md`), or use the **Write tool** if the file doesn't exist yet. Format:
 
-```bash
-cat >> /tmp/ask-gpt-debate.md << 'DEBATE_EOF'
-
+```markdown
 ## Claude (Round N):
 
 [YOUR RESPONSE]
-
-DEBATE_EOF
 ```
 
 ### 4c. Get ChatGPT's Follow-up

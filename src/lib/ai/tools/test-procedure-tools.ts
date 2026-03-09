@@ -1,0 +1,167 @@
+// LLM tools for test procedure mutations.
+// Test procedures use two-entity versioning: a logical procedure + immutable version snapshots.
+
+import { tool } from "ai";
+import { z } from "zod";
+import type { RequestContext } from "@/lib/request-context";
+import {
+  createTestProcedure,
+  createTestProcedureVersion,
+  updateTestProcedureVersion,
+  publishTestProcedureVersion,
+  obsoleteTestProcedure,
+} from "@/services/test-procedure.service";
+import { formatToolError } from "./tool-wrapper";
+
+export function createTestProcedureTools(ctx: RequestContext) {
+  return {
+    // -- Create a new test procedure (also creates draft v1) --
+    createTestProcedure: tool({
+      description:
+        "Create a new test procedure linked to a sub-requirement. " +
+        "This also creates the first draft version (v1) with the provided description and steps.",
+      inputSchema: z.object({
+        title: z.string().min(1).max(255).describe("Short title for the procedure"),
+        subRequirementId: z.string().uuid().describe("ID of the parent sub-requirement"),
+        description: z.string().min(1).describe("What this procedure tests"),
+        steps: z.string().min(1).describe("Step-by-step instructions for executing the test"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await createTestProcedure(
+            {
+              title: args.title,
+              subRequirementId: args.subRequirementId,
+              description: args.description,
+              steps: args.steps,
+            },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+            subRequirementId: result.subRequirementId,
+            versions: result.versions.map((v) => ({
+              id: v.id,
+              versionNumber: v.versionNumber,
+              status: v.status,
+            })),
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Create a new version on an existing procedure --
+    createTestProcedureVersion: tool({
+      description:
+        "Create a new draft version on an existing test procedure. " +
+        "Only one draft version is allowed per procedure. " +
+        "The version number is assigned automatically.",
+      inputSchema: z.object({
+        procedureId: z.string().uuid().describe("ID of the test procedure"),
+        description: z.string().min(1).describe("What changed in this version"),
+        steps: z.string().min(1).describe("Updated step-by-step instructions"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await createTestProcedureVersion(
+            args.procedureId,
+            { description: args.description, steps: args.steps },
+            ctx
+          );
+          return {
+            id: result.id,
+            testProcedureId: result.testProcedureId,
+            versionNumber: result.versionNumber,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Update a draft version --
+    updateTestProcedureVersion: tool({
+      description:
+        "Update a test procedure version that is still in DRAFT status. " +
+        "At least one of description or steps must be provided.",
+      inputSchema: z.object({
+        versionId: z.string().uuid().describe("ID of the version to update"),
+        description: z.string().min(1).optional().describe("New description (optional)"),
+        steps: z.string().min(1).optional().describe("New steps (optional)"),
+      }).refine(
+        (data) => data.description !== undefined || data.steps !== undefined,
+        { message: "At least one of description or steps must be provided" }
+      ),
+      execute: async (args) => {
+        try {
+          const input: { description?: string; steps?: string } = {};
+          if (args.description !== undefined) input.description = args.description;
+          if (args.steps !== undefined) input.steps = args.steps;
+
+          const result = await updateTestProcedureVersion(args.versionId, input, ctx);
+          return {
+            id: result.id,
+            versionNumber: result.versionNumber,
+            description: result.description,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Publish a draft version --
+    publishTestProcedureVersion: tool({
+      description:
+        "Publish a test procedure version, locking it from further edits. " +
+        "Only DRAFT versions can be published. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        versionId: z.string().uuid().describe("ID of the version to publish"),
+        confirmPublish: z.literal(true).describe("Must be true to confirm publishing"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await publishTestProcedureVersion(args.versionId, ctx);
+          return {
+            id: result.id,
+            versionNumber: result.versionNumber,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Obsolete an entire procedure --
+    obsoleteTestProcedure: tool({
+      description:
+        "Mark an entire test procedure as obsolete. " +
+        "Cannot obsolete a procedure that is already obsolete. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the test procedure to obsolete"),
+        confirmObsolete: z.literal(true).describe("Must be true to confirm obsoleting"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await obsoleteTestProcedure(args.id, ctx);
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+  };
+}
