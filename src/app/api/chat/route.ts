@@ -1,26 +1,14 @@
 // Chat endpoint - streams LLM responses with tool execution.
 // Uses Vercel AI SDK streamText with stopWhen for automatic ReAct looping.
 
-import { streamText, stepCountIs } from "ai";
+import { streamText, stepCountIs, convertToModelMessages } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { NextRequest } from "next/server";
-import { z } from "zod";
 import { getRequestContext } from "@/lib/request-context";
 import { handleApiError } from "@/lib/api-utils";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createAllTools } from "@/lib/ai/tools";
 import { createTraceLogger } from "@/lib/ai/trace-logger";
-
-// Validates the chat request body.
-// Vercel AI SDK sends messages as an array of { role, content } objects.
-const ChatRequestBody = z.object({
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant", "system"]),
-      content: z.string().min(1),
-    })
-  ).min(1, "At least one message is required"),
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,9 +16,24 @@ export async function POST(request: NextRequest) {
     // This identifies which demo user is chatting.
     const ctx = getRequestContext(request);
 
-    // Parse and validate the messages array from the request body.
+    // Parse the request body. The Vercel AI SDK's useChat sends UIMessages
+    // with a `parts` array (text, tool calls, tool results). We use
+    // convertToModelMessages() to transform them into the format streamText expects.
+    // No custom Zod validation here - the SDK handles the message contract.
     const body = await request.json();
-    const { messages } = ChatRequestBody.parse(body);
+    const { messages: uiMessages } = body;
+
+    if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "At least one message is required" }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // Convert UIMessages (with parts) to ModelMessages (with content/tool_calls)
+    // that streamText can process. This handles the format difference between
+    // what useChat sends and what the LLM expects.
+    const modelMessages = await convertToModelMessages(uiMessages);
 
     // Create all tools bound to the current user's context.
     // Mutation tools use ctx for auth and audit logging.
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system: buildSystemPrompt(),
-      messages,
+      messages: modelMessages,
       tools,
       stopWhen: stepCountIs(10),
       onStepFinish: tracer.onStepFinish,
