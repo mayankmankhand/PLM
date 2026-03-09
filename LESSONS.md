@@ -9,6 +9,10 @@
 - **Hybrid approach beats all-or-nothing.** Don't replace markdown with XML - use both. Markdown headers stay for human readability, XML wraps content blocks for AI parsing. Pattern: header outside the tag, content inside.
 - **AI peer review recommendations often over-engineer.** When /ask-gpt and /ask-gemini reviewed the XML plan, they recommended namespaced tags (`tk_rules`), a formal schema file, testing rubrics, and a three-wave rollout. Most of that was unnecessary for 9 small files. Trust your gut when something feels like too much.
 
+- **Vercel AI SDK v6 renamed everything.** `maxSteps` is now `stopWhen: stepCountIs(N)`. `parameters` on tool definitions is now `inputSchema`. `toDataStreamResponse()` is now `toUIMessageStreamResponse()`. Online tutorials and AI training data reference v3/v4 names. Always check the actual type definitions in `node_modules/ai/dist/index.d.ts` when something doesn't compile.
+- **Confirm-before-act works with prompt engineering alone.** No need for middleware or multi-step confirmation flows. Put the rule in the system prompt ("NEVER pass confirmPublish: true unless user explicitly confirmed") and require a `z.literal(true)` field on destructive tool schemas. The LLM consistently asks for confirmation first.
+- **LLM tools should call services, not HTTP routes.** Calling your own API endpoints from tool functions creates unnecessary network round-trips and auth headaches. Call the service layer directly - you already have the RequestContext.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
@@ -33,3 +37,5 @@
 - **Triage review findings: fix now vs track later.** After a multi-model review, split findings into quick fixes (do now) and follow-ups (add as comments on existing issues or create new ones). Don't try to fix everything in one pass - it bloats the commit and risks scope creep.
 - **Single source of truth for seed data IDs.** Seed scripts should import IDs from the same module the app uses (e.g. `demo-users.ts`), not hardcode duplicates. Caught during review when seed had copy-pasted user IDs that could drift from the source.
 - **`Record<EnumA, EnumB>` for type-safe enum mappings.** TypeScript's `Record` with Prisma enum types (e.g. `Record<TestCaseResult, TestCaseStatus>`) ensures every enum value is handled at compile time. Used in the test case result-to-status mapping - if a new enum value is added, TypeScript will error until you handle it.
+- **Compact Prisma `select` in LLM tools.** LLM tools must use explicit `select` clauses with `take` limits on nested relations. Without limits, a single traceability chain query could return 40K+ objects (20 x 20 x 5 x 20). With limits (10 x 10 x 3 x 5), max is 1.5K. Also use parallel `prisma.count()` for true totals when paginating.
+- **Stable error prefixes for LLM tools.** Return errors as strings with prefixes (`LifecycleError: ...`, `NotFoundError: ...`) instead of throwing. The LLM can parse these to give users plain-language explanations. Use `instanceof` checks (not `error.name` string comparison) for reliable error type detection.

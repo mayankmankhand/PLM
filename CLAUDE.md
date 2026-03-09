@@ -9,6 +9,7 @@
 **PLM** - Product Lifecycle Management system for managing requirements, test procedures, and test cases.
 
 - **Stack**: Next.js 16 (App Router) + TypeScript + Prisma ORM + Neon PostgreSQL + Zod + Vitest
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 25 tools)
 - **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/publish`
 - **Auth**: 3 hardcoded demo users via Edge Middleware (V1)
 - **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
@@ -24,7 +25,11 @@ PM learning to code. Explain things simply. Show your work.
 - Service layer owns lifecycle rules and transaction boundaries
 - Route handlers stay thin (parse, delegate, respond)
 - Centralized error handling via `handleApiError()` in `src/lib/api-utils.ts`
-- Zod schemas shared between API validation and (future) LLM tool definitions
+- Zod schemas shared between API validation and LLM tool definitions
 - No hard deletes - use obsolete/invalidate status transitions
 - Exclusive Arc pattern for polymorphic ownership (attachments)
 - Single-draft-per-procedure enforced at service layer
+- LLM tools call services directly (not HTTP routes) for mutations
+- Confirm-before-act for destructive LLM operations via prompt engineering + `z.literal(true)`
+- Compact Prisma `select` payloads in LLM tools to protect context window
+- Stable error prefixes in tool responses: `LifecycleError:`, `NotFoundError:`, `ValidationError:`

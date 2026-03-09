@@ -6,7 +6,8 @@ A lightweight PLM system for managing product requirements, test procedures, and
 
 - **Framework**: Next.js 16 (App Router, TypeScript)
 - **Database**: Neon PostgreSQL via Prisma ORM
-- **Validation**: Zod schemas (shared between API routes and future LLM tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 25 LLM tools)
+- **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest
 - **Auth**: Demo users via Edge Middleware (hardcoded for V1)
 
@@ -18,7 +19,7 @@ npm install
 
 # Set up environment
 cp .env.local.example .env.local
-# Add your Neon DATABASE_URL to .env.local
+# Add your Neon DATABASE_URL and ANTHROPIC_API_KEY to .env.local
 # Also create .env with just DATABASE_URL (Prisma CLI needs this)
 
 # Push schema to database
@@ -52,6 +53,14 @@ ProductRequirement (org-wide)
       -> TestProcedureVersion (immutable snapshots, one draft at a time)
         -> TestCase (execution records)
 ```
+
+### Chat API (LLM)
+
+```
+POST /api/chat   # Streaming natural language interface to manage PLM entities
+```
+
+Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 25 tools (15 mutation, 5 read, 4 query, 1 search) and confirms before destructive actions.
 
 ### Named Queries
 
@@ -95,7 +104,8 @@ npm run lint         # ESLint
 
 ```
 src/
-  app/api/           # 31 route handlers (domain commands + queries)
+  app/api/           # 32 route handlers (domain commands + queries + chat)
+  lib/ai/            # LLM layer: system prompt, 25 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
   schemas/           # Zod validation schemas
   services/          # Business logic with lifecycle enforcement + audit logging
@@ -107,7 +117,8 @@ prisma/
 
 ## Issues & Roadmap
 
-- **Issue #4**: LLM integration (AI-powered tools using these API endpoints)
+- **Issue #4**: LLM backend - 25 tools + streaming chat endpoint (DONE)
+- **Issue #9**: Document parsing pipeline - PDF, Word, URL (future)
 - **Issue #5**: Frontend UI
 - **Issue #7**: CI/CD pipeline
 - **Issue #8**: Database hardening (partial unique indexes, check constraints)
