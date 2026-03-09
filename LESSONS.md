@@ -22,6 +22,7 @@
 - **Prisma CLI reads `.env`, not `.env.local`.** Next.js reads `.env.local` but Prisma CLI only reads `.env`. If your DATABASE_URL is in `.env.local`, create a `.env` with just that variable (already in `.gitignore`).
 - **`create-next-app` rejects uppercase project names.** Scaffold into a temp dir with a lowercase name, then copy the config files into your actual project directory.
 - **Don't put Prisma types in Edge-compatible files.** The demo-users module needed to work in Edge Middleware, so it must be pure TypeScript with no Prisma imports. Keep Edge-compatible modules free of Node-only dependencies.
+- **Claude struggles with UI design.** The initial chat UI looked "from the 80s" - iMessage-style left/right bubbles, five layers of near-identical white, system fallback fonts due to wrong CSS variable placement. It took three rounds of multi-model peer review (Gemini + GPT) to identify the root causes. Key issues: `inter.variable` must go on `<html>` not `<body>` for Tailwind v4's `@theme` to resolve it, modern AI chat uses left-aligned centered columns (not SMS bubbles), and layer separation needs intentional contrast (not just slightly different whites). The final result still lacks color richness. Don't trust the first UI output - always visually inspect and iterate.
 
 ## Patterns That Work
 <!-- Add approaches and conventions that proved effective -->
