@@ -193,8 +193,8 @@ export default function ChatPage() {
 
         {/* Error display */}
         {chat.error && (
-          <div className="px-4 py-2 bg-danger/10 border-t border-danger/20">
-            <p className="text-sm text-danger max-w-4xl mx-auto">
+          <div className="px-6 py-2 bg-danger/10 border-t border-danger/20">
+            <p className="text-sm text-danger max-w-3xl mx-auto">
               Something went wrong. Please try again.
             </p>
           </div>

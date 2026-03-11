@@ -61,10 +61,10 @@ export function ChatInput({
   }
 
   return (
-    <div className="bg-background px-4 pb-4 pt-2">
+    <div className="bg-background px-6 pb-4 pt-2">
       <form
         onSubmit={handleSubmit}
-        className="max-w-4xl mx-auto bg-surface-elevated rounded-xl border border-border
+        className="max-w-3xl mx-auto bg-surface-elevated rounded-xl border border-border
                    shadow-[0_-1px_3px_rgba(0,0,0,0.04)]
                    flex items-end gap-2 px-4 py-3"
       >

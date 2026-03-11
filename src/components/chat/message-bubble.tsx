@@ -1,6 +1,6 @@
 // Renders a single chat message row.
 // All messages are left-aligned in a centered column (modern AI chat style).
-// User messages get a white elevated card; assistant messages are transparent.
+// User messages get a subtle warm surface tint; assistant messages are transparent.
 
 "use client";
 
@@ -101,7 +101,7 @@ export function MessageBubble({
           <div
             className={`rounded-2xl px-4 py-3 ${
               isUser
-                ? "bg-surface-elevated border border-border text-text"
+                ? "bg-surface text-text"
                 : ""
             }`}
           >

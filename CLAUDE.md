@@ -11,7 +11,7 @@
 - **Stack**: Next.js 16 (App Router) + TypeScript + Prisma ORM + Neon PostgreSQL + Tailwind CSS v4 + Zod + Vitest
 - **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 28 tools)
 - **UI**: Dual-panel chat app with `@ai-sdk/react` useChat hook, Zustand panel store, react-markdown, lucide-react icons
-- **Design**: Warm stone palette (#FAF9F7 bg), `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
+- **Design**: Warm earthy beige palette (#F8F0E3 bg, #B45309 amber primary), `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
 - **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams) via 3 UI intent tools
 - **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/publish`
 - **Auth**: 3 hardcoded demo users via Edge Middleware (V1)
