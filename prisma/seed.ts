@@ -184,14 +184,14 @@ async function main() {
       description:
         "The smartwatch shall continuously measure the user's heart rate using an optical PPG sensor " +
         "and display the value in the health monitoring interface.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       createdBy: ALICE_ID,
     },
     {
       id: PR2_ID,
       title: "Outdoor Activity GPS Tracking",
       description: "The smartwatch shall track outdoor workouts using GPS and store route data.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       createdBy: ALICE_ID,
     },
     {
@@ -199,7 +199,7 @@ async function main() {
       title: "Smartwatch Battery Life",
       description:
         "The smartwatch shall support at least 24 hours of typical usage on a full charge.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       createdBy: ALICE_ID,
     },
     {
@@ -207,7 +207,7 @@ async function main() {
       title: "Water Resistance Capability",
       description:
         "The smartwatch shall maintain functionality after exposure to water equivalent to 50 meters depth.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       createdBy: ALICE_ID,
     },
     {
@@ -215,7 +215,7 @@ async function main() {
       title: "Smartphone Notification Display",
       description:
         "The smartwatch shall display notifications received from a paired smartphone.",
-      status: "OBSOLETE" as const,
+      status: "CANCELED" as const,
       createdBy: ALICE_ID,
     },
     {
@@ -223,7 +223,7 @@ async function main() {
       title: "System Functional Verification",
       description:
         "All smartwatch subsystems shall be validated through integration testing before release.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       createdBy: ALICE_ID,
     },
   ];
@@ -244,7 +244,7 @@ async function main() {
       title: "Heart Rate Sensor Hardware Integration",
       description:
         "The smartwatch shall integrate an optical heart rate sensor capable of sampling at least once per second.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR1_ID,
       teamId: TEAM_HARDWARE_ID,
       createdBy: ALICE_ID,
@@ -255,7 +255,7 @@ async function main() {
       description:
         "The system shall compute heart rate from PPG sensor signals with an accuracy " +
         "within plus/minus 5 BPM under resting conditions.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR1_ID,
       teamId: TEAM_ALGORITHM_ID,
       createdBy: ALICE_ID,
@@ -266,7 +266,7 @@ async function main() {
       description:
         "The smartwatch shall include a GPS receiver capable of recording location coordinates " +
         "during outdoor activity tracking.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR2_ID,
       teamId: TEAM_ELECTRICAL_ID,
       createdBy: ALICE_ID,
@@ -277,7 +277,7 @@ async function main() {
       description:
         "The smartwatch shall store GPS coordinates during workouts and display route maps " +
         "in the mobile application.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR2_ID,
       teamId: TEAM_APP_ID,
       createdBy: ALICE_ID,
@@ -288,7 +288,7 @@ async function main() {
       description:
         "The smartwatch battery system shall provide sufficient capacity to support 24 hours " +
         "of operation under typical usage conditions.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR3_ID,
       teamId: TEAM_ELECTRICAL_ID,
       createdBy: ALICE_ID,
@@ -299,7 +299,7 @@ async function main() {
       description:
         "The smartwatch enclosure shall be sealed to prevent water ingress during water exposure " +
         "equivalent to 50 meters depth.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR4_ID,
       teamId: TEAM_MECHANICAL_ID,
       createdBy: ALICE_ID,
@@ -309,7 +309,7 @@ async function main() {
       title: "Notification Delivery and Display",
       description:
         "The smartwatch shall receive and display notifications from a paired smartphone within 3 seconds.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       productRequirementId: PR5_ID,
       teamId: TEAM_APP_ID,
       createdBy: ALICE_ID,
@@ -371,7 +371,7 @@ async function main() {
         "3. Enable heart rate monitoring.\n" +
         "4. Record sensor output for 60 seconds.\n" +
         "5. Verify heart rate samples are generated at least once per second.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP1_ID,
     },
     {
@@ -384,7 +384,7 @@ async function main() {
         "3. Record smartwatch heart rate value.\n" +
         "4. Compare smartwatch value to reference monitor.\n" +
         "5. Verify deviation does not exceed plus/minus 5 BPM.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP2_ID,
     },
     {
@@ -396,7 +396,7 @@ async function main() {
         "2. Start activity tracking mode.\n" +
         "3. Measure time required to acquire GPS lock.\n" +
         "4. Verify lock occurs within 60 seconds.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP3_ID,
     },
     {
@@ -409,7 +409,7 @@ async function main() {
         "3. Stop activity recording.\n" +
         "4. Sync activity to mobile application.\n" +
         "5. Verify route map matches actual path.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP4_ID,
     },
     {
@@ -423,7 +423,7 @@ async function main() {
         "4. Simulate notification usage.\n" +
         "5. Run GPS workout for 30 minutes.\n" +
         "6. Measure total runtime until battery reaches 5%.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP5_ID,
     },
     {
@@ -437,7 +437,7 @@ async function main() {
         "4. Remove smartwatch from chamber.\n" +
         "5. Inspect device for water ingress.\n" +
         "6. Verify device powers on and functions normally.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP6_ID,
     },
     {
@@ -449,7 +449,7 @@ async function main() {
         "2. Send test message to phone.\n" +
         "3. Observe smartwatch notification display.\n" +
         "4. Measure time between phone receipt and smartwatch display.",
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testProcedureId: TP7_ID,
     },
     {
@@ -566,7 +566,7 @@ async function main() {
   console.log("Seeding audit logs...");
 
   const auditEntries = [
-    // ── Day 1-2: Alice creates and publishes all 6 PRs ──────
+    // ── Day 1-2: Alice creates and approves all 6 PRs ──────
 
     // PR1: Continuous Heart Rate Monitoring
     {
@@ -579,10 +579,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(0, 1), // Day 1, 10:00
     },
 
@@ -597,10 +597,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR2_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(0, 3), // Day 1, 12:00
     },
 
@@ -615,10 +615,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR3_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(0, 5), // Day 1, 14:00
     },
 
@@ -633,14 +633,14 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR4_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(1, 1), // Day 2, 10:00
     },
 
-    // PR5: Smartphone Notification Display (will be obsoleted later)
+    // PR5: Smartphone Notification Display (will be canceled later)
     {
       actorId: ALICE_ID,
       action: "CREATE" as const,
@@ -651,10 +651,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR5_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(1, 3), // Day 2, 12:00
     },
 
@@ -669,14 +669,14 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "ProductRequirement",
       entityId: PR6_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(1, 5), // Day 2, 14:00
     },
 
-    // ── Day 3-5: Alice creates and publishes sub-requirements ──
+    // ── Day 3-5: Alice creates and approves sub-requirements ──
 
     // SR1.1: Heart Rate Sensor Hardware Integration -> Hardware
     {
@@ -689,10 +689,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR1_1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(2, 1), // Day 3, 10:00
     },
 
@@ -707,10 +707,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR1_2_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(2, 3), // Day 3, 12:00
     },
 
@@ -725,10 +725,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR2_1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(2, 5), // Day 3, 14:00
     },
 
@@ -743,10 +743,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR2_2_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(3, 1), // Day 4, 10:00
     },
 
@@ -761,10 +761,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR3_1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(3, 3), // Day 4, 12:00
     },
 
@@ -779,10 +779,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR4_1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(3, 5), // Day 4, 14:00
     },
 
@@ -797,10 +797,10 @@ async function main() {
     },
     {
       actorId: ALICE_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "SubRequirement",
       entityId: SR5_1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(4, 1), // Day 5, 10:00
     },
 
@@ -835,10 +835,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV1_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(5, 2), // Day 6, 11:00
     },
 
@@ -861,10 +861,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV2_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(5, 5), // Day 6, 14:00
     },
 
@@ -887,10 +887,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV3_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(6, 2), // Day 7, 11:00
     },
 
@@ -913,10 +913,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV4_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(6, 5), // Day 7, 14:00
     },
 
@@ -939,10 +939,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV5_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(7, 2), // Day 8, 11:00
     },
 
@@ -965,10 +965,10 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV6_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(7, 5), // Day 8, 14:00
     },
 
@@ -991,14 +991,14 @@ async function main() {
     },
     {
       actorId: CAROL_ID,
-      action: "PUBLISH" as const,
+      action: "APPROVE" as const,
       entityType: "TestProcedureVersion",
       entityId: TPV7_ID,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
       createdAt: at(7, 8), // Day 8, 17:00
     },
 
-    // TP8: System Integration Test (DRAFT version - no PUBLISH)
+    // TP8: System Integration Test (DRAFT version - no APPROVE)
     {
       actorId: CAROL_ID,
       action: "CREATE" as const,
@@ -1120,14 +1120,14 @@ async function main() {
       createdAt: at(9, 3), // Day 10, 12:00
     },
 
-    // ── Day 11: Alice obsoletes PR5 ──────────────────────────
+    // ── Day 11: Alice cancels PR5 ──────────────────────────
 
     {
       actorId: ALICE_ID,
-      action: "OBSOLETE" as const,
+      action: "CANCEL" as const,
       entityType: "ProductRequirement",
       entityId: PR5_ID,
-      changes: { status: { from: "PUBLISHED", to: "OBSOLETE" } },
+      changes: { status: { from: "APPROVED", to: "CANCELED" } },
       createdAt: at(10, 0), // Day 11, 09:00
     },
   ];
@@ -1141,10 +1141,10 @@ async function main() {
 
   console.log("Seed complete!");
   console.log("  6 teams, 3 users");
-  console.log("  6 product requirements (5 PUBLISHED, 1 OBSOLETE)");
-  console.log("  8 sub-requirements (7 PUBLISHED, 1 DRAFT)");
+  console.log("  6 product requirements (5 APPROVED, 1 CANCELED)");
+  console.log("  8 sub-requirements (7 APPROVED, 1 DRAFT)");
   console.log("  8 test procedures (all ACTIVE)");
-  console.log("  8 procedure versions (7 PUBLISHED, 1 DRAFT)");
+  console.log("  8 procedure versions (7 APPROVED, 1 DRAFT)");
   console.log("  8 test cases (6 PENDING, 1 PASSED, 1 FAILED)");
   console.log(`  ${auditEntries.length} audit log entries`);
 }

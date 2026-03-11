@@ -7,8 +7,8 @@ import type { RequestContext } from "@/lib/request-context";
 import {
   createSubRequirement,
   updateSubRequirement,
-  publishSubRequirement,
-  obsoleteSubRequirement,
+  approveSubRequirement,
+  cancelSubRequirement,
 } from "@/services/sub-requirement.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -82,19 +82,19 @@ export function createSubRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Publish a draft sub-requirement --
-    publishSubRequirement: tool({
+    // -- Approve a draft sub-requirement --
+    approveSubRequirement: tool({
       description:
-        "Publish a sub-requirement, changing its status from DRAFT to PUBLISHED. " +
-        "The parent product requirement must already be PUBLISHED. " +
+        "Approve a sub-requirement, changing its status from DRAFT to APPROVED. " +
+        "The parent product requirement must already be APPROVED. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the sub-requirement to publish"),
-        confirmPublish: z.literal(true).describe("Must be true to confirm publishing"),
+        id: z.string().uuid().describe("ID of the sub-requirement to approve"),
+        confirmApprove: z.literal(true).describe("Must be true to confirm approval"),
       }),
       execute: async (args) => {
         try {
-          const result = await publishSubRequirement(args.id, ctx);
+          const result = await approveSubRequirement(args.id, ctx);
           return {
             id: result.id,
             title: result.title,
@@ -106,19 +106,19 @@ export function createSubRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Obsolete a published sub-requirement --
-    obsoleteSubRequirement: tool({
+    // -- Cancel an approved sub-requirement --
+    cancelSubRequirement: tool({
       description:
-        "Mark a published sub-requirement as obsolete. " +
-        "Only PUBLISHED sub-requirements can be obsoleted. " +
+        "Mark an approved sub-requirement as canceled. " +
+        "Only APPROVED sub-requirements can be canceled. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the sub-requirement to obsolete"),
-        confirmObsolete: z.literal(true).describe("Must be true to confirm obsoleting"),
+        id: z.string().uuid().describe("ID of the sub-requirement to cancel"),
+        confirmCancel: z.literal(true).describe("Must be true to confirm canceling"),
       }),
       execute: async (args) => {
         try {
-          const result = await obsoleteSubRequirement(args.id, ctx);
+          const result = await cancelSubRequirement(args.id, ctx);
           return {
             id: result.id,
             title: result.title,

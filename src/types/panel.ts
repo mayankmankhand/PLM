@@ -58,11 +58,35 @@ export const DiagramPayloadSchema = z.object({
   mermaidSyntax: z.string(),
 });
 
+// -- Audit payload: shows a timeline of audit log entries for an entity --
+export const AuditChangeItemSchema = z.object({
+  field: z.string(),
+  old: z.string().optional(),
+  new: z.string().optional(),
+});
+
+export const AuditEntrySchema = z.object({
+  id: z.string(),
+  action: z.string(),
+  entityType: z.string(),
+  entityId: z.string(),
+  actor: z.object({ name: z.string() }),
+  createdAt: z.string(),
+  changes: z.array(AuditChangeItemSchema).max(10).default([]),
+});
+
+export const AuditPayloadSchema = z.object({
+  type: z.literal("audit"),
+  title: z.string(),
+  entries: z.array(AuditEntrySchema),
+});
+
 // -- Discriminated union of all panel content types --
 export const PanelContentSchema = z.discriminatedUnion("type", [
   DetailPayloadSchema,
   TablePayloadSchema,
   DiagramPayloadSchema,
+  AuditPayloadSchema,
 ]);
 
 // -- Error state (not part of the discriminated union - separate concern) --
@@ -77,6 +101,9 @@ export type DetailPayload = z.infer<typeof DetailPayloadSchema>;
 export type TablePayload = z.infer<typeof TablePayloadSchema>;
 export type DiagramPayload = z.infer<typeof DiagramPayloadSchema>;
 export type PanelContent = z.infer<typeof PanelContentSchema>;
+export type AuditChangeItem = z.infer<typeof AuditChangeItemSchema>;
+export type AuditEntry = z.infer<typeof AuditEntrySchema>;
+export type AuditPayload = z.infer<typeof AuditPayloadSchema>;
 export type PanelError = z.infer<typeof PanelErrorSchema>;
 
 // The panel can show content or an error state

@@ -29,12 +29,12 @@ AuditLog
 
 | Enum | Values |
 |------|--------|
-| RequirementStatus | `DRAFT`, `PUBLISHED`, `OBSOLETE` |
-| ProcedureStatus | `ACTIVE`, `OBSOLETE` |
-| ProcedureVersionStatus | `DRAFT`, `PUBLISHED` |
-| TestCaseStatus | `PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `INVALIDATED` |
+| RequirementStatus | `DRAFT`, `APPROVED`, `CANCELED` |
+| ProcedureStatus | `ACTIVE`, `CANCELED` |
+| ProcedureVersionStatus | `DRAFT`, `APPROVED` |
+| TestCaseStatus | `PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `SKIPPED` |
 | TestCaseResult | `PASS`, `FAIL`, `BLOCKED`, `SKIPPED` |
-| AuditAction | `CREATE`, `UPDATE`, `PUBLISH`, `OBSOLETE`, `INVALIDATE`, `ADD_ATTACHMENT`, `REMOVE_ATTACHMENT`, `CREATE_VERSION`, `RECORD_RESULT` |
+| AuditAction | `CREATE`, `UPDATE`, `APPROVE`, `CANCEL`, `SKIP`, `ADD_ATTACHMENT`, `REMOVE_ATTACHMENT`, `CREATE_VERSION`, `RECORD_RESULT` |
 | AttachmentType | `DOCUMENT`, `IMAGE`, `SPREADSHEET`, `OTHER` |
 
 ---
@@ -189,38 +189,38 @@ AuditLog
 ### Requirement Hierarchy
 
 ```
-PR1: Continuous Heart Rate Monitoring [PUBLISHED]
-  SR1.1: HR Sensor Hardware Integration [PUBLISHED] -> Hardware
+PR1: Continuous Heart Rate Monitoring [APPROVED]
+  SR1.1: HR Sensor Hardware Integration [APPROVED] -> Hardware
     TP: Sensor Data Availability [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: HR samples generated continuously [PENDING]
-  SR1.2: HR Calculation Algorithm [PUBLISHED] -> Algorithm
+      TPV1 [APPROVED] -> TC: HR samples generated continuously [PENDING]
+  SR1.2: HR Calculation Algorithm [APPROVED] -> Algorithm
     TP: Algorithm Accuracy Validation [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: HR accuracy within tolerance [PENDING]
+      TPV1 [APPROVED] -> TC: HR accuracy within tolerance [PENDING]
 
-PR2: Outdoor Activity GPS Tracking [PUBLISHED]
-  SR2.1: GPS Hardware Receiver [PUBLISHED] -> Electrical
+PR2: Outdoor Activity GPS Tracking [APPROVED]
+  SR2.1: GPS Hardware Receiver [APPROVED] -> Electrical
     TP: GPS Signal Acquisition [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: GPS lock acquired [PASSED]
-  SR2.2: Workout Route Recording [PUBLISHED] -> App
+      TPV1 [APPROVED] -> TC: GPS lock acquired [PASSED]
+  SR2.2: Workout Route Recording [APPROVED] -> App
     TP: Route Recording Verification [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: Route displayed correctly [PENDING]
+      TPV1 [APPROVED] -> TC: Route displayed correctly [PENDING]
 
-PR3: Smartwatch Battery Life [PUBLISHED]
-  SR3.1: Battery Capacity and Power Delivery [PUBLISHED] -> Electrical
+PR3: Smartwatch Battery Life [APPROVED]
+  SR3.1: Battery Capacity and Power Delivery [APPROVED] -> Electrical
     TP: Battery Runtime Test [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: Battery runtime meets minimum [FAILED]
+      TPV1 [APPROVED] -> TC: Battery runtime meets minimum [FAILED]
 
-PR4: Water Resistance Capability [PUBLISHED]
-  SR4.1: Waterproof Mechanical Sealing [PUBLISHED] -> Mechanical
+PR4: Water Resistance Capability [APPROVED]
+  SR4.1: Waterproof Mechanical Sealing [APPROVED] -> Mechanical
     TP: Water Pressure Test [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: Device functional after pressure test [PENDING]
+      TPV1 [APPROVED] -> TC: Device functional after pressure test [PENDING]
 
-PR5: Smartphone Notification Display [OBSOLETE]
-  SR5.1: Notification Delivery and Display [PUBLISHED] -> App
+PR5: Smartphone Notification Display [CANCELED]
+  SR5.1: Notification Delivery and Display [APPROVED] -> App
     TP: Notification Delivery Test [ACTIVE]
-      TPV1 [PUBLISHED] -> TC: Notification appears within time [PENDING]
+      TPV1 [APPROVED] -> TC: Notification appears within time [PENDING]
 
-PR6: System Functional Verification [PUBLISHED]
+PR6: System Functional Verification [APPROVED]
   SR6.1: End-to-End System Validation [DRAFT] -> Testing
     TP: System Integration Test [ACTIVE]
       TPV1 [DRAFT] -> TC: All subsystems operate simultaneously [PENDING]
@@ -230,10 +230,10 @@ PR6: System Functional Verification [PUBLISHED]
 
 | Entity Type | Status Counts |
 |-------------|--------------|
-| Product Requirements | 5 PUBLISHED, 1 OBSOLETE |
-| Sub-Requirements | 7 PUBLISHED, 1 DRAFT |
+| Product Requirements | 5 APPROVED, 1 CANCELED |
+| Sub-Requirements | 7 APPROVED, 1 DRAFT |
 | Test Procedures | 8 ACTIVE |
-| Procedure Versions | 7 PUBLISHED, 1 DRAFT |
+| Procedure Versions | 7 APPROVED, 1 DRAFT |
 | Test Cases | 5 PENDING, 1 PASSED, 1 FAILED, 1 PENDING |
 
 ### Audit Log Timeline
@@ -242,12 +242,12 @@ Anchor date: 2026-02-01. Follows PM (Alice) -> Engineer (Bob) -> QA (Carol) narr
 
 | Days | Actor | Activity |
 |------|-------|----------|
-| 1-2 | Alice | Creates and publishes all 6 product requirements |
-| 3-5 | Alice | Creates and publishes sub-requirements, assigns to teams |
+| 1-2 | Alice | Creates and approves all 6 product requirements |
+| 3-5 | Alice | Creates and approves sub-requirements, assigns to teams |
 | 6-8 | Carol | Creates test procedures, versions, and test cases |
 | 9 | Bob | Executes GPS test (PASS) |
 | 10 | Bob | Executes battery test (FAIL) |
-| 11 | Alice | Obsoletes PR5 (Notification Mirroring) |
+| 11 | Alice | Cancels PR5 (Notification Mirroring) |
 
 Total: 61 audit log entries.
 

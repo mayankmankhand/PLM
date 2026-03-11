@@ -5,12 +5,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { X, Table2, FileText, GitBranch, AlertCircle } from "lucide-react";
+import { X, Table2, FileText, GitBranch, AlertCircle, History } from "lucide-react";
 import { usePanelStore } from "@/stores/panel-store";
 import { DetailView } from "./detail-view";
 import { TableView } from "./table-view";
 import { DiagramView } from "./diagram-view";
 import { ErrorView } from "./error-view";
+import { AuditView } from "./audit-view";
 
 // Badge config for each content type.
 // Keys match PanelState["type"] values for type safety.
@@ -21,6 +22,7 @@ const TYPE_BADGES: Record<PanelState["type"], BadgeConfig> = {
   detail: { label: "Detail", icon: FileText },
   table: { label: "Table", icon: Table2 },
   diagram: { label: "Diagram", icon: GitBranch },
+  audit: { label: "Audit", icon: History },
   error: { label: "Error", icon: AlertCircle },
 };
 
@@ -98,6 +100,7 @@ export function ContextPanel() {
         {content?.type === "detail" && <DetailView payload={content} />}
         {content?.type === "table" && <TableView payload={content} />}
         {content?.type === "diagram" && <DiagramView payload={content} />}
+        {content?.type === "audit" && <AuditView payload={content} />}
         {content?.type === "error" && <ErrorView payload={content} />}
       </div>
     </aside>

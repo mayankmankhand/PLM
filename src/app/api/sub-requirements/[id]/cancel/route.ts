@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@/lib/request-context";
 import { handleApiError } from "@/lib/api-utils";
-import { PublishProductRequirementInput } from "@/schemas/product-requirement.schema";
-import { publishProductRequirement } from "@/services/product-requirement.service";
+import { CancelSubRequirementInput } from "@/schemas/sub-requirement.schema";
+import { cancelSubRequirement } from "@/services/sub-requirement.service";
 
 export async function POST(
   request: NextRequest,
@@ -12,8 +12,8 @@ export async function POST(
     const ctx = getRequestContext(request);
     const { id } = await params;
     const body = await request.json();
-    PublishProductRequirementInput.parse(body);
-    const result = await publishProductRequirement(id, ctx);
+    CancelSubRequirementInput.parse(body);
+    const result = await cancelSubRequirement(id, ctx);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

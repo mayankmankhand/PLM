@@ -10,23 +10,23 @@ import type { CSSProperties } from "react";
 
 // All status values this component handles (from Prisma enums).
 type StatusValue =
-  | "DRAFT" | "PUBLISHED" | "OBSOLETE"    // RequirementStatus / ProcedureVersionStatus
-  | "ACTIVE"                               // ProcedureStatus
-  | "PENDING" | "PASSED" | "FAILED"        // TestCaseStatus (subset)
-  | "BLOCKED" | "INVALIDATED";             // TestCaseStatus (full)
+  | "DRAFT" | "APPROVED" | "CANCELED"    // RequirementStatus / ProcedureVersionStatus
+  | "ACTIVE"                              // ProcedureStatus
+  | "PENDING" | "PASSED" | "FAILED"       // TestCaseStatus (subset)
+  | "BLOCKED" | "SKIPPED";               // TestCaseStatus (full)
 
 // Map each status to its visual treatment.
 // Background, text color, and optional border for outlined style.
 const STATUS_STYLES: Record<StatusValue, { bg: string; text: string; border?: string }> = {
-  DRAFT:       { bg: "#FEF3C7", text: "#92400E" },
-  PUBLISHED:   { bg: "#E6F2E0", text: "#3B6B35" },
-  OBSOLETE:    { bg: "#F0E9DC", text: "#6D6560" },
-  PENDING:     { bg: "transparent", text: "#6D6560", border: "1px solid #D6D3D1" },
-  PASSED:      { bg: "#E6F2E0", text: "#3B6B35" },
-  FAILED:      { bg: "#F5E0D5", text: "#9B3030" },
-  ACTIVE:      { bg: "#E6F2E0", text: "#3B6B35" },
-  BLOCKED:     { bg: "#FEF3C7", text: "#92400E" },
-  INVALIDATED: { bg: "#F0E9DC", text: "#6D6560" },
+  DRAFT:     { bg: "#FEF3C7", text: "#92400E" },
+  APPROVED:  { bg: "#E6F2E0", text: "#3B6B35" },
+  CANCELED:  { bg: "#F0E9DC", text: "#6D6560" },
+  PENDING:   { bg: "transparent", text: "#6D6560", border: "1px solid #D6D3D1" },
+  PASSED:    { bg: "#E6F2E0", text: "#3B6B35" },
+  FAILED:    { bg: "#F5E0D5", text: "#9B3030" },
+  ACTIVE:    { bg: "#E6F2E0", text: "#3B6B35" },
+  BLOCKED:   { bg: "#FEF3C7", text: "#92400E" },
+  SKIPPED:   { bg: "#F0E9DC", text: "#6D6560" },
 };
 
 // Fallback for unknown statuses - uses @theme tokens since those are in the palette.

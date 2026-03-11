@@ -3,7 +3,7 @@
 // UI intent tools return structured payloads that the frontend
 // renders in the context panel for the user to see.
 //
-// 3 tools: showEntityDetail, showTable, showDiagram
+// 4 tools: showEntityDetail, showTable, showDiagram, showAuditLog
 
 import { tool } from "ai";
 import { z } from "zod";
@@ -15,8 +15,9 @@ import {
   fetchTestProcedure,
   fetchTestProcedureVersion,
   fetchTestCase,
+  fetchAuditLogForPanel,
 } from "./shared-queries";
-import type { DetailPayload, TablePayload, DiagramPayload } from "@/types/panel";
+import type { DetailPayload, TablePayload, DiagramPayload, AuditPayload } from "@/types/panel";
 
 // Helper to format dates for display
 function formatDate(date: Date | string): string {
@@ -25,6 +26,32 @@ function formatDate(date: Date | string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+// Normalize raw changes JSON from the database into typed change items.
+// The changes column stores freeform JSON - this extracts field/old/new
+// pairs and caps at 10 items. Malformed data collapses to empty array.
+export function normalizeChanges(raw: unknown): Array<{ field: string; old?: string; new?: string }> {
+  if (!raw || typeof raw !== "object") return [];
+
+  try {
+    const entries = Object.entries(raw as Record<string, unknown>);
+    return entries.slice(0, 10).map(([key, value]) => {
+      // Handle { before: X, after: Y } shape (used by some services)
+      if (value && typeof value === "object" && ("before" in value || "after" in value)) {
+        const v = value as Record<string, unknown>;
+        return {
+          field: key,
+          ...(v.before !== undefined ? { old: String(v.before) } : {}),
+          ...(v.after !== undefined ? { new: String(v.after) } : {}),
+        };
+      }
+      // Simple key-value: treat as a new value
+      return { field: key, new: String(value) };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export function createUIIntentTools() {
@@ -230,7 +257,7 @@ export function createUIIntentTools() {
 
             case "untestedProcedures": {
               const data = await prisma.testProcedureVersion.findMany({
-                where: { status: "PUBLISHED", testCases: { none: {} } },
+                where: { status: "APPROVED", testCases: { none: {} } },
                 select: {
                   id: true,
                   versionNumber: true,
@@ -471,6 +498,78 @@ export function createUIIntentTools() {
             type: "diagram" as const,
             title: args.title,
             mermaidSyntax: cleaned,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Show audit log entries in the context panel --
+    showAuditLog: tool({
+      description:
+        "Display audit history visually in the context panel. " +
+        "Use this when the user asks to see, show, or display audit logs or activity history. " +
+        "Do NOT use getRecentAuditLog for user-facing display - use this tool instead.",
+      inputSchema: z.object({
+        entityType: z
+          .enum([
+            "ProductRequirement",
+            "SubRequirement",
+            "TestProcedure",
+            "TestProcedureVersion",
+            "TestCase",
+            "Attachment",
+          ])
+          .optional()
+          .describe("Filter by entity type"),
+        entityId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Filter by specific entity ID"),
+        actorId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Filter by actor (user) ID"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .default(25)
+          .describe("Max entries to return (default 25)"),
+      }),
+      execute: async (args): Promise<AuditPayload | { error: string }> => {
+        try {
+          const data = await fetchAuditLogForPanel({
+            entityType: args.entityType,
+            entityId: args.entityId,
+            actorId: args.actorId,
+            limit: args.limit,
+          });
+
+          // Build a descriptive title based on active filters
+          let title = "Recent Audit Log";
+          if (args.entityType && args.entityId) {
+            title = `Audit History - ${args.entityType}`;
+          } else if (args.entityType) {
+            title = `Audit Log - ${args.entityType}`;
+          }
+
+          return {
+            type: "audit" as const,
+            title,
+            entries: data.map((entry) => ({
+              id: entry.id,
+              action: entry.action,
+              entityType: entry.entityType,
+              entityId: entry.entityId,
+              actor: { name: entry.actor.name },
+              createdAt: entry.createdAt.toISOString(),
+              changes: normalizeChanges(entry.changes),
+            })),
           };
         } catch (error) {
           return { error: formatToolError(error) };

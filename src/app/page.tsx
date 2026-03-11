@@ -142,6 +142,9 @@ export default function ChatPage() {
                 case "diagram":
                   usePanelStore.getState().showDiagram(parsed.data);
                   break;
+                case "audit":
+                  usePanelStore.getState().showAudit(parsed.data);
+                  break;
               }
             } else {
               usePanelStore.getState().showError(
