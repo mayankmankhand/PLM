@@ -19,6 +19,9 @@
 - **StrictMode double-renders break stateful IDs.** `Date.now()` for element IDs causes collisions because React StrictMode renders twice in dev. `crypto.randomUUID()` is always unique with no timing dependency.
 - **Deterministic ordering needs separate arrays.** Pushing to a shared array inside `Promise.all` callbacks creates a race condition - whichever query resolves first writes first. Use separate arrays with fixed-order flattening after `Promise.all`.
 
+- **AI SDK v6 tool part types aren't what the docs suggest.** Tool results arrive as `tool-{toolName}` (e.g. `tool-showTable`), not `dynamic-tool`. The panel logic only checked `dynamic-tool` while the message bubble already used a broader filter (`startsWith("tool-")`). Same codebase, two different assumptions about the SDK. When one component works and another doesn't, compare their filters - the working one probably got it right.
+- **Diff the working thing against the broken thing.** When something works in one place but fails in another, comparing the two implementations is faster than reading docs or guessing. In this case, `message-bubble.tsx` (tool indicators worked) vs `page.tsx` (panel didn't) - a 30-second diff revealed the exact line that needed to change.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
