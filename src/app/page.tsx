@@ -97,20 +97,24 @@ export default function ChatPage() {
       if (msg.role !== "assistant") continue;
 
       for (const part of msg.parts) {
-        // Check for dynamic-tool parts (UI intent tools show up as dynamic-tool)
-        if (part.type !== "dynamic-tool") continue;
+        // Tool parts arrive as "tool-{toolName}" (e.g. "tool-showTable").
+        // Match the same broad filter used in message-bubble.tsx.
+        if (part.type !== "dynamic-tool" && !part.type.startsWith("tool-")) continue;
 
         const toolPart = part as {
-          type: "dynamic-tool";
-          toolName: string;
+          type: string;
+          toolName?: string;
           toolCallId: string;
           state: string;
           output?: unknown;
           errorText?: string;
         };
 
+        // Extract tool name: prefer explicit toolName, fall back to type prefix.
+        const toolName = toolPart.toolName ?? toolPart.type.replace("tool-", "");
+
         // Only process UI intent tools
-        if (!UI_INTENT_TOOLS.has(toolPart.toolName)) continue;
+        if (!UI_INTENT_TOOLS.has(toolName)) continue;
 
         // Skip if already processed
         if (processedToolCalls.current.has(toolPart.toolCallId)) continue;
@@ -121,7 +125,7 @@ export default function ChatPage() {
 
           // Check if the tool returned an error
           if ("error" in output && typeof output.error === "string") {
-            usePanelStore.getState().showError(toolPart.toolName, output.error);
+            usePanelStore.getState().showError(toolName, output.error);
           } else {
             // Validate output against Zod schema before sending to store.
             // Tool output crosses a network boundary (SDK serialization),
@@ -141,7 +145,7 @@ export default function ChatPage() {
               }
             } else {
               usePanelStore.getState().showError(
-                toolPart.toolName,
+                toolName,
                 "Received malformed panel data from tool",
               );
             }
@@ -151,7 +155,7 @@ export default function ChatPage() {
 
         // Handle tool errors
         if (toolPart.state === "output-error" && toolPart.errorText) {
-          usePanelStore.getState().showError(toolPart.toolName, toolPart.errorText);
+          usePanelStore.getState().showError(toolName, toolPart.errorText);
           processedToolCalls.current.add(toolPart.toolCallId);
         }
       }
