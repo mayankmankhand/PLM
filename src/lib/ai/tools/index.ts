@@ -8,12 +8,14 @@ import { createTestProcedureTools } from "./test-procedure-tools";
 import { createTestCaseTools } from "./test-case-tools";
 import { createReadTools } from "./read-tools";
 import { createQueryTools } from "./query-tools";
+import { createUIIntentTools } from "./ui-intent-tools";
 
 /**
  * Creates all LLM tools, bound to the given RequestContext.
  *
  * Mutation tools use the context for auth and audit logging.
  * Read/query tools don't need context (they use Prisma directly).
+ * UI intent tools open the context panel in the frontend.
  *
  * Returns a flat object suitable for passing to Vercel AI SDK's streamText().
  */
@@ -25,6 +27,7 @@ export function createAllTools(ctx: RequestContext) {
     ...createTestCaseTools(ctx),
     ...createReadTools(),
     ...createQueryTools(),
+    ...createUIIntentTools(),
   };
 }
 
@@ -35,3 +38,4 @@ export { createTestProcedureTools } from "./test-procedure-tools";
 export { createTestCaseTools } from "./test-case-tools";
 export { createReadTools } from "./read-tools";
 export { createQueryTools } from "./query-tools";
+export { createUIIntentTools } from "./ui-intent-tools";

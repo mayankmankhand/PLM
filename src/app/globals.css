@@ -70,3 +70,10 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
+
+/* Respect reduced motion preference for panel animations */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --panel-duration: 0ms;
+  }
+}

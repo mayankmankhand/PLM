@@ -40,7 +40,20 @@ const TOOL_LABELS: Record<string, string> = {
 
   // Search
   searchByTitle: "Searching by title",
+
+  // UI intent tools (open context panel)
+  showEntityDetail: "Showing in panel",
+  showTable: "Showing table in panel",
+  showDiagram: "Showing diagram in panel",
 };
+
+// UI intent tool names - these open the context panel.
+// Used by message-bubble to render compact summaries instead of raw JSON.
+export const UI_INTENT_TOOLS = new Set([
+  "showEntityDetail",
+  "showTable",
+  "showDiagram",
+]);
 
 /**
  * Returns a human-readable label for a tool name.
