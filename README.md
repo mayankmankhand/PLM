@@ -39,8 +39,8 @@ The API uses **domain commands** instead of raw CRUD. Each endpoint maps to one 
 
 ```
 POST /api/product-requirements/create
-POST /api/product-requirements/:id/publish
-POST /api/product-requirements/:id/obsolete
+POST /api/product-requirements/:id/approve
+POST /api/product-requirements/:id/cancel
 GET  /api/product-requirements
 GET  /api/product-requirements/:id
 ```
@@ -75,10 +75,10 @@ GET /api/queries/recent-audit
 ### Lifecycle Rules
 
 - **Draft** entities are fully editable
-- **Published** requirements are immutable (except status transitions)
-- **Published** procedure versions are fully immutable
-- Sub-requirements can only be published if their parent requirement is published
-- Test results can only be recorded against published procedure versions
+- **Approved** requirements are immutable (except status transitions)
+- **Approved** procedure versions are fully immutable
+- Sub-requirements can only be approved if their parent requirement is approved
+- Test results can only be recorded against approved procedure versions
 - Only one draft version per test procedure at a time
 
 ### Auth
@@ -129,7 +129,11 @@ prisma/
 - **Issue #4**: LLM backend - 25 tools + streaming chat endpoint (DONE)
 - **Issue #5**: Chat UI - single-panel streaming chat (DONE)
 - **Issue #6**: Context panel - tables, diagrams, detail views (DONE)
-- **Issue #7**: CI/CD pipeline
+- **Issue #7**: UI redesign + demo data (DONE)
 - **Issue #8**: Database hardening (partial unique indexes, check constraints)
 - **Issue #9**: Document parsing pipeline - PDF, Word, URL (future)
 - **Issue #10**: V2 panel features - clickable rows, history, resize (future)
+- **Issue #11**: Audit log viewer in context panel (future)
+- **Issue #12**: Fix panel not opening on UI intent tool calls (DONE)
+- **Issue #13**: Warm earthy beige palette refresh (DONE)
+- **Issue #16**: Rename status enums for clarity (DONE)
