@@ -386,7 +386,7 @@ describe("PanelContentSchema discriminated union", () => {
       entries: [
         {
           id: "e1",
-          action: "PUBLISH",
+          action: "APPROVE",
           entityType: "TestProcedure",
           entityId: "tp-1",
           actor: { name: "Bob" },
@@ -400,7 +400,7 @@ describe("PanelContentSchema discriminated union", () => {
     expect(result.success).toBe(true);
     if (result.success && result.data.type === "audit") {
       expect(result.data.entries).toHaveLength(1);
-      expect(result.data.entries[0].action).toBe("PUBLISH");
+      expect(result.data.entries[0].action).toBe("APPROVE");
     }
   });
 
@@ -445,6 +445,24 @@ describe("normalizeChanges", () => {
     expect(normalizeChanges("not an object")).toEqual([]);
     expect(normalizeChanges(42)).toEqual([]);
     expect(normalizeChanges(undefined)).toEqual([]);
+  });
+
+  it("returns empty array for empty object", () => {
+    expect(normalizeChanges({})).toEqual([]);
+  });
+
+  it("returns empty array for array input", () => {
+    expect(normalizeChanges([1, 2, 3])).toEqual([]);
+  });
+
+  it("converts null values to (none)", () => {
+    const result = normalizeChanges({ status: null });
+    expect(result).toEqual([{ field: "status", new: "(none)" }]);
+  });
+
+  it("JSON-stringifies object values", () => {
+    const result = normalizeChanges({ steps: ["step1", "step2"] });
+    expect(result).toEqual([{ field: "steps", new: '["step1","step2"]' }]);
   });
 
   it("caps at 10 items", () => {

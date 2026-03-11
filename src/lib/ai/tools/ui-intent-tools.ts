@@ -9,6 +9,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatToolError } from "./tool-wrapper";
+import { AuditEntityTypeEnum } from "@/schemas/query.schema";
 import {
   fetchProductRequirement,
   fetchSubRequirement,
@@ -31,23 +32,31 @@ function formatDate(date: Date | string): string {
 // Normalize raw changes JSON from the database into typed change items.
 // The changes column stores freeform JSON - this extracts field/old/new
 // pairs and caps at 10 items. Malformed data collapses to empty array.
+// Safely convert a value to a display string.
+// Objects/arrays get JSON-stringified; null/undefined become "(none)".
+function toDisplayString(value: unknown): string {
+  if (value === null || value === undefined) return "(none)";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
 export function normalizeChanges(raw: unknown): Array<{ field: string; old?: string; new?: string }> {
-  if (!raw || typeof raw !== "object") return [];
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
 
   try {
     const entries = Object.entries(raw as Record<string, unknown>);
     return entries.slice(0, 10).map(([key, value]) => {
       // Handle { before: X, after: Y } shape (used by some services)
-      if (value && typeof value === "object" && ("before" in value || "after" in value)) {
+      if (value && typeof value === "object" && !Array.isArray(value) && ("before" in value || "after" in value)) {
         const v = value as Record<string, unknown>;
         return {
           field: key,
-          ...(v.before !== undefined ? { old: String(v.before) } : {}),
-          ...(v.after !== undefined ? { new: String(v.after) } : {}),
+          ...(v.before !== undefined ? { old: toDisplayString(v.before) } : {}),
+          ...(v.after !== undefined ? { new: toDisplayString(v.after) } : {}),
         };
       }
       // Simple key-value: treat as a new value
-      return { field: key, new: String(value) };
+      return { field: key, new: toDisplayString(value) };
     });
   } catch {
     return [];
@@ -512,15 +521,7 @@ export function createUIIntentTools() {
         "Use this when the user asks to see, show, or display audit logs or activity history. " +
         "Do NOT use getRecentAuditLog for user-facing display - use this tool instead.",
       inputSchema: z.object({
-        entityType: z
-          .enum([
-            "ProductRequirement",
-            "SubRequirement",
-            "TestProcedure",
-            "TestProcedureVersion",
-            "TestCase",
-            "Attachment",
-          ])
+        entityType: AuditEntityTypeEnum
           .optional()
           .describe("Filter by entity type"),
         entityId: z
@@ -556,6 +557,10 @@ export function createUIIntentTools() {
             title = `Audit History - ${args.entityType}`;
           } else if (args.entityType) {
             title = `Audit Log - ${args.entityType}`;
+          } else if (args.actorId && data.length > 0) {
+            title = `Audit Log - ${data[0].actor.name}`;
+          } else if (args.actorId) {
+            title = "Audit Log - User Activity";
           }
 
           return {

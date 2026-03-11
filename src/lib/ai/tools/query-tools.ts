@@ -6,6 +6,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatToolError } from "./tool-wrapper";
+import { AuditEntityTypeEnum } from "@/schemas/query.schema";
 
 export function createQueryTools() {
   return {
@@ -180,15 +181,7 @@ export function createQueryTools() {
         "Optionally filter by entity type or a specific entity ID. " +
         "To SHOW audit logs to the user visually, use showAuditLog instead.",
       inputSchema: z.object({
-        entityType: z
-          .enum([
-            "ProductRequirement",
-            "SubRequirement",
-            "TestProcedure",
-            "TestProcedureVersion",
-            "TestCase",
-            "Attachment",
-          ])
+        entityType: AuditEntityTypeEnum
           .optional()
           .describe("Filter by entity type"),
         entityId: z
