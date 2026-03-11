@@ -14,9 +14,9 @@ import { humanize } from "@/lib/format-utils";
 const ACTION_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
   CREATE:            { label: "Created",            bg: "#E6F2E0", text: "#3B6B35" },
   UPDATE:            { label: "Updated",            bg: "#FEF3C7", text: "#92400E" },
-  PUBLISH:           { label: "Published",          bg: "#DBEAFE", text: "#1E40AF" },
-  OBSOLETE:          { label: "Obsoleted",          bg: "#F0E9DC", text: "#6D6560" },
-  INVALIDATE:        { label: "Invalidated",        bg: "#F0E9DC", text: "#6D6560" },
+  APPROVE:           { label: "Approved",            bg: "#DBEAFE", text: "#1E40AF" },
+  CANCEL:            { label: "Canceled",            bg: "#F0E9DC", text: "#6D6560" },
+  SKIP:              { label: "Skipped",             bg: "#F0E9DC", text: "#6D6560" },
   ADD_ATTACHMENT:    { label: "Attachment added",   bg: "#E6F2E0", text: "#3B6B35" },
   REMOVE_ATTACHMENT: { label: "Attachment removed", bg: "#F5E0D5", text: "#9B3030" },
   CREATE_VERSION:    { label: "Version created",    bg: "#DBEAFE", text: "#1E40AF" },
@@ -31,6 +31,7 @@ function formatRelativeTime(isoDate: string): string {
   const then = new Date(isoDate).getTime();
   const diffMs = now - then;
 
+  // Guard against future dates (clock skew or test data)
   if (diffMs < 60_000) return "just now";
 
   const minutes = Math.floor(diffMs / 60_000);
@@ -42,9 +43,13 @@ function formatRelativeTime(isoDate: string): string {
   const days = Math.floor(diffMs / 86_400_000);
   if (days < 7) return `${days}d ago`;
 
-  // Beyond 7 days - show abbreviated date
+  // Beyond 7 days - show abbreviated date (include year if different)
   const date = new Date(isoDate);
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  if (date.getFullYear() !== new Date().getFullYear()) {
+    options.year = "numeric";
+  }
+  return date.toLocaleDateString("en-US", options);
 }
 
 // Color-coded pill for the audit action.
@@ -62,10 +67,11 @@ function ActionBadge({ action }: { action: string }) {
 }
 
 // Formats a single field change as a readable string.
+// Uses undefined checks (not truthiness) so empty strings are preserved.
 function formatChange(change: { field: string; old?: string; new?: string }): string {
-  if (change.old && change.new) return `${change.field}: ${change.old} -> ${change.new}`;
-  if (change.new) return `${change.field}: ${change.new}`;
-  if (change.old) return `${change.field}: ${change.old} -> (removed)`;
+  if (change.old !== undefined && change.new !== undefined) return `${change.field}: ${change.old} -> ${change.new}`;
+  if (change.new !== undefined) return `${change.field}: ${change.new}`;
+  if (change.old !== undefined) return `${change.field}: ${change.old} -> (removed)`;
   return change.field;
 }
 

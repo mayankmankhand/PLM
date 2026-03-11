@@ -78,7 +78,7 @@ export const AuditEntrySchema = z.object({
 export const AuditPayloadSchema = z.object({
   type: z.literal("audit"),
   title: z.string(),
-  entries: z.array(AuditEntrySchema),
+  entries: z.array(AuditEntrySchema).max(50, "Audit entries capped at 50"),
 });
 
 // -- Discriminated union of all panel content types --

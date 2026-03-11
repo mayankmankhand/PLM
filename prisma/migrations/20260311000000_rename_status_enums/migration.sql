@@ -1,25 +1,30 @@
 -- Rename status enum values across all enums.
--- PostgreSQL requires: add new value, update rows, remove old value.
+-- Strategy: drop defaults, convert columns to text, drop old enums,
+-- update text data, create new enums, cast back, restore defaults.
 
--- RequirementStatus: PUBLISHED -> APPROVED, OBSOLETE -> CANCELED
-ALTER TYPE "RequirementStatus" ADD VALUE IF NOT EXISTS 'APPROVED';
-ALTER TYPE "RequirementStatus" ADD VALUE IF NOT EXISTS 'CANCELED';
+-- Step 1: Drop column defaults (they reference the enum types)
+ALTER TABLE "product_requirements" ALTER COLUMN status DROP DEFAULT;
+ALTER TABLE "sub_requirements" ALTER COLUMN status DROP DEFAULT;
+ALTER TABLE "test_procedures" ALTER COLUMN status DROP DEFAULT;
+ALTER TABLE "test_procedure_versions" ALTER COLUMN status DROP DEFAULT;
+ALTER TABLE "test_cases" ALTER COLUMN status DROP DEFAULT;
 
--- ProcedureStatus: OBSOLETE -> CANCELED
-ALTER TYPE "ProcedureStatus" ADD VALUE IF NOT EXISTS 'CANCELED';
+-- Step 2: Convert all enum columns to text
+ALTER TABLE "product_requirements" ALTER COLUMN status TYPE text;
+ALTER TABLE "sub_requirements" ALTER COLUMN status TYPE text;
+ALTER TABLE "test_procedures" ALTER COLUMN status TYPE text;
+ALTER TABLE "test_procedure_versions" ALTER COLUMN status TYPE text;
+ALTER TABLE "test_cases" ALTER COLUMN status TYPE text;
+ALTER TABLE "audit_logs" ALTER COLUMN action TYPE text;
 
--- ProcedureVersionStatus: PUBLISHED -> APPROVED
-ALTER TYPE "ProcedureVersionStatus" ADD VALUE IF NOT EXISTS 'APPROVED';
+-- Step 3: Drop old enum types (now safe, no dependencies)
+DROP TYPE "RequirementStatus";
+DROP TYPE "ProcedureStatus";
+DROP TYPE "ProcedureVersionStatus";
+DROP TYPE "TestCaseStatus";
+DROP TYPE "AuditAction";
 
--- TestCaseStatus: INVALIDATED -> SKIPPED
-ALTER TYPE "TestCaseStatus" ADD VALUE IF NOT EXISTS 'SKIPPED';
-
--- AuditAction: PUBLISH -> APPROVE, OBSOLETE -> CANCEL, INVALIDATE -> SKIP
-ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'APPROVE';
-ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'CANCEL';
-ALTER TYPE "AuditAction" ADD VALUE IF NOT EXISTS 'SKIP';
-
--- Update existing data to use new values (using actual table names from @@map)
+-- Step 4: Update text values to new names
 UPDATE "product_requirements" SET status = 'APPROVED' WHERE status = 'PUBLISHED';
 UPDATE "product_requirements" SET status = 'CANCELED' WHERE status = 'OBSOLETE';
 
@@ -36,41 +41,27 @@ UPDATE "audit_logs" SET action = 'APPROVE' WHERE action = 'PUBLISH';
 UPDATE "audit_logs" SET action = 'CANCEL' WHERE action = 'OBSOLETE';
 UPDATE "audit_logs" SET action = 'SKIP' WHERE action = 'INVALIDATE';
 
--- Now remove old values by recreating enums without them.
--- PostgreSQL doesn't support DROP VALUE, so we recreate the type.
-
--- RequirementStatus
-ALTER TYPE "RequirementStatus" RENAME TO "RequirementStatus_old";
+-- Step 5: Create new enum types with renamed values
 CREATE TYPE "RequirementStatus" AS ENUM ('DRAFT', 'APPROVED', 'CANCELED');
-ALTER TABLE "product_requirements" ALTER COLUMN status TYPE "RequirementStatus" USING status::text::"RequirementStatus";
-ALTER TABLE "sub_requirements" ALTER COLUMN status TYPE "RequirementStatus" USING status::text::"RequirementStatus";
-ALTER TABLE "product_requirements" ALTER COLUMN status SET DEFAULT 'DRAFT'::"RequirementStatus";
-ALTER TABLE "sub_requirements" ALTER COLUMN status SET DEFAULT 'DRAFT'::"RequirementStatus";
-DROP TYPE "RequirementStatus_old";
-
--- ProcedureStatus
-ALTER TYPE "ProcedureStatus" RENAME TO "ProcedureStatus_old";
 CREATE TYPE "ProcedureStatus" AS ENUM ('ACTIVE', 'CANCELED');
-ALTER TABLE "test_procedures" ALTER COLUMN status TYPE "ProcedureStatus" USING status::text::"ProcedureStatus";
-ALTER TABLE "test_procedures" ALTER COLUMN status SET DEFAULT 'ACTIVE'::"ProcedureStatus";
-DROP TYPE "ProcedureStatus_old";
-
--- ProcedureVersionStatus
-ALTER TYPE "ProcedureVersionStatus" RENAME TO "ProcedureVersionStatus_old";
 CREATE TYPE "ProcedureVersionStatus" AS ENUM ('DRAFT', 'APPROVED');
-ALTER TABLE "test_procedure_versions" ALTER COLUMN status TYPE "ProcedureVersionStatus" USING status::text::"ProcedureVersionStatus";
-ALTER TABLE "test_procedure_versions" ALTER COLUMN status SET DEFAULT 'DRAFT'::"ProcedureVersionStatus";
-DROP TYPE "ProcedureVersionStatus_old";
-
--- TestCaseStatus
-ALTER TYPE "TestCaseStatus" RENAME TO "TestCaseStatus_old";
 CREATE TYPE "TestCaseStatus" AS ENUM ('PENDING', 'PASSED', 'FAILED', 'BLOCKED', 'SKIPPED');
-ALTER TABLE "test_cases" ALTER COLUMN status TYPE "TestCaseStatus" USING status::text::"TestCaseStatus";
-ALTER TABLE "test_cases" ALTER COLUMN status SET DEFAULT 'PENDING'::"TestCaseStatus";
-DROP TYPE "TestCaseStatus_old";
-
--- AuditAction
-ALTER TYPE "AuditAction" RENAME TO "AuditAction_old";
 CREATE TYPE "AuditAction" AS ENUM ('CREATE', 'UPDATE', 'APPROVE', 'CANCEL', 'SKIP', 'ADD_ATTACHMENT', 'REMOVE_ATTACHMENT', 'CREATE_VERSION', 'RECORD_RESULT');
-ALTER TABLE "audit_logs" ALTER COLUMN action TYPE "AuditAction" USING action::text::"AuditAction";
-DROP TYPE "AuditAction_old";
+
+-- Step 6: Cast text columns back to enum types and restore defaults
+ALTER TABLE "product_requirements" ALTER COLUMN status TYPE "RequirementStatus" USING status::"RequirementStatus";
+ALTER TABLE "product_requirements" ALTER COLUMN status SET DEFAULT 'DRAFT'::"RequirementStatus";
+
+ALTER TABLE "sub_requirements" ALTER COLUMN status TYPE "RequirementStatus" USING status::"RequirementStatus";
+ALTER TABLE "sub_requirements" ALTER COLUMN status SET DEFAULT 'DRAFT'::"RequirementStatus";
+
+ALTER TABLE "test_procedures" ALTER COLUMN status TYPE "ProcedureStatus" USING status::"ProcedureStatus";
+ALTER TABLE "test_procedures" ALTER COLUMN status SET DEFAULT 'ACTIVE'::"ProcedureStatus";
+
+ALTER TABLE "test_procedure_versions" ALTER COLUMN status TYPE "ProcedureVersionStatus" USING status::"ProcedureVersionStatus";
+ALTER TABLE "test_procedure_versions" ALTER COLUMN status SET DEFAULT 'DRAFT'::"ProcedureVersionStatus";
+
+ALTER TABLE "test_cases" ALTER COLUMN status TYPE "TestCaseStatus" USING status::"TestCaseStatus";
+ALTER TABLE "test_cases" ALTER COLUMN status SET DEFAULT 'PENDING'::"TestCaseStatus";
+
+ALTER TABLE "audit_logs" ALTER COLUMN action TYPE "AuditAction" USING action::"AuditAction";

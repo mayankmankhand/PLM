@@ -97,18 +97,18 @@ Six lifecycle states rendered as pill badges. Color is always paired with a text
 | Status | Background | Text Color | Border | Style |
 |--------|-----------|------------|--------|-------|
 | DRAFT | `#FEF3C7` (amber-100) | `#92400E` (amber-800) | none | filled - warm amber |
-| PUBLISHED | `#E6F2E0` | `#3B6B35` | none | filled - warm sage green |
-| OBSOLETE | `#F0E9DC` (surface) | `#6D6560` (text-muted) | none | filled, dimmed - uses palette tokens |
+| APPROVED | `#E6F2E0` | `#3B6B35` | none | filled - warm sage green |
+| CANCELED | `#F0E9DC` (surface) | `#6D6560` (text-muted) | none | filled, dimmed - uses palette tokens |
 | PENDING | `transparent` | `#6D6560` (text-muted) | `1px solid #D6D3D1` (border) | outlined - uses palette tokens |
-| PASSED | `#E6F2E0` | `#3B6B35` | none | filled - same as PUBLISHED |
+| PASSED | `#E6F2E0` | `#3B6B35` | none | filled - same as APPROVED |
 | FAILED | `#F5E0D5` | `#9B3030` | none | filled - warm terra cotta red |
 
 ### What Changed from v1 Badges
 
 | Status | What changed | Why |
 |--------|-------------|-----|
-| PUBLISHED/PASSED | `#DCFCE7`/`#166534` to `#E6F2E0`/`#3B6B35` | Old was cold mint green. New is warm sage that sits naturally on beige. |
-| OBSOLETE | Raw `stone-100` to `Surface` token | Now uses the palette directly instead of a separate color. |
+| APPROVED/PASSED | `#DCFCE7`/`#166534` to `#E6F2E0`/`#3B6B35` | Old was cold mint green. New is warm sage that sits naturally on beige. |
+| CANCELED | Raw `stone-100` to `Surface` token | Now uses the palette directly instead of a separate color. |
 | PENDING | Raw `stone-500`/`stone-300` to palette tokens | Uses `Text Muted` and `Border` tokens. |
 | FAILED | `#FEE2E2`/`#991B1B` to `#F5E0D5`/`#9B3030` | Old was cold pink-red. New has warm peach undertone. |
 | DRAFT | No change | Already amber-based, matches the warm palette perfectly. |
@@ -127,7 +127,7 @@ Six lifecycle states rendered as pill badges. Color is always paired with a text
 
 **Badge colors are component-local, not global tokens.** The status badge hex values (e.g., `#E6F2E0`, `#3B6B35`) live in the StatusBadge component, not in `@theme`. Rationale: these colors are only used in one place. If a color appears in 2+ unrelated components, promote it to a global token.
 
-**PASSED and PUBLISHED share the same green intentionally.** Both represent a positive outcome in different domains (test execution vs requirement lifecycle). Same visual treatment is correct.
+**PASSED and APPROVED share the same green intentionally.** Both represent a positive outcome in different domains (test execution vs requirement lifecycle). Same visual treatment is correct.
 
 ---
 

@@ -283,7 +283,7 @@ describe("AuditPayloadSchema", () => {
     const result = AuditChangeItemSchema.safeParse({
       field: "status",
       old: "DRAFT",
-      new: "PUBLISHED",
+      new: "APPROVED",
     });
     expect(result.success).toBe(true);
   });
@@ -420,9 +420,9 @@ import { normalizeChanges } from "@/lib/ai/tools/ui-intent-tools";
 describe("normalizeChanges", () => {
   it("extracts before/after shape", () => {
     const result = normalizeChanges({
-      status: { before: "DRAFT", after: "PUBLISHED" },
+      status: { before: "DRAFT", after: "APPROVED" },
     });
-    expect(result).toEqual([{ field: "status", old: "DRAFT", new: "PUBLISHED" }]);
+    expect(result).toEqual([{ field: "status", old: "DRAFT", new: "APPROVED" }]);
   });
 
   it("handles simple key-value as new value", () => {
@@ -458,11 +458,11 @@ describe("normalizeChanges", () => {
 
   it("handles mixed shapes", () => {
     const result = normalizeChanges({
-      status: { before: "DRAFT", after: "PUBLISHED" },
+      status: { before: "DRAFT", after: "APPROVED" },
       title: "Updated Title",
     });
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ field: "status", old: "DRAFT", new: "PUBLISHED" });
+    expect(result[0]).toEqual({ field: "status", old: "DRAFT", new: "APPROVED" });
     expect(result[1]).toEqual({ field: "title", new: "Updated Title" });
   });
 });
