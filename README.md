@@ -96,7 +96,7 @@ V1 uses 3 hardcoded demo users. Set `x-demo-user-id` header to switch users (def
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (71 tests)
+npm run test         # Run tests (74 tests)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -137,6 +137,3 @@ prisma/
 - **Issue #12**: Fix panel not opening on UI intent tool calls (DONE)
 - **Issue #13**: Warm earthy beige palette refresh (DONE)
 - **Issue #16**: Rename status enums for clarity (DONE)
-  - TypeScript compiles clean (0 errors)
-  - Dev server needs restart since `.next` was cleared (`npm run dev`)
-  - DB migration at `prisma/migrations/20260311000000_rename_status_enums/` - run `npx prisma db push` or `npx prisma migrate deploy`, then re-seed (`npx prisma db seed`) since old enum values in the database won't match the new schema
