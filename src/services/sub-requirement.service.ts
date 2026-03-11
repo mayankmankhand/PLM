@@ -1,5 +1,5 @@
 // Sub-Requirement service - domain commands with lifecycle enforcement.
-// Sub-requirements inherit team context and require a published parent for publishing.
+// Sub-requirements inherit team context and require an approved parent for approval.
 
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
@@ -93,9 +93,9 @@ export async function updateSubRequirement(
   });
 }
 
-// ─── Publish (requires parent to be published) ───────────
+// ─── Approve (requires parent to be approved) ────────────
 
-export async function publishSubRequirement(
+export async function approveSubRequirement(
   id: string,
   ctx: RequestContext
 ) {
@@ -107,37 +107,37 @@ export async function publishSubRequirement(
 
     if (existing.status !== "DRAFT") {
       throw new LifecycleError(
-        `Cannot publish sub-requirement in ${existing.status} status. Only DRAFT sub-requirements can be published.`
+        `Cannot approve sub-requirement in ${existing.status} status. Only DRAFT sub-requirements can be approved.`
       );
     }
 
-    if (existing.productRequirement.status !== "PUBLISHED") {
+    if (existing.productRequirement.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot publish sub-requirement: parent product requirement is ${existing.productRequirement.status}. It must be PUBLISHED first.`
+        `Cannot approve sub-requirement: parent product requirement is ${existing.productRequirement.status}. It must be APPROVED first.`
       );
     }
 
     const updated = await tx.subRequirement.update({
       where: { id },
-      data: { status: "PUBLISHED" },
+      data: { status: "APPROVED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "PUBLISH",
+      action: "APPROVE",
       entityType: "SubRequirement",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
 
     return updated;
   });
 }
 
-// ─── Obsolete ────────────────────────────────────────────
+// ─── Cancel ─────────────────────────────────────────────
 
-export async function obsoleteSubRequirement(
+export async function cancelSubRequirement(
   id: string,
   ctx: RequestContext
 ) {
@@ -146,24 +146,24 @@ export async function obsoleteSubRequirement(
       where: { id },
     });
 
-    if (existing.status !== "PUBLISHED") {
+    if (existing.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot obsolete sub-requirement in ${existing.status} status. Only PUBLISHED sub-requirements can be obsoleted.`
+        `Cannot cancel sub-requirement in ${existing.status} status. Only APPROVED sub-requirements can be canceled.`
       );
     }
 
     const updated = await tx.subRequirement.update({
       where: { id },
-      data: { status: "OBSOLETE" },
+      data: { status: "CANCELED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "OBSOLETE",
+      action: "CANCEL",
       entityType: "SubRequirement",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: "PUBLISHED", to: "OBSOLETE" } },
+      changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });
 
     return updated;

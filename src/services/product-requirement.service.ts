@@ -81,9 +81,9 @@ export async function updateProductRequirement(
   });
 }
 
-// ─── Publish ─────────────────────────────────────────────
+// ─── Approve ─────────────────────────────────────────────
 
-export async function publishProductRequirement(
+export async function approveProductRequirement(
   id: string,
   ctx: RequestContext
 ) {
@@ -94,31 +94,31 @@ export async function publishProductRequirement(
 
     if (existing.status !== "DRAFT") {
       throw new LifecycleError(
-        `Cannot publish product requirement in ${existing.status} status. Only DRAFT requirements can be published.`
+        `Cannot approve product requirement in ${existing.status} status. Only DRAFT requirements can be approved.`
       );
     }
 
     const updated = await tx.productRequirement.update({
       where: { id },
-      data: { status: "PUBLISHED" },
+      data: { status: "APPROVED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "PUBLISH",
+      action: "APPROVE",
       entityType: "ProductRequirement",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
 
     return updated;
   });
 }
 
-// ─── Obsolete ────────────────────────────────────────────
+// ─── Cancel ─────────────────────────────────────────────
 
-export async function obsoleteProductRequirement(
+export async function cancelProductRequirement(
   id: string,
   ctx: RequestContext
 ) {
@@ -127,24 +127,24 @@ export async function obsoleteProductRequirement(
       where: { id },
     });
 
-    if (existing.status !== "PUBLISHED") {
+    if (existing.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot obsolete product requirement in ${existing.status} status. Only PUBLISHED requirements can be obsoleted.`
+        `Cannot cancel product requirement in ${existing.status} status. Only APPROVED requirements can be canceled.`
       );
     }
 
     const updated = await tx.productRequirement.update({
       where: { id },
-      data: { status: "OBSOLETE" },
+      data: { status: "CANCELED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "OBSOLETE",
+      action: "CANCEL",
       entityType: "ProductRequirement",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: "PUBLISHED", to: "OBSOLETE" } },
+      changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });
 
     return updated;

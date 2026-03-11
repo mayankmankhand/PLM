@@ -33,26 +33,26 @@ export type UpdateSubRequirementInput = z.infer<
   typeof UpdateSubRequirementInput
 >;
 
-// ─── Publish ───────────────────────────────────────────
+// ─── Approve ──────────────────────────────────────────
 
-export const PublishSubRequirementInput = z.object({
-  confirmPublish: z.literal(true, {
-    errorMap: () => ({ message: "confirmPublish must be true" }),
+export const ApproveSubRequirementInput = z.object({
+  confirmApprove: z.literal(true, {
+    errorMap: () => ({ message: "confirmApprove must be true" }),
   }),
 });
 
-export type PublishSubRequirementInput = z.infer<
-  typeof PublishSubRequirementInput
+export type ApproveSubRequirementInput = z.infer<
+  typeof ApproveSubRequirementInput
 >;
 
-// ─── Obsolete ──────────────────────────────────────────
+// ─── Cancel ───────────────────────────────────────────
 
-export const ObsoleteSubRequirementInput = z.object({
-  confirmObsolete: z.literal(true, {
-    errorMap: () => ({ message: "confirmObsolete must be true" }),
+export const CancelSubRequirementInput = z.object({
+  confirmCancel: z.literal(true, {
+    errorMap: () => ({ message: "confirmCancel must be true" }),
   }),
 });
 
-export type ObsoleteSubRequirementInput = z.infer<
-  typeof ObsoleteSubRequirementInput
+export type CancelSubRequirementInput = z.infer<
+  typeof CancelSubRequirementInput
 >;

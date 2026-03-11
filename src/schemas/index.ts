@@ -3,29 +3,29 @@
 export {
   CreateProductRequirementInput,
   UpdateProductRequirementInput,
-  PublishProductRequirementInput,
-  ObsoleteProductRequirementInput,
+  ApproveProductRequirementInput,
+  CancelProductRequirementInput,
 } from "./product-requirement.schema";
 
 export {
   CreateSubRequirementInput,
   UpdateSubRequirementInput,
-  PublishSubRequirementInput,
-  ObsoleteSubRequirementInput,
+  ApproveSubRequirementInput,
+  CancelSubRequirementInput,
 } from "./sub-requirement.schema";
 
 export {
   CreateTestProcedureInput,
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
-  PublishTestProcedureVersionInput,
-  ObsoleteTestProcedureInput,
+  ApproveTestProcedureVersionInput,
+  CancelTestProcedureInput,
 } from "./test-procedure.schema";
 
 export {
   CreateTestCaseInput,
   RecordTestResultInput,
-  InvalidateTestCaseInput,
+  SkipTestCaseInput,
 } from "./test-case.schema";
 
 export { CreateAttachmentInput } from "./attachment.schema";

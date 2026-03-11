@@ -1,6 +1,6 @@
-// Test Case service - record results, invalidate.
+// Test Case service - record results, skip.
 // Test cases belong to a TestProcedureVersion. Results can only be recorded
-// when the parent version is PUBLISHED.
+// when the parent version is APPROVED.
 
 import { prisma } from "@/lib/prisma";
 import { TestCaseResult, TestCaseStatus } from "@prisma/client";
@@ -50,7 +50,7 @@ export async function createTestCase(
   });
 }
 
-// ─── Record result (parent version must be published) ────
+// ─── Record result (parent version must be approved) ─────
 
 export async function recordTestResult(
   id: string,
@@ -63,18 +63,18 @@ export async function recordTestResult(
       include: { testProcedureVersion: true },
     });
 
-    if (existing.testProcedureVersion.status !== "PUBLISHED") {
+    if (existing.testProcedureVersion.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot record result: parent procedure version is ${existing.testProcedureVersion.status}. It must be PUBLISHED.`
+        `Cannot record result: parent procedure version is ${existing.testProcedureVersion.status}. It must be APPROVED.`
       );
     }
 
-    if (existing.status === "INVALIDATED") {
-      throw new LifecycleError("Cannot record result for an invalidated test case.");
+    if (existing.status === "SKIPPED") {
+      throw new LifecycleError("Cannot record result for a skipped test case.");
     }
 
     // Map result to status.
-    // SKIPPED means "skip this round, return to PENDING" - it's a temporary
+    // SKIPPED result means "skip this round, return to PENDING" - it's a temporary
     // deferment, not a terminal outcome. The test case can be re-executed later.
     const statusMap: Record<TestCaseResult, TestCaseStatus> = {
       PASS: "PASSED",
@@ -111,9 +111,9 @@ export async function recordTestResult(
   });
 }
 
-// ─── Invalidate ──────────────────────────────────────────
+// ─── Skip ───────────────────────────────────────────────
 
-export async function invalidateTestCase(
+export async function skipTestCase(
   id: string,
   ctx: RequestContext
 ) {
@@ -122,22 +122,22 @@ export async function invalidateTestCase(
       where: { id },
     });
 
-    if (existing.status === "INVALIDATED") {
-      throw new LifecycleError("Test case is already invalidated.");
+    if (existing.status === "SKIPPED") {
+      throw new LifecycleError("Test case is already skipped.");
     }
 
     const updated = await tx.testCase.update({
       where: { id },
-      data: { status: "INVALIDATED" },
+      data: { status: "SKIPPED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "INVALIDATE",
+      action: "SKIP",
       entityType: "TestCase",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: existing.status, to: "INVALIDATED" } },
+      changes: { status: { from: existing.status, to: "SKIPPED" } },
     });
 
     return updated;
