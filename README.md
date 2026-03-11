@@ -6,8 +6,8 @@ A lightweight PLM system for managing product requirements, test procedures, and
 
 - **Framework**: Next.js 16 (App Router, TypeScript)
 - **Database**: Neon PostgreSQL via Prisma ORM
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 25 LLM tools)
-- **UI**: Tailwind CSS v4, react-markdown, lucide-react, @ai-sdk/react
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 28 LLM tools)
+- **UI**: Tailwind CSS v4, Zustand, react-markdown, lucide-react, @ai-sdk/react, mermaid, dompurify
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest
 - **Auth**: Demo users via Edge Middleware (hardcoded for V1)
@@ -61,7 +61,7 @@ ProductRequirement (org-wide)
 POST /api/chat   # Streaming natural language interface to manage PLM entities
 ```
 
-Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 25 tools (15 mutation, 5 read, 4 query, 1 search) and confirms before destructive actions.
+Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 28 tools (15 mutation, 5 read, 4 query, 1 search, 3 UI intent) and confirms before destructive actions.
 
 ### Named Queries
 
@@ -96,7 +96,7 @@ V1 uses 3 hardcoded demo users. Set `x-demo-user-id` header to switch users (def
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (36 tests)
+npm run test         # Run tests (55 tests)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -107,10 +107,13 @@ npm run lint         # ESLint
 src/
   app/               # Next.js pages + API routes
     api/             # 32 route handlers (domain commands + queries + chat)
-    page.tsx         # Chat UI (single-panel, streaming)
+    page.tsx         # Chat UI (dual-panel, streaming)
     globals.css      # Tailwind v4 + design tokens
   components/chat/   # Chat UI components (8 files)
-  lib/ai/            # LLM layer: system prompt, 25 tools, trace logger
+  components/panel/  # Context panel views (detail, table, diagram, error)
+  stores/            # Zustand stores (panel state)
+  types/             # Shared TypeScript types + Zod schemas (panel payloads)
+  lib/ai/            # LLM layer: system prompt, 28 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
   schemas/           # Zod validation schemas
   services/          # Business logic with lifecycle enforcement + audit logging
@@ -125,6 +128,8 @@ prisma/
 - **Issue #3**: Project foundation + database (DONE)
 - **Issue #4**: LLM backend - 25 tools + streaming chat endpoint (DONE)
 - **Issue #5**: Chat UI - single-panel streaming chat (DONE)
+- **Issue #6**: Context panel - tables, diagrams, detail views (DONE)
 - **Issue #7**: CI/CD pipeline
 - **Issue #8**: Database hardening (partial unique indexes, check constraints)
 - **Issue #9**: Document parsing pipeline - PDF, Word, URL (future)
+- **Issue #10**: V2 panel features - clickable rows, history, resize (future)
