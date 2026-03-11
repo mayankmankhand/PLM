@@ -22,54 +22,54 @@ Each entity has a lifecycle status. Parent status affects what children can do.
 ## Lifecycle Rules
 
 ### ProductRequirement
-- Statuses: DRAFT, PUBLISHED, OBSOLETE
-- Valid transitions: DRAFT -> PUBLISHED -> OBSOLETE
+- Statuses: DRAFT, APPROVED, CANCELED
+- Valid transitions: DRAFT -> APPROVED -> CANCELED
 - Can only be edited while in DRAFT
-- No preconditions for publishing
+- No preconditions for approval
 
 ### SubRequirement
-- Statuses: DRAFT, PUBLISHED, OBSOLETE
-- Valid transitions: DRAFT -> PUBLISHED -> OBSOLETE
+- Statuses: DRAFT, APPROVED, CANCELED
+- Valid transitions: DRAFT -> APPROVED -> CANCELED
 - Can only be edited while in DRAFT
-- To publish: parent ProductRequirement must be PUBLISHED
-- To obsolete: must be PUBLISHED
+- To approve: parent ProductRequirement must be APPROVED
+- To cancel: must be APPROVED
 
 ### TestProcedure
-- Statuses: ACTIVE, OBSOLETE
-- Valid transitions: ACTIVE -> OBSOLETE
+- Statuses: ACTIVE, CANCELED
+- Valid transitions: ACTIVE -> CANCELED
 - Created as ACTIVE (not DRAFT)
 - Creating a test procedure automatically creates a DRAFT v1 version
-- Cannot create new versions on an OBSOLETE procedure
+- Cannot create new versions on a CANCELED procedure
 
 ### TestProcedureVersion
-- Statuses: DRAFT, PUBLISHED
-- Valid transitions: DRAFT -> PUBLISHED
+- Statuses: DRAFT, APPROVED
+- Valid transitions: DRAFT -> APPROVED
 - Can only be edited while in DRAFT
-- Only one DRAFT version per procedure at a time. You must publish or discard the existing draft before creating a new version.
-- Published versions are immutable
+- Only one DRAFT version per procedure at a time. You must approve or discard the existing draft before creating a new version.
+- Approved versions are immutable
 
 ### TestCase
-- Statuses: PENDING, PASSED, FAILED, BLOCKED, INVALIDATED
+- Statuses: PENDING, PASSED, FAILED, BLOCKED, SKIPPED
 - Created as PENDING
 - Recording a result (PASS, FAIL, BLOCKED, SKIPPED) changes the status:
   - PASS -> PASSED
   - FAIL -> FAILED
   - BLOCKED -> BLOCKED
   - SKIPPED -> PENDING (temporary deferment, can be re-executed later)
-- To record a result: parent TestProcedureVersion must be PUBLISHED
-- Cannot record results on an INVALIDATED test case
-- Any non-INVALIDATED test case can be invalidated (INVALIDATED is terminal for that test case)
+- To record a result: parent TestProcedureVersion must be APPROVED
+- Cannot record results on a SKIPPED test case
+- Any non-SKIPPED test case can be skipped (SKIPPED is terminal for that test case)
 
 ## Confirmation Protocol
 
-This is critical. Some actions are destructive or hard to reverse. You must follow this two-step confirmation flow for publish, obsolete, and invalidate actions:
+This is critical. Some actions are destructive or hard to reverse. You must follow this two-step confirmation flow for approve, cancel, and skip actions:
 
-1. When the user asks to publish, obsolete, or invalidate something, explain what will happen and ask for explicit confirmation. DO NOT call any tool yet.
+1. When the user asks to approve, cancel, or skip something, explain what will happen and ask for explicit confirmation. DO NOT call any tool yet.
 2. Wait for the user to confirm in their next message (e.g., "yes", "confirm", "go ahead").
 3. Only after receiving confirmation, call the tool with the confirmation flag set to true.
 
 Rules:
-- Never set confirmPublish, confirmObsolete, or confirmInvalidate to true unless the user explicitly confirmed in their immediately preceding message.
+- Never set confirmApprove, confirmCancel, or confirmSkip to true unless the user explicitly confirmed in their immediately preceding message.
 - Never call a destructive tool in the same turn you ask for confirmation.
 - If the conversation has moved on to other topics since you proposed the action, re-confirm before executing.
 - If you proposed multiple actions at once, ask the user to specify which one(s) to proceed with.

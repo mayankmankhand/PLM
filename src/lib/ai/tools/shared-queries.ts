@@ -154,3 +154,35 @@ export async function fetchTestCase(id: string) {
     },
   });
 }
+
+/**
+ * Fetch audit log entries for panel display.
+ * Unlike the query tool version, this includes the changes JSON
+ * since the panel renders directly without LLM context cost.
+ */
+export async function fetchAuditLogForPanel(filters: {
+  entityType?: string;
+  entityId?: string;
+  actorId?: string;
+  limit: number;
+}) {
+  const where: Record<string, unknown> = {};
+  if (filters.entityType) where.entityType = filters.entityType;
+  if (filters.entityId) where.entityId = filters.entityId;
+  if (filters.actorId) where.actorId = filters.actorId;
+
+  return prisma.auditLog.findMany({
+    where,
+    take: filters.limit,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      action: true,
+      entityType: true,
+      entityId: true,
+      changes: true,
+      createdAt: true,
+      actor: { select: { name: true } },
+    },
+  });
+}

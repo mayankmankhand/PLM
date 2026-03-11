@@ -22,13 +22,13 @@ export const RecordTestResultInput = z.object({
 
 export type RecordTestResultInput = z.infer<typeof RecordTestResultInput>;
 
-// ─── Invalidate ────────────────────────────────────────
-// Marks a test case as invalid (e.g., the procedure version changed).
+// ─── Skip ──────────────────────────────────────────────
+// Marks a test case as skipped (e.g., the procedure version changed).
 
-export const InvalidateTestCaseInput = z.object({
-  confirmInvalidate: z.literal(true, {
-    errorMap: () => ({ message: "confirmInvalidate must be true" }),
+export const SkipTestCaseInput = z.object({
+  confirmSkip: z.literal(true, {
+    errorMap: () => ({ message: "confirmSkip must be true" }),
   }),
 });
 
-export type InvalidateTestCaseInput = z.infer<typeof InvalidateTestCaseInput>;
+export type SkipTestCaseInput = z.infer<typeof SkipTestCaseInput>;

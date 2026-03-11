@@ -8,24 +8,24 @@ const TOOL_LABELS: Record<string, string> = {
   // Product Requirement mutations
   createProductRequirement: "Creating product requirement",
   updateProductRequirement: "Updating product requirement",
-  publishProductRequirement: "Publishing product requirement",
-  obsoleteProductRequirement: "Marking product requirement as obsolete",
+  approveProductRequirement: "Approving product requirement",
+  cancelProductRequirement: "Canceling product requirement",
 
   // Sub-Requirement mutations
   createSubRequirement: "Creating sub-requirement",
   updateSubRequirement: "Updating sub-requirement",
-  publishSubRequirement: "Publishing sub-requirement",
-  obsoleteSubRequirement: "Marking sub-requirement as obsolete",
+  approveSubRequirement: "Approving sub-requirement",
+  cancelSubRequirement: "Canceling sub-requirement",
 
   // Test Procedure mutations
   createTestProcedure: "Creating test procedure",
   createTestProcedureVersion: "Creating test procedure version",
-  obsoleteTestProcedure: "Marking test procedure as obsolete",
+  cancelTestProcedure: "Canceling test procedure",
 
   // Test Case mutations
   createTestCase: "Creating test case",
   recordTestResult: "Recording test result",
-  invalidateTestCase: "Invalidating test case",
+  skipTestCase: "Skipping test case",
 
   // Read tools
   getProductRequirement: "Looking up product requirement",
@@ -47,6 +47,7 @@ const TOOL_LABELS: Record<string, string> = {
   showEntityDetail: "Showing in panel",
   showTable: "Showing table in panel",
   showDiagram: "Showing diagram in panel",
+  showAuditLog: "Showing audit log in panel",
 };
 
 // UI intent tool names - these open the context panel.
@@ -55,6 +56,7 @@ export const UI_INTENT_TOOLS = new Set([
   "showEntityDetail",
   "showTable",
   "showDiagram",
+  "showAuditLog",
 ]);
 
 /**

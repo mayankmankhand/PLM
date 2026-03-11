@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@/lib/request-context";
 import { handleApiError } from "@/lib/api-utils";
-import { ObsoleteSubRequirementInput } from "@/schemas/sub-requirement.schema";
-import { obsoleteSubRequirement } from "@/services/sub-requirement.service";
+import { ApproveSubRequirementInput } from "@/schemas/sub-requirement.schema";
+import { approveSubRequirement } from "@/services/sub-requirement.service";
 
 export async function POST(
   request: NextRequest,
@@ -12,8 +12,8 @@ export async function POST(
     const ctx = getRequestContext(request);
     const { id } = await params;
     const body = await request.json();
-    ObsoleteSubRequirementInput.parse(body);
-    const result = await obsoleteSubRequirement(id, ctx);
+    ApproveSubRequirementInput.parse(body);
+    const result = await approveSubRequirement(id, ctx);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

@@ -47,28 +47,28 @@ export type UpdateTestProcedureVersionInput = z.infer<
   typeof UpdateTestProcedureVersionInput
 >;
 
-// ─── Publish Version ───────────────────────────────────
+// ─── Approve Version ──────────────────────────────────
 // Locks the version - no more edits allowed after this.
 
-export const PublishTestProcedureVersionInput = z.object({
-  confirmPublish: z.literal(true, {
-    errorMap: () => ({ message: "confirmPublish must be true" }),
+export const ApproveTestProcedureVersionInput = z.object({
+  confirmApprove: z.literal(true, {
+    errorMap: () => ({ message: "confirmApprove must be true" }),
   }),
 });
 
-export type PublishTestProcedureVersionInput = z.infer<
-  typeof PublishTestProcedureVersionInput
+export type ApproveTestProcedureVersionInput = z.infer<
+  typeof ApproveTestProcedureVersionInput
 >;
 
-// ─── Obsolete Procedure ────────────────────────────────
-// Marks the entire logical procedure as obsolete.
+// ─── Cancel Procedure ─────────────────────────────────
+// Marks the entire logical procedure as canceled.
 
-export const ObsoleteTestProcedureInput = z.object({
-  confirmObsolete: z.literal(true, {
-    errorMap: () => ({ message: "confirmObsolete must be true" }),
+export const CancelTestProcedureInput = z.object({
+  confirmCancel: z.literal(true, {
+    errorMap: () => ({ message: "confirmCancel must be true" }),
   }),
 });
 
-export type ObsoleteTestProcedureInput = z.infer<
-  typeof ObsoleteTestProcedureInput
+export type CancelTestProcedureInput = z.infer<
+  typeof CancelTestProcedureInput
 >;

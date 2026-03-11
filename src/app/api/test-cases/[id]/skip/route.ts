@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequestContext } from "@/lib/request-context";
 import { handleApiError } from "@/lib/api-utils";
-import { InvalidateTestCaseInput } from "@/schemas/test-case.schema";
-import { invalidateTestCase } from "@/services/test-case.service";
+import { SkipTestCaseInput } from "@/schemas/test-case.schema";
+import { skipTestCase } from "@/services/test-case.service";
 
 export async function POST(
   request: NextRequest,
@@ -12,8 +12,8 @@ export async function POST(
     const ctx = getRequestContext(request);
     const { id } = await params;
     const body = await request.json();
-    InvalidateTestCaseInput.parse(body);
-    const result = await invalidateTestCase(id, ctx);
+    SkipTestCaseInput.parse(body);
+    const result = await skipTestCase(id, ctx);
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error);

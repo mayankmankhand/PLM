@@ -6,7 +6,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 
 - **Framework**: Next.js 16 (App Router, TypeScript)
 - **Database**: Neon PostgreSQL via Prisma ORM
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 28 LLM tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 LLM tools)
 - **UI**: Tailwind CSS v4, Zustand, react-markdown, lucide-react, @ai-sdk/react, mermaid, dompurify
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest
@@ -39,8 +39,8 @@ The API uses **domain commands** instead of raw CRUD. Each endpoint maps to one 
 
 ```
 POST /api/product-requirements/create
-POST /api/product-requirements/:id/publish
-POST /api/product-requirements/:id/obsolete
+POST /api/product-requirements/:id/approve
+POST /api/product-requirements/:id/cancel
 GET  /api/product-requirements
 GET  /api/product-requirements/:id
 ```
@@ -61,7 +61,7 @@ ProductRequirement (org-wide)
 POST /api/chat   # Streaming natural language interface to manage PLM entities
 ```
 
-Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 28 tools (15 mutation, 5 read, 4 query, 1 search, 3 UI intent) and confirms before destructive actions.
+Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 29 tools (16 mutation, 4 read, 4 query, 1 search, 4 UI intent) and confirms before destructive actions.
 
 ### Named Queries
 
@@ -75,10 +75,10 @@ GET /api/queries/recent-audit
 ### Lifecycle Rules
 
 - **Draft** entities are fully editable
-- **Published** requirements are immutable (except status transitions)
-- **Published** procedure versions are fully immutable
-- Sub-requirements can only be published if their parent requirement is published
-- Test results can only be recorded against published procedure versions
+- **Approved** requirements are immutable (except cancel transition)
+- **Approved** procedure versions are fully immutable
+- Sub-requirements can only be approved if their parent requirement is approved
+- Test results can only be recorded against approved procedure versions
 - Only one draft version per test procedure at a time
 
 ### Auth
@@ -96,7 +96,7 @@ V1 uses 3 hardcoded demo users. Set `x-demo-user-id` header to switch users (def
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (55 tests)
+npm run test         # Run tests (74 tests)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -110,14 +110,14 @@ src/
     page.tsx         # Chat UI (dual-panel, streaming)
     globals.css      # Tailwind v4 + design tokens
   components/chat/   # Chat UI components (8 files)
-  components/panel/  # Context panel views (detail, table, diagram, error)
+  components/panel/  # Context panel views (detail, table, diagram, audit, error)
   stores/            # Zustand stores (panel state)
   types/             # Shared TypeScript types + Zod schemas (panel payloads)
-  lib/ai/            # LLM layer: system prompt, 28 tools, trace logger
+  lib/ai/            # LLM layer: system prompt, 29 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
   schemas/           # Zod validation schemas
   services/          # Business logic with lifecycle enforcement + audit logging
-  __tests__/         # Vitest tests (lifecycle, schema, integration)
+  __tests__/         # Vitest tests (lifecycle, schema, integration, panel)
 prisma/
   schema.prisma      # Database schema (9 models, 7 enums)
   seed.ts            # Demo data seeder
@@ -129,7 +129,11 @@ prisma/
 - **Issue #4**: LLM backend - 25 tools + streaming chat endpoint (DONE)
 - **Issue #5**: Chat UI - single-panel streaming chat (DONE)
 - **Issue #6**: Context panel - tables, diagrams, detail views (DONE)
-- **Issue #7**: CI/CD pipeline
+- **Issue #7**: UI redesign + demo data (DONE)
 - **Issue #8**: Database hardening (partial unique indexes, check constraints)
 - **Issue #9**: Document parsing pipeline - PDF, Word, URL (future)
 - **Issue #10**: V2 panel features - clickable rows, history, resize (future)
+- **Issue #11**: Audit log viewer in context panel (DONE)
+- **Issue #12**: Fix panel not opening on UI intent tool calls (DONE)
+- **Issue #13**: Warm earthy beige palette refresh (DONE)
+- **Issue #16**: Rename status enums for clarity (DONE)

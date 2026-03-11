@@ -7,6 +7,9 @@ import {
   DetailPayloadSchema,
   TablePayloadSchema,
   DiagramPayloadSchema,
+  AuditPayloadSchema,
+  AuditChangeItemSchema,
+  AuditEntrySchema,
   PanelContentSchema,
   PanelErrorSchema,
 } from "@/types/panel";
@@ -14,6 +17,7 @@ import type {
   DetailPayload,
   TablePayload,
   DiagramPayload,
+  AuditPayload,
   PanelContent,
 } from "@/types/panel";
 
@@ -124,6 +128,33 @@ describe("usePanelStore", () => {
     expect(state.content).toBeNull();
   });
 
+  it("showAudit opens panel with audit content", () => {
+    const payload: AuditPayload = {
+      type: "audit",
+      title: "Recent Audit Log",
+      entries: [
+        {
+          id: "entry-1",
+          action: "CREATE",
+          entityType: "ProductRequirement",
+          entityId: "req-1",
+          actor: { name: "Alice" },
+          createdAt: "2026-03-01T10:00:00Z",
+          changes: [{ field: "status", new: "DRAFT" }],
+        },
+      ],
+    };
+
+    usePanelStore.getState().showAudit(payload);
+    const state = usePanelStore.getState();
+
+    expect(state.isOpen).toBe(true);
+    expect(state.content?.type).toBe("audit");
+    if (state.content?.type === "audit") {
+      expect(state.content.entries).toHaveLength(1);
+    }
+  });
+
   it("new tool call replaces previous content", () => {
     usePanelStore.getState().showDetail({
       type: "detail",
@@ -219,6 +250,71 @@ describe("DiagramPayloadSchema", () => {
   });
 });
 
+describe("AuditPayloadSchema", () => {
+  const validEntry = {
+    id: "entry-1",
+    action: "CREATE",
+    entityType: "ProductRequirement",
+    entityId: "req-1",
+    actor: { name: "Alice" },
+    createdAt: "2026-03-01T10:00:00Z",
+    changes: [{ field: "status", new: "DRAFT" }],
+  };
+
+  it("accepts valid audit payload", () => {
+    const result = AuditPayloadSchema.safeParse({
+      type: "audit",
+      title: "Recent Audit Log",
+      entries: [validEntry],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts entry without changes (defaults to empty array)", () => {
+    const { changes: _, ...entryWithoutChanges } = validEntry;
+    const result = AuditEntrySchema.safeParse(entryWithoutChanges);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.changes).toEqual([]);
+    }
+  });
+
+  it("accepts entry with old and new change values", () => {
+    const result = AuditChangeItemSchema.safeParse({
+      field: "status",
+      old: "DRAFT",
+      new: "APPROVED",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts change with only field name", () => {
+    const result = AuditChangeItemSchema.safeParse({ field: "title" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects changes array with more than 10 items", () => {
+    const tooManyChanges = Array.from({ length: 11 }, (_, i) => ({
+      field: `field-${i}`,
+      new: `value-${i}`,
+    }));
+    const result = AuditEntrySchema.safeParse({
+      ...validEntry,
+      changes: tooManyChanges,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts empty entries array", () => {
+    const result = AuditPayloadSchema.safeParse({
+      type: "audit",
+      title: "No Activity",
+      entries: [],
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
 describe("PanelErrorSchema", () => {
   it("accepts valid error payload", () => {
     const result = PanelErrorSchema.safeParse({
@@ -283,11 +379,108 @@ describe("PanelContentSchema discriminated union", () => {
     }
   });
 
+  it("narrows to audit type", () => {
+    const input = {
+      type: "audit",
+      title: "Audit Log",
+      entries: [
+        {
+          id: "e1",
+          action: "APPROVE",
+          entityType: "TestProcedure",
+          entityId: "tp-1",
+          actor: { name: "Bob" },
+          createdAt: "2026-03-05T14:00:00Z",
+          changes: [],
+        },
+      ],
+    };
+
+    const result = PanelContentSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (result.success && result.data.type === "audit") {
+      expect(result.data.entries).toHaveLength(1);
+      expect(result.data.entries[0].action).toBe("APPROVE");
+    }
+  });
+
   it("rejects unknown discriminant", () => {
     const result = PanelContentSchema.safeParse({
       type: "unknown",
       title: "Bad",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+// ─── Normalizer Tests ───────────────────────────────────
+
+import { normalizeChanges } from "@/lib/ai/tools/ui-intent-tools";
+
+describe("normalizeChanges", () => {
+  it("extracts before/after shape", () => {
+    const result = normalizeChanges({
+      status: { before: "DRAFT", after: "APPROVED" },
+    });
+    expect(result).toEqual([{ field: "status", old: "DRAFT", new: "APPROVED" }]);
+  });
+
+  it("handles simple key-value as new value", () => {
+    const result = normalizeChanges({ title: "New Title" });
+    expect(result).toEqual([{ field: "title", new: "New Title" }]);
+  });
+
+  it("handles before-only (removal)", () => {
+    const result = normalizeChanges({
+      notes: { before: "old notes" },
+    });
+    expect(result).toEqual([{ field: "notes", old: "old notes" }]);
+  });
+
+  it("returns empty array for null input", () => {
+    expect(normalizeChanges(null)).toEqual([]);
+  });
+
+  it("returns empty array for non-object input", () => {
+    expect(normalizeChanges("not an object")).toEqual([]);
+    expect(normalizeChanges(42)).toEqual([]);
+    expect(normalizeChanges(undefined)).toEqual([]);
+  });
+
+  it("returns empty array for empty object", () => {
+    expect(normalizeChanges({})).toEqual([]);
+  });
+
+  it("returns empty array for array input", () => {
+    expect(normalizeChanges([1, 2, 3])).toEqual([]);
+  });
+
+  it("converts null values to (none)", () => {
+    const result = normalizeChanges({ status: null });
+    expect(result).toEqual([{ field: "status", new: "(none)" }]);
+  });
+
+  it("JSON-stringifies object values", () => {
+    const result = normalizeChanges({ steps: ["step1", "step2"] });
+    expect(result).toEqual([{ field: "steps", new: '["step1","step2"]' }]);
+  });
+
+  it("caps at 10 items", () => {
+    const raw: Record<string, string> = {};
+    for (let i = 0; i < 15; i++) {
+      raw[`field-${i}`] = `value-${i}`;
+    }
+    const result = normalizeChanges(raw);
+    expect(result).toHaveLength(10);
+  });
+
+  it("handles mixed shapes", () => {
+    const result = normalizeChanges({
+      status: { before: "DRAFT", after: "APPROVED" },
+      title: "Updated Title",
+    });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ field: "status", old: "DRAFT", new: "APPROVED" });
+    expect(result[1]).toEqual({ field: "title", new: "Updated Title" });
   });
 });

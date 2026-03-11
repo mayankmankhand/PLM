@@ -6,6 +6,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatToolError } from "./tool-wrapper";
+import { AuditEntityTypeEnum } from "@/schemas/query.schema";
 
 export function createQueryTools() {
   return {
@@ -119,10 +120,10 @@ export function createQueryTools() {
       },
     }),
 
-    // -- Published procedure versions with no test cases --
+    // -- Approved procedure versions with no test cases --
     getProceduresWithoutTestCases: tool({
       description:
-        "Find published test procedure versions that have no test cases. " +
+        "Find approved test procedure versions that have no test cases. " +
         "These are procedures that exist but have never been tested.",
       inputSchema: z.object({
         limit: z
@@ -136,7 +137,7 @@ export function createQueryTools() {
       execute: async (args) => {
         try {
           const where = {
-            status: "PUBLISHED" as const,
+            status: "APPROVED" as const,
             testCases: { none: {} },
           };
 
@@ -176,19 +177,11 @@ export function createQueryTools() {
     // -- Recent audit log entries --
     getRecentAuditLog: tool({
       description:
-        "Fetch recent audit log entries. " +
-        "Optionally filter by entity type (e.g. 'ProductRequirement', 'TestCase') " +
-        "or a specific entity ID.",
+        "Fetch recent audit log entries for your own reasoning (not user-facing). " +
+        "Optionally filter by entity type or a specific entity ID. " +
+        "To SHOW audit logs to the user visually, use showAuditLog instead.",
       inputSchema: z.object({
-        entityType: z
-          .enum([
-            "ProductRequirement",
-            "SubRequirement",
-            "TestProcedure",
-            "TestProcedureVersion",
-            "TestCase",
-            "Attachment",
-          ])
+        entityType: AuditEntityTypeEnum
           .optional()
           .describe("Filter by entity type"),
         entityId: z

@@ -1,5 +1,5 @@
 // Integration tests that run against the real Neon database.
-// Tests the full create -> publish -> query chain and verifies audit logs.
+// Tests the full create -> approve -> query chain and verifies audit logs.
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PrismaClient } from "@prisma/client";
@@ -99,7 +99,7 @@ describe("Full traceability chain", () => {
   let tpvId: string;
   let tcId: string;
 
-  it("creates and publishes the full chain: PR -> SubReq -> TestProc -> TestCase with PASS", async () => {
+  it("creates and approves the full chain: PR -> SubReq -> TestProc -> TestCase with PASS", async () => {
     // 1. Create a product requirement
     const pr = await prService.createProductRequirement(
       { title: "Integration PR", description: "Top-level requirement" },
@@ -109,9 +109,9 @@ describe("Full traceability chain", () => {
     createdIds.productRequirements.push(pr.id);
     expect(pr.status).toBe("DRAFT");
 
-    // 2. Publish it
-    const publishedPr = await prService.publishProductRequirement(pr.id, ctx);
-    expect(publishedPr.status).toBe("PUBLISHED");
+    // 2. Approve it
+    const approvedPr = await prService.approveProductRequirement(pr.id, ctx);
+    expect(approvedPr.status).toBe("APPROVED");
 
     // 3. Create a sub-requirement
     const sr = await srService.createSubRequirement(
@@ -127,9 +127,9 @@ describe("Full traceability chain", () => {
     createdIds.subRequirements.push(sr.id);
     expect(sr.status).toBe("DRAFT");
 
-    // 4. Publish the sub-requirement
-    const publishedSr = await srService.publishSubRequirement(sr.id, ctx);
-    expect(publishedSr.status).toBe("PUBLISHED");
+    // 4. Approve the sub-requirement
+    const approvedSr = await srService.approveSubRequirement(sr.id, ctx);
+    expect(approvedSr.status).toBe("APPROVED");
 
     // 5. Create a test procedure (comes with draft v1)
     const tp = await tpService.createTestProcedure(
@@ -147,12 +147,12 @@ describe("Full traceability chain", () => {
     createdIds.testProcedureVersions.push(tp.versions[0].id);
     expect(tp.versions[0].status).toBe("DRAFT");
 
-    // 6. Publish v1
-    const publishedVersion = await tpService.publishTestProcedureVersion(
+    // 6. Approve v1
+    const approvedVersion = await tpService.approveTestProcedureVersion(
       tp.versions[0].id,
       ctx
     );
-    expect(publishedVersion.status).toBe("PUBLISHED");
+    expect(approvedVersion.status).toBe("APPROVED");
 
     // 7. Create a test case
     const tc = await tcService.createTestCase(
@@ -199,18 +199,18 @@ describe("Full traceability chain", () => {
     });
 
     expect(chain).not.toBeNull();
-    expect(chain!.status).toBe("PUBLISHED");
+    expect(chain!.status).toBe("APPROVED");
     expect(chain!.subRequirements).toHaveLength(1);
 
     const subReq = chain!.subRequirements[0];
-    expect(subReq.status).toBe("PUBLISHED");
+    expect(subReq.status).toBe("APPROVED");
     expect(subReq.testProcedures).toHaveLength(1);
 
     const proc = subReq.testProcedures[0];
     expect(proc.versions).toHaveLength(1);
 
     const version = proc.versions[0];
-    expect(version.status).toBe("PUBLISHED");
+    expect(version.status).toBe("APPROVED");
     expect(version.testCases).toHaveLength(1);
 
     const testCase = version.testCases[0];
@@ -221,23 +221,23 @@ describe("Full traceability chain", () => {
   // ─── Audit Log Verification ─────────────────────────────
 
   it("records correct audit log actions for each entity", async () => {
-    // Product requirement: CREATE, PUBLISH
+    // Product requirement: CREATE, APPROVE
     const prLogs = await prisma.auditLog.findMany({
       where: { entityId: prId },
       orderBy: { createdAt: "asc" },
     });
     const prActions = prLogs.map((l) => l.action);
     expect(prActions).toContain("CREATE");
-    expect(prActions).toContain("PUBLISH");
+    expect(prActions).toContain("APPROVE");
 
-    // Sub-requirement: CREATE, PUBLISH
+    // Sub-requirement: CREATE, APPROVE
     const srLogs = await prisma.auditLog.findMany({
       where: { entityId: srId },
       orderBy: { createdAt: "asc" },
     });
     const srActions = srLogs.map((l) => l.action);
     expect(srActions).toContain("CREATE");
-    expect(srActions).toContain("PUBLISH");
+    expect(srActions).toContain("APPROVE");
 
     // Test procedure: CREATE (logged on the procedure entity)
     const tpLogs = await prisma.auditLog.findMany({
@@ -246,12 +246,12 @@ describe("Full traceability chain", () => {
     const tpActions = tpLogs.map((l) => l.action);
     expect(tpActions).toContain("CREATE");
 
-    // Test procedure version: PUBLISH
+    // Test procedure version: APPROVE
     const tpvLogs = await prisma.auditLog.findMany({
       where: { entityId: tpvId },
     });
     const tpvActions = tpvLogs.map((l) => l.action);
-    expect(tpvActions).toContain("PUBLISH");
+    expect(tpvActions).toContain("APPROVE");
 
     // Test case: CREATE, RECORD_RESULT
     const tcLogs = await prisma.auditLog.findMany({
@@ -271,16 +271,16 @@ describe("Uncovered sub-requirements query", () => {
   let srId: string;
 
   it("finds sub-requirements with no test procedures", async () => {
-    // Create a published product requirement
+    // Create an approved product requirement
     const pr = await prService.createProductRequirement(
       { title: "Uncovered PR", description: "For uncovered query test" },
       ctx
     );
     prId = pr.id;
     createdIds.productRequirements.push(pr.id);
-    await prService.publishProductRequirement(pr.id, ctx);
+    await prService.approveProductRequirement(pr.id, ctx);
 
-    // Create a published sub-requirement with NO test procedures
+    // Create an approved sub-requirement with NO test procedures
     const sr = await srService.createSubRequirement(
       {
         title: "Uncovered SubReq",
@@ -292,13 +292,13 @@ describe("Uncovered sub-requirements query", () => {
     );
     srId = sr.id;
     createdIds.subRequirements.push(sr.id);
-    await srService.publishSubRequirement(sr.id, ctx);
+    await srService.approveSubRequirement(sr.id, ctx);
 
     // Query for sub-requirements that have zero test procedures
     const uncovered = await prisma.subRequirement.findMany({
       where: {
         productRequirementId: pr.id,
-        status: "PUBLISHED",
+        status: "APPROVED",
         testProcedures: {
           none: {},
         },

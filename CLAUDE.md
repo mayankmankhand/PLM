@@ -9,11 +9,11 @@
 **PLM** - Product Lifecycle Management system for managing requirements, test procedures, and test cases.
 
 - **Stack**: Next.js 16 (App Router) + TypeScript + Prisma ORM + Neon PostgreSQL + Tailwind CSS v4 + Zod + Vitest
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 28 tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 tools)
 - **UI**: Dual-panel chat app with `@ai-sdk/react` useChat hook, Zustand panel store, react-markdown, lucide-react icons
-- **Design**: Warm stone palette (#FAF9F7 bg), `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
-- **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams) via 3 UI intent tools
-- **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/publish`
+- **Design**: Warm earthy beige palette (#F8F0E3 bg, #B45309 amber primary), `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
+- **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams, audit log) via 4 UI intent tools
+- **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/approve`
 - **Auth**: 3 hardcoded demo users via Edge Middleware (V1)
 - **Seed**: Smartwatch PLM dataset (6 teams, 6 PRs, 8 SRs, 8 TPs, 8 TCs with mixed statuses)
 - **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
@@ -30,7 +30,7 @@ PM learning to code. Explain things simply. Show your work.
 - Route handlers stay thin (parse, delegate, respond)
 - Centralized error handling via `handleApiError()` in `src/lib/api-utils.ts`
 - Zod schemas shared between API validation and LLM tool definitions
-- No hard deletes - use obsolete/invalidate status transitions
+- No hard deletes - use cancel/skip status transitions
 - Exclusive Arc pattern for polymorphic ownership (attachments)
 - Single-draft-per-procedure enforced at service layer
 - LLM tools call services directly (not HTTP routes) for mutations

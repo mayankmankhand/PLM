@@ -31,29 +31,29 @@ export type UpdateProductRequirementInput = z.infer<
   typeof UpdateProductRequirementInput
 >;
 
-// ─── Publish ───────────────────────────────────────────
-// Transitions DRAFT -> PUBLISHED. The literal(true) forces the caller
-// to explicitly confirm, preventing accidental publishes.
+// ─── Approve ──────────────────────────────────────────
+// Transitions DRAFT -> APPROVED. The literal(true) forces the caller
+// to explicitly confirm, preventing accidental approvals.
 
-export const PublishProductRequirementInput = z.object({
-  confirmPublish: z.literal(true, {
-    errorMap: () => ({ message: "confirmPublish must be true" }),
+export const ApproveProductRequirementInput = z.object({
+  confirmApprove: z.literal(true, {
+    errorMap: () => ({ message: "confirmApprove must be true" }),
   }),
 });
 
-export type PublishProductRequirementInput = z.infer<
-  typeof PublishProductRequirementInput
+export type ApproveProductRequirementInput = z.infer<
+  typeof ApproveProductRequirementInput
 >;
 
-// ─── Obsolete ──────────────────────────────────────────
-// Transitions PUBLISHED -> OBSOLETE. Same confirmation pattern.
+// ─── Cancel ───────────────────────────────────────────
+// Transitions APPROVED -> CANCELED. Same confirmation pattern.
 
-export const ObsoleteProductRequirementInput = z.object({
-  confirmObsolete: z.literal(true, {
-    errorMap: () => ({ message: "confirmObsolete must be true" }),
+export const CancelProductRequirementInput = z.object({
+  confirmCancel: z.literal(true, {
+    errorMap: () => ({ message: "confirmCancel must be true" }),
   }),
 });
 
-export type ObsoleteProductRequirementInput = z.infer<
-  typeof ObsoleteProductRequirementInput
+export type CancelProductRequirementInput = z.infer<
+  typeof CancelProductRequirementInput
 >;

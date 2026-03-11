@@ -7,6 +7,7 @@ import type {
   DetailPayload,
   TablePayload,
   DiagramPayload,
+  AuditPayload,
   PanelState,
 } from "@/types/panel";
 
@@ -19,6 +20,7 @@ interface PanelStore {
   showDetail: (payload: DetailPayload) => void;
   showTable: (payload: TablePayload) => void;
   showDiagram: (payload: DiagramPayload) => void;
+  showAudit: (payload: AuditPayload) => void;
   showError: (toolName: string, message: string) => void;
   close: () => void;
   // Reset everything (e.g. on user switch)
@@ -32,6 +34,7 @@ export const usePanelStore = create<PanelStore>((set) => ({
   showDetail: (payload) => set({ isOpen: true, content: payload }),
   showTable: (payload) => set({ isOpen: true, content: payload }),
   showDiagram: (payload) => set({ isOpen: true, content: payload }),
+  showAudit: (payload) => set({ isOpen: true, content: payload }),
   showError: (toolName, message) =>
     set({ isOpen: true, content: { type: "error", toolName, message } }),
 

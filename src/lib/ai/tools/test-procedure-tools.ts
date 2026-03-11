@@ -8,8 +8,8 @@ import {
   createTestProcedure,
   createTestProcedureVersion,
   updateTestProcedureVersion,
-  publishTestProcedureVersion,
-  obsoleteTestProcedure,
+  approveTestProcedureVersion,
+  cancelTestProcedure,
 } from "@/services/test-procedure.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -116,19 +116,19 @@ export function createTestProcedureTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Publish a draft version --
-    publishTestProcedureVersion: tool({
+    // -- Approve a draft version --
+    approveTestProcedureVersion: tool({
       description:
-        "Publish a test procedure version, locking it from further edits. " +
-        "Only DRAFT versions can be published. " +
+        "Approve a test procedure version, locking it from further edits. " +
+        "Only DRAFT versions can be approved. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        versionId: z.string().uuid().describe("ID of the version to publish"),
-        confirmPublish: z.literal(true).describe("Must be true to confirm publishing"),
+        versionId: z.string().uuid().describe("ID of the version to approve"),
+        confirmApprove: z.literal(true).describe("Must be true to confirm approval"),
       }),
       execute: async (args) => {
         try {
-          const result = await publishTestProcedureVersion(args.versionId, ctx);
+          const result = await approveTestProcedureVersion(args.versionId, ctx);
           return {
             id: result.id,
             versionNumber: result.versionNumber,
@@ -140,19 +140,19 @@ export function createTestProcedureTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Obsolete an entire procedure --
-    obsoleteTestProcedure: tool({
+    // -- Cancel an entire procedure --
+    cancelTestProcedure: tool({
       description:
-        "Mark an entire test procedure as obsolete. " +
-        "Cannot obsolete a procedure that is already obsolete. " +
+        "Mark an entire test procedure as canceled. " +
+        "Cannot cancel a procedure that is already canceled. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the test procedure to obsolete"),
-        confirmObsolete: z.literal(true).describe("Must be true to confirm obsoleting"),
+        id: z.string().uuid().describe("ID of the test procedure to cancel"),
+        confirmCancel: z.literal(true).describe("Must be true to confirm canceling"),
       }),
       execute: async (args) => {
         try {
-          const result = await obsoleteTestProcedure(args.id, ctx);
+          const result = await cancelTestProcedure(args.id, ctx);
           return {
             id: result.id,
             title: result.title,

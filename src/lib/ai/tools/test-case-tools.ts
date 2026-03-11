@@ -7,7 +7,7 @@ import type { RequestContext } from "@/lib/request-context";
 import {
   createTestCase,
   recordTestResult,
-  invalidateTestCase,
+  skipTestCase,
 } from "@/services/test-case.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -50,7 +50,7 @@ export function createTestCaseTools(ctx: RequestContext) {
     recordTestResult: tool({
       description:
         "Record a result (PASS, FAIL, BLOCKED, or SKIPPED) on a test case. " +
-        "The parent procedure version must be PUBLISHED. " +
+        "The parent procedure version must be APPROVED. " +
         "SKIPPED returns the test case to PENDING so it can be re-run later.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the test case"),
@@ -78,18 +78,18 @@ export function createTestCaseTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Invalidate a test case --
-    invalidateTestCase: tool({
+    // -- Skip a test case --
+    skipTestCase: tool({
       description:
-        "Mark a test case as invalidated. Cannot record results after this. " +
+        "Mark a test case as skipped. Cannot record results after this. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the test case to invalidate"),
-        confirmInvalidate: z.literal(true).describe("Must be true to confirm invalidation"),
+        id: z.string().uuid().describe("ID of the test case to skip"),
+        confirmSkip: z.literal(true).describe("Must be true to confirm skipping"),
       }),
       execute: async (args) => {
         try {
-          const result = await invalidateTestCase(args.id, ctx);
+          const result = await skipTestCase(args.id, ctx);
           return {
             id: result.id,
             title: result.title,

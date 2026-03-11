@@ -76,15 +76,15 @@ export async function createTestProcedureVersion(
       include: { versions: { orderBy: { versionNumber: "desc" } } },
     });
 
-    if (procedure.status === "OBSOLETE") {
-      throw new LifecycleError("Cannot create a version for an obsolete procedure.");
+    if (procedure.status === "CANCELED") {
+      throw new LifecycleError("Cannot create a version for a canceled procedure.");
     }
 
     // Enforce single-draft rule
     const existingDraft = procedure.versions.find((v) => v.status === "DRAFT");
     if (existingDraft) {
       throw new LifecycleError(
-        `Procedure already has a draft version (v${existingDraft.versionNumber}). Publish or discard it first.`
+        `Procedure already has a draft version (v${existingDraft.versionNumber}). Approve or discard it first.`
       );
     }
 
@@ -161,9 +161,9 @@ export async function updateTestProcedureVersion(
   });
 }
 
-// ─── Publish version ─────────────────────────────────────
+// ─── Approve version ─────────────────────────────────────
 
-export async function publishTestProcedureVersion(
+export async function approveTestProcedureVersion(
   versionId: string,
   ctx: RequestContext
 ) {
@@ -174,31 +174,31 @@ export async function publishTestProcedureVersion(
 
     if (existing.status !== "DRAFT") {
       throw new LifecycleError(
-        `Cannot publish version in ${existing.status} status. Only DRAFT versions can be published.`
+        `Cannot approve version in ${existing.status} status. Only DRAFT versions can be approved.`
       );
     }
 
     const updated = await tx.testProcedureVersion.update({
       where: { id: versionId },
-      data: { status: "PUBLISHED" },
+      data: { status: "APPROVED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "PUBLISH",
+      action: "APPROVE",
       entityType: "TestProcedureVersion",
       entityId: versionId,
       requestId: ctx.requestId,
-      changes: { status: { from: "DRAFT", to: "PUBLISHED" } },
+      changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
 
     return updated;
   });
 }
 
-// ─── Obsolete procedure ──────────────────────────────────
+// ─── Cancel procedure ───────────────────────────────────
 
-export async function obsoleteTestProcedure(
+export async function cancelTestProcedure(
   id: string,
   ctx: RequestContext
 ) {
@@ -207,22 +207,22 @@ export async function obsoleteTestProcedure(
       where: { id },
     });
 
-    if (existing.status === "OBSOLETE") {
-      throw new LifecycleError("Procedure is already obsolete.");
+    if (existing.status === "CANCELED") {
+      throw new LifecycleError("Procedure is already canceled.");
     }
 
     const updated = await tx.testProcedure.update({
       where: { id },
-      data: { status: "OBSOLETE" },
+      data: { status: "CANCELED" },
     });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
-      action: "OBSOLETE",
+      action: "CANCEL",
       entityType: "TestProcedure",
       entityId: id,
       requestId: ctx.requestId,
-      changes: { status: { from: existing.status, to: "OBSOLETE" } },
+      changes: { status: { from: existing.status, to: "CANCELED" } },
     });
 
     return updated;

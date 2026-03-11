@@ -14,18 +14,18 @@ datasource db {
 
 enum RequirementStatus {
   DRAFT
-  PUBLISHED
-  OBSOLETE
+  APPROVED
+  CANCELED
 }
 
 enum ProcedureStatus {
   ACTIVE
-  OBSOLETE
+  CANCELED
 }
 
 enum ProcedureVersionStatus {
   DRAFT
-  PUBLISHED
+  APPROVED
 }
 
 enum TestCaseStatus {
@@ -33,7 +33,7 @@ enum TestCaseStatus {
   PASSED
   FAILED
   BLOCKED
-  INVALIDATED
+  SKIPPED
 }
 
 enum TestCaseResult {
@@ -46,9 +46,9 @@ enum TestCaseResult {
 enum AuditAction {
   CREATE
   UPDATE
-  PUBLISH
-  OBSOLETE
-  INVALIDATE
+  APPROVE
+  CANCEL
+  SKIP
   ADD_ATTACHMENT
   REMOVE_ATTACHMENT
   CREATE_VERSION
@@ -139,7 +139,7 @@ model TestProcedure {
   @@map("test_procedures")
 }
 
-// Immutable once published. Each version belongs to a logical TestProcedure.
+// Immutable once approved. Each version belongs to a logical TestProcedure.
 model TestProcedureVersion {
   id              String                 @id @default(uuid())
   versionNumber   Int                    @map("version_number")

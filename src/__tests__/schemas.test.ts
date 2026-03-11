@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import {
   CreateProductRequirementInput,
-  PublishProductRequirementInput,
+  ApproveProductRequirementInput,
 } from "@/schemas/product-requirement.schema";
 import { CreateAttachmentInput } from "@/schemas/attachment.schema";
 import { PaginationParams } from "@/schemas/query.schema";
@@ -42,25 +42,25 @@ describe("CreateProductRequirementInput", () => {
   });
 });
 
-describe("PublishProductRequirementInput", () => {
-  it("requires confirmPublish to be exactly true", () => {
-    const result = PublishProductRequirementInput.safeParse({
-      confirmPublish: true,
+describe("ApproveProductRequirementInput", () => {
+  it("requires confirmApprove to be exactly true", () => {
+    const result = ApproveProductRequirementInput.safeParse({
+      confirmApprove: true,
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects confirmPublish: false", () => {
-    const result = PublishProductRequirementInput.safeParse({
-      confirmPublish: false,
+  it("rejects confirmApprove: false", () => {
+    const result = ApproveProductRequirementInput.safeParse({
+      confirmApprove: false,
     });
     expect(result.success).toBe(false);
     if (!result.success) {
       const error = result.error.issues.find(
-        (i) => i.path[0] === "confirmPublish"
+        (i) => i.path[0] === "confirmApprove"
       );
       expect(error).toBeDefined();
-      expect(error?.message).toBe("confirmPublish must be true");
+      expect(error?.message).toBe("confirmApprove must be true");
     }
   });
 });

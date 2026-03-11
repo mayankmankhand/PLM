@@ -41,8 +41,8 @@ export function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col justify-end p-6 pb-8">
-        <div className="max-w-4xl mx-auto w-full">
+      <div className="flex-1 flex flex-col justify-end px-6 py-6 pb-8">
+        <div className="max-w-3xl mx-auto w-full">
           {/* Welcome content - oversized low-opacity icon with warm typography */}
           <div className="mb-8 text-center">
             <MessageSquare
@@ -85,7 +85,7 @@ export function MessageList({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+      <div className="max-w-3xl mx-auto px-6 py-6 space-y-5">
         {messages.map((message, index) => (
           <MessageBubble
             key={message.id}

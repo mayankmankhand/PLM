@@ -7,8 +7,8 @@ import type { RequestContext } from "@/lib/request-context";
 import {
   createProductRequirement,
   updateProductRequirement,
-  publishProductRequirement,
-  obsoleteProductRequirement,
+  approveProductRequirement,
+  cancelProductRequirement,
 } from "@/services/product-requirement.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -73,19 +73,19 @@ export function createProductRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Publish a draft product requirement --
-    publishProductRequirement: tool({
+    // -- Approve a draft product requirement --
+    approveProductRequirement: tool({
       description:
-        "Publish a product requirement, changing its status from DRAFT to PUBLISHED. " +
+        "Approve a product requirement, changing its status from DRAFT to APPROVED. " +
         "This is irreversible. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the product requirement to publish"),
-        confirmPublish: z.literal(true).describe("Must be true to confirm publishing"),
+        id: z.string().uuid().describe("ID of the product requirement to approve"),
+        confirmApprove: z.literal(true).describe("Must be true to confirm approval"),
       }),
       execute: async (args) => {
         try {
-          const result = await publishProductRequirement(args.id, ctx);
+          const result = await approveProductRequirement(args.id, ctx);
           return {
             id: result.id,
             title: result.title,
@@ -97,19 +97,19 @@ export function createProductRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Obsolete a published product requirement --
-    obsoleteProductRequirement: tool({
+    // -- Cancel an approved product requirement --
+    cancelProductRequirement: tool({
       description:
-        "Mark a published product requirement as obsolete. " +
-        "Only PUBLISHED requirements can be obsoleted. " +
+        "Mark an approved product requirement as canceled. " +
+        "Only APPROVED requirements can be canceled. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
-        id: z.string().uuid().describe("ID of the product requirement to obsolete"),
-        confirmObsolete: z.literal(true).describe("Must be true to confirm obsoleting"),
+        id: z.string().uuid().describe("ID of the product requirement to cancel"),
+        confirmCancel: z.literal(true).describe("Must be true to confirm canceling"),
       }),
       execute: async (args) => {
         try {
-          const result = await obsoleteProductRequirement(args.id, ctx);
+          const result = await cancelProductRequirement(args.id, ctx);
           return {
             id: result.id,
             title: result.title,

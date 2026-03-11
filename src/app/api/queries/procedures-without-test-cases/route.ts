@@ -1,4 +1,4 @@
-// Named query: published procedure versions with zero test cases.
+// Named query: approved procedure versions with zero test cases.
 // Helps find procedures that exist but have never been tested.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where = {
-      status: "PUBLISHED" as const,
+      status: "APPROVED" as const,
       testCases: { none: {} },
     };
 

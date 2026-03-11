@@ -20,11 +20,24 @@ export const TraceabilityQueryParams = z.object({
 
 export type TraceabilityQueryParams = z.infer<typeof TraceabilityQueryParams>;
 
+// ─── Audit Entity Types ───────────────────────────────
+// Shared enum for entity types that appear in the audit log.
+// Used by both getRecentAuditLog (query tool) and showAuditLog (UI intent tool).
+
+export const AuditEntityTypeEnum = z.enum([
+  "ProductRequirement",
+  "SubRequirement",
+  "TestProcedure",
+  "TestProcedureVersion",
+  "TestCase",
+  "Attachment",
+]);
+
 // ─── Audit Query ───────────────────────────────────────
 // Filters audit log entries by entity type and/or entity ID.
 
 export const AuditQueryParams = z.object({
-  entityType: z.string().optional(),
+  entityType: AuditEntityTypeEnum.optional(),
   entityId: z.string().uuid("Must be a valid UUID").optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });

@@ -1,36 +1,35 @@
 // Renders a color-coded status pill badge.
-// Six lifecycle states with distinct visual treatments:
-//   DRAFT (amber, filled), PUBLISHED (green, filled), OBSOLETE (stone, dimmed),
-//   PENDING (outlined), PASSED (green, filled), FAILED (red, filled).
-// Text label is always shown - color is supportive, never the only indicator.
-//
-// Uses raw Tailwind palette classes (not @theme tokens) because these are
-// semantic status colors that don't map to the app's surface/text palette.
+// Nine lifecycle states with distinct visual treatments.
+// Badge colors are component-local hex values (not @theme tokens)
+// because they're warm-tinted semantic colors used only here.
+// See UI-SPEC-plm-v1.md Section 3 for the color definitions.
 
 "use client";
 
+import type { CSSProperties } from "react";
+
 // All status values this component handles (from Prisma enums).
 type StatusValue =
-  | "DRAFT" | "PUBLISHED" | "OBSOLETE"    // RequirementStatus / ProcedureVersionStatus
-  | "ACTIVE"                               // ProcedureStatus
-  | "PENDING" | "PASSED" | "FAILED"        // TestCaseStatus (subset)
-  | "BLOCKED" | "INVALIDATED";             // TestCaseStatus (full)
+  | "DRAFT" | "APPROVED" | "CANCELED"    // RequirementStatus / ProcedureVersionStatus
+  | "ACTIVE"                              // ProcedureStatus
+  | "PENDING" | "PASSED" | "FAILED"       // TestCaseStatus (subset)
+  | "BLOCKED" | "SKIPPED";               // TestCaseStatus (full)
 
 // Map each status to its visual treatment.
 // Background, text color, and optional border for outlined style.
 const STATUS_STYLES: Record<StatusValue, { bg: string; text: string; border?: string }> = {
-  DRAFT: { bg: "bg-amber-100", text: "text-amber-800" },
-  PUBLISHED: { bg: "bg-green-100", text: "text-green-800" },
-  OBSOLETE: { bg: "bg-stone-100", text: "text-stone-500" },
-  PENDING: { bg: "bg-transparent", text: "text-stone-500", border: "border border-stone-300" },
-  PASSED: { bg: "bg-green-100", text: "text-green-800" },
-  FAILED: { bg: "bg-red-100", text: "text-red-800" },
-  ACTIVE: { bg: "bg-green-100", text: "text-green-800" },
-  BLOCKED: { bg: "bg-amber-100", text: "text-amber-800" },
-  INVALIDATED: { bg: "bg-stone-100", text: "text-stone-500" },
+  DRAFT:     { bg: "#FEF3C7", text: "#92400E" },
+  APPROVED:  { bg: "#E6F2E0", text: "#3B6B35" },
+  CANCELED:  { bg: "#F0E9DC", text: "#6D6560" },
+  PENDING:   { bg: "transparent", text: "#6D6560", border: "1px solid #D6D3D1" },
+  PASSED:    { bg: "#E6F2E0", text: "#3B6B35" },
+  FAILED:    { bg: "#F5E0D5", text: "#9B3030" },
+  ACTIVE:    { bg: "#E6F2E0", text: "#3B6B35" },
+  BLOCKED:   { bg: "#FEF3C7", text: "#92400E" },
+  SKIPPED:   { bg: "#F0E9DC", text: "#6D6560" },
 };
 
-// Fallback for unknown statuses
+// Fallback for unknown statuses - uses @theme tokens since those are in the palette.
 const DEFAULT_STYLE = { bg: "bg-surface", text: "text-text-muted" };
 
 interface StatusBadgeProps {
@@ -38,11 +37,30 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const style = STATUS_STYLES[status as StatusValue] ?? DEFAULT_STYLE;
+  const known = STATUS_STYLES[status as StatusValue];
 
+  // Known statuses use inline styles with component-local hex colors.
+  if (known) {
+    const inlineStyle: CSSProperties = {
+      backgroundColor: known.bg,
+      color: known.text,
+      ...(known.border ? { border: known.border } : {}),
+    };
+
+    return (
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide"
+        style={inlineStyle}
+      >
+        {status}
+      </span>
+    );
+  }
+
+  // Unknown statuses fall back to Tailwind @theme classes.
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide ${style.bg} ${style.text} ${style.border ?? ""}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide ${DEFAULT_STYLE.bg} ${DEFAULT_STYLE.text}`}
     >
       {status}
     </span>
