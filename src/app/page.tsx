@@ -162,15 +162,15 @@ export default function ChatPage() {
   const isBusy = chat.status === "streaming" || chat.status === "submitted";
 
   return (
-    <div className="flex h-dvh bg-slate-50">
+    <div className="flex h-dvh bg-background">
       {/* Chat column - compresses when panel is open on desktop */}
       <div
         className="flex flex-col flex-1 min-w-0 transition-all duration-200 ease-out"
       >
         {/* Top bar */}
-        <header className="flex items-center justify-between px-5 py-3 bg-white border-b border-border">
+        <header className="flex items-center justify-between px-5 py-3 bg-surface-elevated border-b border-border">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center">
               <Bot size={18} className="text-primary" />
             </div>
             <h1 className="text-lg font-semibold text-text">PLM Assistant</h1>

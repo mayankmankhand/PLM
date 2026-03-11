@@ -45,7 +45,7 @@ export function ContextPanel() {
 
   return (
     <>
-    {/* Backdrop overlay for tablet/mobile when panel is open */}
+    {/* Backdrop overlay for mobile/tablet when panel is open */}
     {isOpen && (
       <div
         className="fixed inset-0 bg-black/20 z-30 lg:hidden"
@@ -72,7 +72,7 @@ export function ContextPanel() {
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-border flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-elevated border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           {BadgeIcon && (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-text-muted bg-surface px-2 py-0.5 rounded-full">
@@ -85,7 +85,9 @@ export function ContextPanel() {
         <button
           onClick={close}
           aria-label="Close panel"
-          className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted hover:text-text hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted
+                     hover:text-text hover:bg-surface transition-colors duration-150
+                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
           <X size={16} />
         </button>

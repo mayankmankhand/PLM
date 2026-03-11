@@ -13,13 +13,13 @@ interface ConfirmButtonsProps {
 
 export function ConfirmButtons({ onConfirm, onReject }: ConfirmButtonsProps) {
   return (
-    <div className="flex gap-2 mt-2">
+    <div className="flex gap-2 mt-3">
       <button
         onClick={onConfirm}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium
                    bg-success text-white rounded-lg
                    hover:bg-success/90 transition-colors duration-150
-                   focus:outline-none focus:ring-2 focus:ring-success/50 focus:ring-offset-2
+                   focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2
                    cursor-pointer"
         aria-label="Confirm action"
       >
@@ -28,10 +28,10 @@ export function ConfirmButtons({ onConfirm, onReject }: ConfirmButtonsProps) {
       </button>
       <button
         onClick={onReject}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
-                   bg-danger text-white rounded-lg
-                   hover:bg-danger/90 transition-colors duration-150
-                   focus:outline-none focus:ring-2 focus:ring-danger/50 focus:ring-offset-2
+        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium
+                   bg-surface-elevated text-text border border-border rounded-lg
+                   hover:bg-surface transition-colors duration-150
+                   focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                    cursor-pointer"
         aria-label="Reject action"
       >

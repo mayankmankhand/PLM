@@ -3,21 +3,28 @@
 @plugin "@tailwindcss/typography";
 
 /*
- * Design tokens from UI-SPEC-plm-v1.md
- * Palette: saas-general | Fonts: minimal-clean (Inter)
+ * Design tokens from UI-SPEC-plm-v1.md (Issue #7 redesign)
+ * Palette: Warm cream/stone (Claude.ai/Notion-inspired)
+ * Fonts: Inter (minimal-clean)
  *
- * Use these via Tailwind classes: bg-primary, text-text-muted, border-border, etc.
+ * Use via Tailwind classes: bg-primary, text-text-muted, border-border, etc.
  * Or via CSS variables: var(--color-primary), var(--color-surface), etc.
  */
 @theme {
+  /* Core palette - warm stone tones */
   --color-primary: #2563EB;
-  --color-secondary: #475569;
+  --color-primary-soft: #EFF6FF;
+  --color-secondary: #57534E;
   --color-accent: #7C3AED;
-  --color-background: #FFFFFF;
-  --color-surface: #F8FAFC;
-  --color-text: #0F172A;
-  --color-text-muted: #64748B;
-  --color-border: #E2E8F0;
+  --color-background: #FAF9F7;
+  --color-surface: #F5F4F0;
+  --color-surface-elevated: #FFFFFF;
+  --color-text: #1C1917;
+  --color-text-muted: #78716C;
+  --color-border: #E7E5E4;
+  --color-border-subtle: #F5F5F4;
+
+  /* Semantic colors */
   --color-success: #16A34A;
   --color-warning: #D97706;
   --color-danger: #DC2626;
@@ -71,9 +78,134 @@ body {
   scrollbar-color: var(--color-border) transparent;
 }
 
-/* Respect reduced motion preference for panel animations */
+/* ── Chat markdown typography ──────────────────────────────── */
+/* Applied to assistant message content rendered via ReactMarkdown.
+ * Uses explicit backgrounds on block elements (pre, blockquote, table)
+ * because assistant messages have a transparent wrapper, so child elements
+ * would otherwise inherit the warm page background (#FAF9F7). */
+.chat-markdown {
+  font-size: 15px;
+  line-height: 1.75rem;
+  color: var(--color-text);
+}
+.chat-markdown p { margin: 0.5rem 0; }
+.chat-markdown p:first-child { margin-top: 0; }
+.chat-markdown p:last-child { margin-bottom: 0; }
+.chat-markdown ul,
+.chat-markdown ol { margin: 0.5rem 0; padding-left: 1.25rem; }
+.chat-markdown ul { list-style-type: disc; }
+.chat-markdown ol { list-style-type: decimal; }
+.chat-markdown li { margin: 0.25rem 0; }
+.chat-markdown h1 { font-size: 1.125rem; font-weight: 600; margin: 0.75rem 0; }
+.chat-markdown h2 { font-size: 1rem; font-weight: 600; margin: 0.75rem 0; }
+.chat-markdown h3 { font-size: 0.875rem; font-weight: 600; margin: 0.5rem 0; }
+.chat-markdown code {
+  font-size: 0.875rem;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  color: var(--color-primary);
+}
+.chat-markdown pre {
+  margin: 0.75rem 0;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+.chat-markdown pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.chat-markdown blockquote {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface-elevated);
+  border-left: 3px solid var(--color-border);
+  border-radius: 0.25rem;
+}
+.chat-markdown table {
+  margin: 0.75rem 0;
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.chat-markdown th,
+.chat-markdown td {
+  padding: 0.375rem 0.75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  text-align: left;
+  font-size: 0.875rem;
+}
+.chat-markdown th {
+  font-weight: 600;
+  background: var(--color-surface);
+}
+.chat-markdown a { color: var(--color-primary); text-decoration: underline; }
+
+/* ── Shimmer animation for streaming text ──────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ── Pulse dot for active tool indicators ──────────────────── */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Streaming shimmer utility */
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-primary-soft) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Active tool indicator pulse */
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Streaming indicator min-height to prevent CLS */
+.streaming-indicator {
+  min-height: 24px;
+}
+
+/* ── Reduced motion ────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --panel-duration: 0ms;
+  }
+
+  .animate-shimmer,
+  .animate-pulse-dot,
+  .animate-pulse {
+    animation: none;
+  }
+
+  /* Keep min-height for CLS prevention even with reduced motion */
+  .streaming-indicator {
+    min-height: 24px;
   }
 }

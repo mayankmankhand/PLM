@@ -48,10 +48,11 @@ export function UserPicker({ selectedUserId, onUserChange }: UserPickerProps) {
         id="user-picker"
         value={selectedUserId}
         onChange={(e) => onUserChange(e.target.value as DemoUserId)}
-        className="appearance-none bg-surface border border-border rounded-lg
+        className="appearance-none bg-surface-elevated border border-border rounded-lg
                    pl-3 pr-8 py-2 text-sm text-text
-                   focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
-                   cursor-pointer transition-colors duration-150"
+                   focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                   cursor-pointer transition-colors duration-150
+                   hover:border-primary/30"
       >
         {DEMO_USERS.map((user) => (
           <option key={user.id} value={user.id}>

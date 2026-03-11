@@ -61,10 +61,11 @@ export function ChatInput({
   }
 
   return (
-    <div className="bg-slate-50 px-4 pb-4 pt-2">
+    <div className="bg-background px-4 pb-4 pt-2">
       <form
         onSubmit={handleSubmit}
-        className="max-w-4xl mx-auto bg-white rounded-2xl border border-slate-200 shadow-sm
+        className="max-w-4xl mx-auto bg-surface-elevated rounded-xl border border-border
+                   shadow-[0_-1px_3px_rgba(0,0,0,0.04)]
                    flex items-end gap-2 px-4 py-3"
       >
         <textarea
@@ -87,7 +88,7 @@ export function ChatInput({
           className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary text-white
                      flex items-center justify-center
                      hover:bg-primary/90 transition-colors duration-150
-                     focus:outline-none focus:ring-2 focus:ring-primary/50
+                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                      disabled:opacity-30 disabled:cursor-not-allowed
                      cursor-pointer"
           aria-label="Send message"

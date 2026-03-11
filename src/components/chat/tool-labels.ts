@@ -2,6 +2,8 @@
 // Used by the tool call visualization to show friendly descriptions
 // instead of camelCase function names.
 
+import { humanize } from "@/lib/format-utils";
+
 const TOOL_LABELS: Record<string, string> = {
   // Product Requirement mutations
   createProductRequirement: "Creating product requirement",
@@ -64,6 +66,6 @@ export function getToolLabel(toolName: string): string {
     return TOOL_LABELS[toolName];
   }
   // Fallback: convert camelCase to spaced words (e.g. "someNewTool" -> "Some new tool")
-  const spaced = toolName.replace(/([A-Z])/g, " $1").trim();
+  const spaced = humanize(toolName);
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 }

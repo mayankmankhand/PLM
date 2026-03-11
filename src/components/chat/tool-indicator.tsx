@@ -1,9 +1,10 @@
-// Shows a small inline label when the AI is executing a tool.
-// Displays a spinner while the tool is running, and a checkmark when done.
+// Shows an inline indicator when the AI is executing a tool.
+// Active tools pulse with animation; completed tools collapse to a checkmark.
+// Error tools show an alert with red styling.
 
 "use client";
 
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { getToolLabel } from "./tool-labels";
 
 interface ToolIndicatorProps {
@@ -19,24 +20,31 @@ export function ToolIndicator({ toolName, state }: ToolIndicatorProps) {
     state === "input-streaming" || state === "input-available";
   const isError = state === "output-error";
 
+  // Active: expanded with pulse animation
+  if (isRunning) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-soft text-primary text-[13px] font-medium">
+        <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot flex-shrink-0" />
+        <span>{label}...</span>
+      </div>
+    );
+  }
+
+  // Error: expanded with alert styling
+  if (isError) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-danger/5 text-danger text-[13px] font-medium">
+        <AlertTriangle size={14} className="flex-shrink-0" />
+        <span>{label} failed</span>
+      </div>
+    );
+  }
+
+  // Completed: collapsed single line with checkmark
   return (
-    <div
-      className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${
-        isRunning
-          ? "bg-primary/10 text-primary"
-          : isError
-            ? "bg-danger/10 text-danger"
-            : "bg-success/10 text-success"
-      }`}
-    >
-      {isRunning ? (
-        <Loader2 size={12} className="animate-spin" />
-      ) : isError ? (
-        <AlertCircle size={12} />
-      ) : (
-        <CheckCircle2 size={12} />
-      )}
-      <span>{label}{isRunning ? "..." : ""}</span>
+    <div className="flex items-center gap-1.5 text-[13px] font-medium text-success">
+      <CheckCircle2 size={14} className="flex-shrink-0" />
+      <span>{label}</span>
     </div>
   );
 }

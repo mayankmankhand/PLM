@@ -73,7 +73,7 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
         <p className="text-xs text-warning font-medium">
           Could not render diagram. Showing raw syntax:
         </p>
-        <pre className="text-xs bg-white border border-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap text-text-muted">
+        <pre className="text-xs bg-surface-elevated border border-border rounded-lg p-3 overflow-x-auto whitespace-pre-wrap text-text-muted">
           {syntax}
         </pre>
       </div>
@@ -84,7 +84,7 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
   if (svg) {
     return (
       <div
-        className="overflow-x-auto [&_svg]:max-w-full [&_svg]:h-auto"
+        className="overflow-x-auto rounded-lg bg-surface-elevated border border-border p-4 [&_svg]:max-w-full [&_svg]:h-auto"
         dangerouslySetInnerHTML={{ __html: svg }}
       />
     );

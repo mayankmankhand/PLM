@@ -1,6 +1,6 @@
 // Renders a single chat message row.
 // All messages are left-aligned in a centered column (modern AI chat style).
-// User messages get a subtle gray background; assistant messages are transparent.
+// User messages get a white elevated card; assistant messages are transparent.
 
 "use client";
 
@@ -61,7 +61,7 @@ export function MessageBubble({
       {/* Avatar - only for assistant messages */}
       <div className="flex-shrink-0 w-7 h-7 mt-1">
         {!isUser && (
-          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center">
             <Bot size={16} className="text-primary" />
           </div>
         )}
@@ -75,7 +75,7 @@ export function MessageBubble({
 
         {/* Tool call indicators (shown above the message text) */}
         {toolParts.length > 0 && (
-          <div className="mb-2 space-y-1">
+          <div className="mb-2 space-y-1.5">
             {toolParts.map((part) => {
               const toolPart = part as {
                 type: string;
@@ -101,8 +101,8 @@ export function MessageBubble({
           <div
             className={`rounded-2xl px-4 py-3 ${
               isUser
-                ? "bg-slate-100 text-text"
-                : "bg-white border border-slate-200/60"
+                ? "bg-surface-elevated border border-border text-text"
+                : ""
             }`}
           >
             {isUser ? (
@@ -110,14 +110,16 @@ export function MessageBubble({
                 {fullText}
               </p>
             ) : (
-              <div className="text-[15px] leading-7 text-text [&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1 [&_h1]:text-lg [&_h1]:font-semibold [&_h1]:my-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:my-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:my-2 [&_code]:text-sm [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-primary [&_pre]:my-3 [&_pre]:bg-slate-50 [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:overflow-x-auto [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_a]:text-primary [&_a]:underline [&_ul]:pl-5 [&_ol]:pl-5 [&_ul]:list-disc [&_ol]:list-decimal">
+              <div className="chat-markdown">
                 <ReactMarkdown>{fullText}</ReactMarkdown>
               </div>
             )}
 
-            {/* Streaming indicator */}
+            {/* Streaming indicator - reserves min-height to prevent CLS */}
             {isStreaming && !isUser && (
-              <span className="inline-block w-1.5 h-5 bg-primary/50 animate-pulse ml-0.5 rounded-sm" />
+              <div className="streaming-indicator flex items-center">
+                <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 rounded-sm" />
+              </div>
             )}
           </div>
         )}
