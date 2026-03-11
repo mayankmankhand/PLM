@@ -1,5 +1,5 @@
 // Accept/Reject buttons shown when the AI asks for confirmation
-// before a destructive action (publish, obsolete, invalidate).
+// before a destructive action (approve, cancel, skip).
 // Clicking either button sends a pre-written message via the chat.
 
 "use client";
