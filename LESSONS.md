@@ -13,6 +13,12 @@
 - **Confirm-before-act works with prompt engineering alone.** No need for middleware or multi-step confirmation flows. Put the rule in the system prompt ("NEVER pass confirmPublish: true unless user explicitly confirmed") and require a `z.literal(true)` field on destructive tool schemas. The LLM consistently asks for confirmation first.
 - **LLM tools should call services, not HTTP routes.** Calling your own API endpoints from tool functions creates unnecessary network round-trips and auth headaches. Call the service layer directly - you already have the RequestContext.
 
+- **Validate at trust boundaries, not everywhere.** Tool output crosses a network boundary (SDK serialization), so the client can't trust it blindly. `safeParse()` at the consumption point catches issues that `as SomeType` casts hide. Casts lie, runtime validation doesn't.
+- **Three reviewers catch different things (again).** Claude found XSS and unsafe casts. GPT found stale deduplication state and unused refs. Gemini found backtick fence issues with LLM-generated mermaid. The overlap was surprisingly small - no single reviewer caught everything.
+- **`dangerouslySetInnerHTML` means what it says.** Even when the input comes from a library (mermaid), the *source* of the mermaid syntax is LLM-generated text. That's user-equivalent input. DOMPurify is the standard fix for SVG sanitization.
+- **StrictMode double-renders break stateful IDs.** `Date.now()` for element IDs causes collisions because React StrictMode renders twice in dev. `crypto.randomUUID()` is always unique with no timing dependency.
+- **Deterministic ordering needs separate arrays.** Pushing to a shared array inside `Promise.all` callbacks creates a race condition - whichever query resolves first writes first. Use separate arrays with fixed-order flattening after `Promise.all`.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
