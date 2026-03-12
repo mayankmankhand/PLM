@@ -35,6 +35,7 @@ AuditLog
 | TestCaseStatus | `PENDING`, `PASSED`, `FAILED`, `BLOCKED`, `SKIPPED` |
 | TestCaseResult | `PASS`, `FAIL`, `BLOCKED`, `SKIPPED` |
 | AuditAction | `CREATE`, `UPDATE`, `APPROVE`, `CANCEL`, `SKIP`, `ADD_ATTACHMENT`, `REMOVE_ATTACHMENT`, `CREATE_VERSION`, `RECORD_RESULT` |
+| AttachmentStatus | `ACTIVE`, `REMOVED` |
 | AttachmentType | `DOCUMENT`, `IMAGE`, `SPREADSHEET`, `OTHER` |
 
 ---
@@ -68,7 +69,7 @@ AuditLog
 | title | String | |
 | description | String | |
 | status | RequirementStatus | Default: DRAFT |
-| created_by | String | User ID who created it |
+| created_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
 | updated_at | DateTime | Auto-updated |
 
@@ -82,7 +83,7 @@ AuditLog
 | status | RequirementStatus | Default: DRAFT |
 | product_requirement_id | UUID (FK) | References ProductRequirement |
 | team_id | UUID (FK) | References Team |
-| created_by | String | User ID who created it |
+| created_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
 | updated_at | DateTime | Auto-updated |
 
@@ -94,7 +95,7 @@ AuditLog
 | title | String | |
 | status | ProcedureStatus | Default: ACTIVE |
 | sub_requirement_id | UUID (FK) | References SubRequirement |
-| created_by | String | User ID who created it |
+| created_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
 | updated_at | DateTime | Auto-updated |
 
@@ -108,11 +109,13 @@ AuditLog
 | steps | String | Plain text (newline-separated steps) |
 | status | ProcedureVersionStatus | Default: DRAFT |
 | test_procedure_id | UUID (FK) | References TestProcedure |
-| created_by | String | User ID who created it |
+| created_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
 | updated_at | DateTime | Auto-updated |
 
 **Unique constraint**: (test_procedure_id, version_number) - no duplicate version numbers per procedure.
+
+**Partial unique index**: Only one DRAFT version per procedure - `WHERE status = 'DRAFT'`.
 
 ### TestCase
 
@@ -125,9 +128,9 @@ AuditLog
 | result | TestCaseResult? | Nullable - set when executed |
 | notes | String? | Optional execution notes |
 | test_procedure_version_id | UUID (FK) | References TestProcedureVersion |
-| executed_by | String? | User ID who ran the test |
+| executed_by | UUID? (FK) | References User (nullable) |
 | executed_at | DateTime? | When the test was run |
-| created_by | String | User ID who created it |
+| created_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
 | updated_at | DateTime | Auto-updated |
 
@@ -140,12 +143,17 @@ AuditLog
 | file_url | String | |
 | file_type | AttachmentType | |
 | file_size_bytes | Int? | Optional |
+| status | AttachmentStatus | Default: ACTIVE. Soft-delete sets to REMOVED. |
 | product_requirement_id | UUID? (FK) | Exactly one of these four FKs is non-null |
-| sub_requirement_id | UUID? (FK) | (enforced by Zod at app layer) |
+| sub_requirement_id | UUID? (FK) | (enforced by DB CHECK constraint) |
 | test_procedure_id | UUID? (FK) | |
 | test_case_id | UUID? (FK) | |
-| uploaded_by | String | User ID who uploaded |
+| uploaded_by | UUID (FK) | References User |
 | created_at | DateTime | Auto-set |
+
+**CHECK constraint**: Exactly one parent FK must be non-null (exclusive arc enforced at DB level).
+
+**Soft-delete**: `removeAttachment()` sets `status: REMOVED` instead of deleting the row. All queries filter by `status: ACTIVE`.
 
 ### AuditLog
 
@@ -162,6 +170,79 @@ AuditLog
 | created_at | DateTime | Auto-set |
 
 **Indexes**: (entity_type, entity_id), (actor_id), (created_at)
+
+---
+
+## Custom Database Constraints
+
+Prisma's schema language cannot express partial unique indexes or CHECK constraints. These protections exist in the database but are maintained outside the Prisma schema file.
+
+### What Prisma Can't Model
+
+| Constraint | Type | Purpose |
+|-----------|------|---------|
+| `test_procedure_versions_single_draft` | Partial unique index (`WHERE status = 'DRAFT'`) | Enforces at most one DRAFT version per test procedure |
+| `attachments_exclusive_parent` | CHECK constraint | Ensures exactly one parent FK is non-null (exclusive arc) |
+
+### How They Are Applied
+
+- **Dev database**: Applied manually via `prisma db execute` after `prisma db push`
+- **Test database**: Applied automatically by `vitest.global-setup.ts` (idempotent `IF NOT EXISTS` guards)
+- **New environments**: Must run the SQL below after initial schema setup
+
+### SQL for New Environments
+
+```sql
+-- Single-draft-per-procedure (partial unique index)
+CREATE UNIQUE INDEX IF NOT EXISTS "test_procedure_versions_single_draft"
+  ON "test_procedure_versions" ("test_procedure_id")
+  WHERE status = 'DRAFT';
+
+-- Exclusive arc for attachments (exactly one parent FK non-null)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'attachments_exclusive_parent'
+  ) THEN
+    ALTER TABLE "attachments" ADD CONSTRAINT "attachments_exclusive_parent"
+      CHECK (
+        (
+          CASE WHEN product_requirement_id IS NOT NULL THEN 1 ELSE 0 END +
+          CASE WHEN sub_requirement_id IS NOT NULL THEN 1 ELSE 0 END +
+          CASE WHEN test_procedure_id IS NOT NULL THEN 1 ELSE 0 END +
+          CASE WHEN test_case_id IS NOT NULL THEN 1 ELSE 0 END
+        ) = 1
+      );
+  END IF;
+END $$;
+```
+
+### Verifying Constraints Exist
+
+```sql
+-- Check partial unique index
+SELECT indexname FROM pg_indexes
+WHERE tablename = 'test_procedure_versions'
+  AND indexname = 'test_procedure_versions_single_draft';
+
+-- Check exclusive arc constraint
+SELECT conname FROM pg_constraint
+WHERE conname = 'attachments_exclusive_parent';
+```
+
+### Soft-Delete Convention
+
+All attachment read paths must filter by `status: ACTIVE` to exclude soft-deleted records. Use the shared `ACTIVE_ATTACHMENT_FILTER` constant from `src/lib/prisma.ts`:
+
+```ts
+import { ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
+
+// In Prisma include/where clauses:
+attachments: { where: ACTIVE_ATTACHMENT_FILTER }
+```
+
+### Known Limitation
+
+The Prisma migration history does not include these custom constraints. The schema was applied via `prisma db push` (not `prisma migrate dev`) due to checksum drift on a prior migration. This means `prisma migrate deploy` alone will not create a complete database. See Issue #19 for the planned resolution.
 
 ---
 

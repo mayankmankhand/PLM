@@ -30,9 +30,10 @@ PM learning to code. Explain things simply. Show your work.
 - Route handlers stay thin (parse, delegate, respond)
 - Centralized error handling via `handleApiError()` in `src/lib/api-utils.ts`
 - Zod schemas shared between API validation and LLM tool definitions
-- No hard deletes - use cancel/skip status transitions
-- Exclusive Arc pattern for polymorphic ownership (attachments)
-- Single-draft-per-procedure enforced at service layer
+- No hard deletes - use cancel/skip status transitions (attachments use soft-delete with ACTIVE/REMOVED status)
+- Exclusive Arc pattern for polymorphic ownership (attachments) - enforced by DB CHECK constraint + Zod
+- Single-draft-per-procedure enforced at service layer + DB partial unique index
+- `ACTIVE_ATTACHMENT_FILTER` constant in `src/lib/prisma.ts` - use in all attachment queries
 - LLM tools call services directly (not HTTP routes) for mutations
 - Confirm-before-act for destructive LLM operations via prompt engineering + `z.literal(true)`
 - Compact Prisma `select` payloads in LLM tools to protect context window

@@ -55,6 +55,11 @@ enum AuditAction {
   RECORD_RESULT
 }
 
+enum AttachmentStatus {
+  ACTIVE
+  REMOVED
+}
+
 enum AttachmentType {
   DOCUMENT
   IMAGE
@@ -86,6 +91,15 @@ model User {
   team      Team       @relation(fields: [teamId], references: [id])
   auditLogs AuditLog[]
 
+  // Reverse relations for user FK constraints
+  createdProductRequirements ProductRequirement[]    @relation("pr_creator")
+  createdSubRequirements     SubRequirement[]        @relation("sr_creator")
+  createdTestProcedures      TestProcedure[]         @relation("tp_creator")
+  createdTestProcedureVersions TestProcedureVersion[] @relation("tpv_creator")
+  createdTestCases           TestCase[]              @relation("tc_creator")
+  executedTestCases          TestCase[]              @relation("tc_executor")
+  uploadedAttachments        Attachment[]            @relation("att_uploader")
+
   @@map("users")
 }
 
@@ -98,6 +112,7 @@ model ProductRequirement {
   createdAt   DateTime            @default(now()) @map("created_at")
   updatedAt   DateTime            @updatedAt @map("updated_at")
 
+  creator         User               @relation("pr_creator", fields: [createdBy], references: [id])
   subRequirements SubRequirement[]
   attachments     Attachment[]
 
@@ -115,6 +130,7 @@ model SubRequirement {
   createdAt             DateTime          @default(now()) @map("created_at")
   updatedAt             DateTime          @updatedAt @map("updated_at")
 
+  creator            User               @relation("sr_creator", fields: [createdBy], references: [id])
   productRequirement ProductRequirement @relation(fields: [productRequirementId], references: [id])
   team               Team               @relation(fields: [teamId], references: [id])
   testProcedures     TestProcedure[]
@@ -132,6 +148,7 @@ model TestProcedure {
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 
+  creator        User                 @relation("tp_creator", fields: [createdBy], references: [id])
   subRequirement SubRequirement       @relation(fields: [subRequirementId], references: [id])
   versions       TestProcedureVersion[]
   attachments    Attachment[]
@@ -151,6 +168,7 @@ model TestProcedureVersion {
   createdAt       DateTime               @default(now()) @map("created_at")
   updatedAt       DateTime               @updatedAt @map("updated_at")
 
+  creator       User          @relation("tpv_creator", fields: [createdBy], references: [id])
   testProcedure TestProcedure @relation(fields: [testProcedureId], references: [id])
   testCases     TestCase[]
 
@@ -172,6 +190,8 @@ model TestCase {
   createdAt              DateTime       @default(now()) @map("created_at")
   updatedAt              DateTime       @updatedAt @map("updated_at")
 
+  creator              User                 @relation("tc_creator", fields: [createdBy], references: [id])
+  executor             User?                @relation("tc_executor", fields: [executedBy], references: [id])
   testProcedureVersion TestProcedureVersion @relation(fields: [testProcedureVersionId], references: [id])
   attachments          Attachment[]
 
@@ -179,20 +199,22 @@ model TestCase {
 }
 
 // Exclusive Arc pattern: exactly one parent FK is non-null.
-// Enforced at the application layer via Zod, not via DB constraint.
+// Enforced at the DB layer via CHECK constraint (see migration).
 model Attachment {
-  id                   String         @id @default(uuid())
-  fileName             String         @map("file_name")
-  fileUrl              String         @map("file_url")
-  fileType             AttachmentType @map("file_type")
-  fileSizeBytes        Int?           @map("file_size_bytes")
-  productRequirementId String?        @map("product_requirement_id")
-  subRequirementId     String?        @map("sub_requirement_id")
-  testProcedureId      String?        @map("test_procedure_id")
-  testCaseId           String?        @map("test_case_id")
-  uploadedBy           String         @map("uploaded_by")
-  createdAt            DateTime       @default(now()) @map("created_at")
+  id                   String           @id @default(uuid())
+  fileName             String           @map("file_name")
+  fileUrl              String           @map("file_url")
+  fileType             AttachmentType   @map("file_type")
+  fileSizeBytes        Int?             @map("file_size_bytes")
+  status               AttachmentStatus @default(ACTIVE)
+  productRequirementId String?          @map("product_requirement_id")
+  subRequirementId     String?          @map("sub_requirement_id")
+  testProcedureId      String?          @map("test_procedure_id")
+  testCaseId           String?          @map("test_case_id")
+  uploadedBy           String           @map("uploaded_by")
+  createdAt            DateTime         @default(now()) @map("created_at")
 
+  uploader           User                @relation("att_uploader", fields: [uploadedBy], references: [id])
   productRequirement ProductRequirement? @relation(fields: [productRequirementId], references: [id])
   subRequirement     SubRequirement?     @relation(fields: [subRequirementId], references: [id])
   testProcedure      TestProcedure?      @relation(fields: [testProcedureId], references: [id])

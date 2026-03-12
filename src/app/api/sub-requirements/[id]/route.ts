@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/api-utils";
-import { prisma } from "@/lib/prisma";
+import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 
 export async function GET(
   _request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
         productRequirement: true,
         team: true,
         testProcedures: true,
-        attachments: true,
+        attachments: { where: ACTIVE_ATTACHMENT_FILTER },
       },
     });
     return NextResponse.json(subRequirement);
