@@ -2,7 +2,7 @@
 // Parses multipart data, discards the binary, stores metadata + placeholder URL.
 // Real storage (Vercel Blob) will be added later.
 
-import { prisma } from "@/lib/prisma";
+import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { writeAuditLog } from "./audit.service";
 import type { CreateAttachmentInput } from "@/schemas/attachment.schema";
@@ -75,11 +75,13 @@ export async function removeAttachment(
 ) {
   return prisma.$transaction(async (tx) => {
     const existing = await tx.attachment.findUniqueOrThrow({
-      where: { id },
+      where: { id, ...ACTIVE_ATTACHMENT_FILTER },
     });
 
-    // In real implementation, also delete from blob storage
-    await tx.attachment.delete({ where: { id } });
+    // Soft-delete: mark as REMOVED instead of hard-deleting.
+    // TODO: When real blob storage is added, schedule file deletion
+    // for REMOVED attachments (e.g. background cleanup job).
+    await tx.attachment.update({ where: { id }, data: { status: "REMOVED" } });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,

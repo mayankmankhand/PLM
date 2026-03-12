@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/api-utils";
 import { TraceabilityQueryParams } from "@/schemas/query.schema";
-import { prisma } from "@/lib/prisma";
+import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        attachments: true,
+        attachments: { where: ACTIVE_ATTACHMENT_FILTER },
       },
     });
 

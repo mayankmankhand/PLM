@@ -1,6 +1,6 @@
 // Test Procedure service - two-entity versioning with lifecycle rules.
 // Creating a procedure also creates a draft v1 version.
-// Only one draft version is allowed per procedure (enforced here, not in DB).
+// Only one draft version is allowed per procedure (enforced here + DB partial unique index).
 
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
