@@ -9,7 +9,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 - **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 LLM tools)
 - **UI**: Tailwind CSS v4, Zustand, react-markdown, lucide-react, @ai-sdk/react, mermaid, dompurify
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
-- **Testing**: Vitest
+- **Testing**: Vitest (isolated test database via `vitest.global-setup.ts`)
 - **Auth**: Demo users via Edge Middleware (hardcoded for V1)
 
 ## Quick Start
@@ -22,6 +22,7 @@ npm install
 cp .env.local.example .env.local
 # Add your Neon DATABASE_URL and ANTHROPIC_API_KEY to .env.local
 # Also create .env with just DATABASE_URL (Prisma CLI needs this)
+# For tests: create .env.test with DATABASE_URL pointing to a separate test database
 
 # Push schema to database
 npx prisma db push
@@ -99,7 +100,7 @@ V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to sw
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (74 tests)
+npm run test         # Run tests (74 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -140,3 +141,4 @@ prisma/
 - **Issue #12**: Fix panel not opening on UI intent tool calls (DONE)
 - **Issue #13**: Warm earthy beige palette refresh (DONE)
 - **Issue #16**: Rename status enums for clarity (DONE)
+- **Issue #17**: Test database isolation (DONE)
