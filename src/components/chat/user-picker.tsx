@@ -63,11 +63,11 @@ export function UserPicker({ selectedUserId, onUserChange }: UserPickerProps) {
         id="user-picker"
         value={selectedUserId}
         onChange={(e) => onUserChange(e.target.value as DemoUserId)}
-        className="appearance-none bg-surface-elevated border border-border rounded-lg
-                   pl-3 pr-8 py-2 text-sm text-text
-                   focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-elevated
-                   cursor-pointer transition-colors duration-150
-                   hover:border-primary/30"
+        className="appearance-none bg-transparent border-none rounded-lg
+                   pl-3 pr-8 py-1.5 text-sm text-text
+                   hover:bg-surface
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background
+                   cursor-pointer transition-colors duration-150"
       >
         {DEMO_USERS.map((user) => (
           <option key={user.id} value={user.id}>

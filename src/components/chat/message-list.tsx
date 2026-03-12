@@ -4,17 +4,17 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { UIMessage } from "ai";
-import { MessageSquare } from "lucide-react";
+import { ArrowDown } from "lucide-react";
 import { MessageBubble } from "./message-bubble";
 
 // Suggestion chips shown on the empty state to help users get started.
 const SUGGESTIONS = [
-  "What product requirements exist?",
-  "Create a new product requirement",
-  "Show me coverage gaps",
-  "What's in the audit log?",
+  "Show all requirements",
+  "What's untested?",
+  "GPS traceability diagram",
+  "Recent audit log",
 ];
 
 interface MessageListProps {
@@ -32,42 +32,66 @@ export function MessageList({
   onReject,
   onSendMessage,
 }: MessageListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showScrollPill, setShowScrollPill] = useState(false);
 
-  // Auto-scroll to bottom when messages change or while streaming.
+  // Check if user is near the bottom (within 200px)
+  const isNearBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+  }, []);
+
+  // Auto-scroll only when user is near the bottom
   useEffect(() => {
+    if (isNearBottom()) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      setShowScrollPill(false);
+    } else {
+      // User is scrolled up - show pill if there's a new message
+      setShowScrollPill(true);
+    }
+  }, [messages, status, isNearBottom]);
+
+  // Track scroll position to hide/show the pill
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    function handleScroll() {
+      if (isNearBottom()) setShowScrollPill(false);
+    }
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [isNearBottom]);
+
+  function scrollToBottom() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, status]);
+    setShowScrollPill(false);
+  }
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col justify-end px-6 py-6 pb-8">
-        <div className="max-w-3xl mx-auto w-full">
-          {/* Welcome content - oversized low-opacity icon with warm typography */}
-          <div className="mb-8 text-center">
-            <MessageSquare
-              size={56}
-              strokeWidth={1.2}
-              className="text-text-muted opacity-25 mx-auto mb-4"
-            />
-            <h2 className="text-lg font-semibold text-text mb-1">
-              PLM Assistant
-            </h2>
-            <p className="text-sm text-text-muted">
-              Manage requirements, test procedures, and test cases.
-            </p>
-          </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+        <div className="max-w-3xl w-full text-center">
+          {/* Clean text-only empty state - no icons, no images */}
+          <h2 className="text-2xl font-semibold text-text">
+            What would you like to work on?
+          </h2>
+          <p className="text-base text-text-muted mt-2">
+            Ask about requirements, test cases, or traceability.
+          </p>
 
           {/* Suggestion chips */}
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
             {SUGGESTIONS.map((suggestion) => (
               <button
                 key={suggestion}
                 onClick={() => onSendMessage(suggestion)}
-                className="px-3.5 py-2 text-sm text-text bg-surface-elevated border border-border
-                           rounded-xl hover:border-primary/30 hover:shadow-sm
+                className="px-4 py-2 rounded-full border border-border text-sm text-text
+                           hover:bg-surface-hover hover:border-primary/30
                            transition-all duration-150
-                           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background
                            cursor-pointer"
               >
                 {suggestion}
@@ -84,14 +108,14 @@ export function MessageList({
   const lastAssistantIndex = findLastAssistantIndex(messages);
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-3xl mx-auto px-6 py-6 space-y-5">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
         {messages.map((message, index) => (
           <MessageBubble
             key={message.id}
             message={message}
             isStreaming={
-              status === "streaming" && index === messages.length - 1
+              status === "streaming" && index === lastAssistantIndex
             }
             showConfirmButtons={index === lastAssistantIndex}
             onConfirm={onConfirm}
@@ -100,6 +124,21 @@ export function MessageList({
         ))}
         <div ref={bottomRef} />
       </div>
+
+      {/* "New message" scroll pill - shown when user is scrolled up */}
+      {showScrollPill && (
+        <button
+          onClick={scrollToBottom}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2
+                     bg-primary text-white rounded-full px-4 py-1.5 text-sm
+                     shadow-lg cursor-pointer
+                     flex items-center gap-1.5
+                     hover:bg-primary-hover transition-colors"
+        >
+          Scroll to bottom
+          <ArrowDown size={14} />
+        </button>
+      )}
     </div>
   );
 }

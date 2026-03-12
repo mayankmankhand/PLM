@@ -12,6 +12,20 @@ import { StatusBadge } from "./status-badge";
 // Column keys that contain status values (rendered as badges instead of text).
 const STATUS_COLUMN_KEYS = new Set(["status", "result"]);
 
+/** Return a fixed col width based on the column key, or undefined for auto. */
+function colWidth(key: string): string | undefined {
+  const k = key.toLowerCase();
+  if (k.includes("id")) return "68px";
+  if (k.includes("status") || k.includes("result")) return "90px";
+  if (k.includes("team") || k.includes("ref") || k.includes("type")) return "85px";
+  return undefined;
+}
+
+/** True when the column should use nowrap. */
+function isFixedColumn(key: string): boolean {
+  return colWidth(key) !== undefined;
+}
+
 interface TableViewProps {
   payload: TablePayload;
 }
@@ -32,44 +46,81 @@ export function TableView({ payload }: TableViewProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border">
-            {payload.columns.map((col) => (
-              <th
-                key={col.key}
-                className="px-4 py-2.5 text-left font-medium text-text-muted text-xs uppercase tracking-wide bg-surface"
-              >
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {payload.rows.map((row, i) => (
-            <tr
-              key={i}
-              className="border-b border-border-subtle last:border-b-0 bg-surface-elevated hover:bg-surface-hover transition-colors duration-150"
-            >
-              {payload.columns.map((col) => {
-                const value = String(row[col.key] ?? "-");
-                const isStatus = STATUS_COLUMN_KEYS.has(col.key.toLowerCase());
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+      <div
+        className="panel-table-scroll overflow-x-auto"
+      >
+        <table
+          className="w-full text-sm"
+          style={{ tableLayout: "fixed", minWidth: 420 }}
+        >
+          <colgroup>
+            {payload.columns.map((col) => {
+              const w = colWidth(col.key);
+              return <col key={col.key} style={w ? { width: w } : undefined} />;
+            })}
+          </colgroup>
 
-                return (
-                  <td key={col.key} className="px-4 py-2.5 text-text">
-                    {isStatus && value !== "-" ? (
-                      <StatusBadge status={value} />
-                    ) : (
-                      value
-                    )}
-                  </td>
-                );
-              })}
+          <thead>
+            <tr className="border-b border-border">
+              {payload.columns.map((col) => (
+                <th
+                  key={col.key}
+                  className="sticky top-0 z-10 bg-surface/95 backdrop-blur-sm px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted"
+                  style={
+                    isFixedColumn(col.key)
+                      ? { whiteSpace: "nowrap" }
+                      : undefined
+                  }
+                >
+                  {col.label}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {payload.rows.map((row, i) => (
+              <tr
+                key={i}
+                className="border-b border-border-subtle last:border-b-0 hover:bg-surface-hover transition-colors"
+              >
+                {payload.columns.map((col) => {
+                  const value = String(row[col.key] ?? "-");
+                  const isStatus = STATUS_COLUMN_KEYS.has(
+                    col.key.toLowerCase()
+                  );
+                  const fixed = isFixedColumn(col.key);
+
+                  return (
+                    <td
+                      key={col.key}
+                      className="px-3.5 py-2.5 text-text"
+                      style={
+                        fixed
+                          ? { whiteSpace: "nowrap" }
+                          : { whiteSpace: "normal", wordBreak: "break-word" }
+                      }
+                    >
+                      {isStatus && value !== "-" ? (
+                        <StatusBadge status={value} />
+                      ) : (
+                        value
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-border-subtle px-3.5 py-2 text-xs text-text-muted">
+        Showing {payload.rows.length}{" "}
+        {payload.rows.length === 1 ? "row" : "rows"}
+      </div>
     </div>
   );
 }

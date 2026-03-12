@@ -2,7 +2,7 @@
 // Nine lifecycle states with distinct visual treatments.
 // Badge colors are component-local hex values (not @theme tokens)
 // because they're warm-tinted semantic colors used only here.
-// See UI-SPEC-plm-v1.md Section 3 for the color definitions.
+// See plm-redesign-spec-v3.md Section 3.3 for the Slate+Teal palette colors.
 
 "use client";
 
@@ -19,14 +19,14 @@ type StatusValue =
 // Background, text color, and optional border for outlined style.
 const STATUS_STYLES: Record<StatusValue, { bg: string; text: string; border?: string }> = {
   DRAFT:     { bg: "#FEF3C7", text: "#92400E" },
-  APPROVED:  { bg: "#E6F2E0", text: "#3B6B35" },
-  CANCELED:  { bg: "#F0E9DC", text: "#6D6560" },
-  PENDING:   { bg: "transparent", text: "#6D6560", border: "1px solid #D6D3D1" },
-  PASSED:    { bg: "#E6F2E0", text: "#3B6B35" },
-  FAILED:    { bg: "#F5E0D5", text: "#9B3030" },
-  ACTIVE:    { bg: "#E6F2E0", text: "#3B6B35" },
-  BLOCKED:   { bg: "#FEF3C7", text: "#92400E" },
-  SKIPPED:   { bg: "#F0E9DC", text: "#6D6560" },
+  APPROVED:  { bg: "#D1FAE5", text: "#065F46" },
+  CANCELED:  { bg: "#F1F5F9", text: "#64748B" },
+  PENDING:   { bg: "transparent", text: "#64748B", border: "1px solid #CBD5E1" },
+  PASSED:    { bg: "#D1FAE5", text: "#065F46" },
+  FAILED:    { bg: "#FEE2E2", text: "#991B1B" },
+  ACTIVE:    { bg: "#CCFBF1", text: "#0F766E" },
+  BLOCKED:   { bg: "#FFEDD5", text: "#9A3412" },
+  SKIPPED:   { bg: "#F1F5F9", text: "#475569" },
 };
 
 // Fallback for unknown statuses - uses @theme tokens since those are in the palette.

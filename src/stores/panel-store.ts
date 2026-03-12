@@ -23,6 +23,8 @@ interface PanelStore {
   showAudit: (payload: AuditPayload) => void;
   showError: (toolName: string, message: string) => void;
   close: () => void;
+  // Re-open the panel with its existing content (used by Cmd+\ toggle)
+  reopen: () => void;
   // Reset everything (e.g. on user switch)
   reset: () => void;
 }
@@ -40,6 +42,10 @@ export const usePanelStore = create<PanelStore>((set) => ({
 
   // Close hides the panel but keeps content (so animation can finish)
   close: () => set({ isOpen: false }),
+
+  // Re-open with existing content (no-op if content is null)
+  reopen: () =>
+    set((state) => (state.content ? { isOpen: true } : {})),
 
   // Full reset clears content too
   reset: () => set({ isOpen: false, content: null }),

@@ -1,14 +1,20 @@
-// Root layout - applies Inter font and global styles.
-// Font: minimal-clean pairing (Inter for both heading and body).
+// Root layout - applies DM Sans + JetBrains Mono fonts and global styles.
+// Font: geometric precision pairing (DM Sans for heading/body, JetBrains Mono for code).
 
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${dmSans.variable} ${jetbrainsMono.variable}`}>
       <body className="font-body">{children}</body>
     </html>
   );

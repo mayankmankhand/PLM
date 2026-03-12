@@ -18,56 +18,87 @@ export function DetailView({ payload }: DetailViewProps) {
   return (
     <div className="space-y-4">
       {/* Entity type label */}
-      <span className="inline-block text-xs font-medium text-text-muted bg-primary-soft text-primary px-2 py-0.5 rounded-full">
+      <span className="inline-block text-xs font-medium bg-primary-subtle text-primary px-2 py-0.5 rounded-full">
         {humanize(payload.entityType)}
       </span>
 
-      {/* Fields */}
-      <dl className="space-y-3">
-        {payload.fields.map((field) => (
-          <div key={field.label} className="border-b border-border-subtle pb-3 last:border-b-0 last:pb-0">
-            <dt className="text-xs font-medium text-text-muted uppercase tracking-wide">
-              {field.label}
-            </dt>
-            <dd className="mt-1 text-sm text-text whitespace-pre-wrap">
-              {STATUS_FIELD_LABELS.has(field.label) ? (
-                <StatusBadge status={field.value} />
-              ) : (
-                field.value
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {/* Fields - short values in 2-col grid, long values full-width */}
+      {(() => {
+        const shortFields = payload.fields.filter((f) => f.value.length < 40);
+        const longFields = payload.fields.filter((f) => f.value.length >= 40);
+        return (
+          <>
+            {shortFields.length > 0 && (
+              <div>
+                <h3 className="text-[11px] uppercase tracking-widest font-semibold text-text-muted mb-2">
+                  Overview
+                </h3>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-2">
+                  {shortFields.map((field) => (
+                    <div key={field.label}>
+                      <dt className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                        {field.label}
+                      </dt>
+                      <dd className="mt-0.5 text-sm text-text">
+                        {STATUS_FIELD_LABELS.has(field.label) ? (
+                          <StatusBadge status={field.value} />
+                        ) : (
+                          field.value
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+
+            {longFields.length > 0 && (
+              <div>
+                <h3 className="text-[11px] uppercase tracking-widest font-semibold text-text-muted mb-2">
+                  Details
+                </h3>
+                <dl className="space-y-3">
+                  {longFields.map((field) => (
+                    <div key={field.label} className="border-b border-border-subtle pb-3 last:border-b-0 last:pb-0">
+                      <dt className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                        {field.label}
+                      </dt>
+                      <dd className="mt-1 text-sm text-text whitespace-pre-wrap">
+                        {STATUS_FIELD_LABELS.has(field.label) ? (
+                          <StatusBadge status={field.value} />
+                        ) : (
+                          field.value
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Related entities */}
       {payload.relatedEntities && payload.relatedEntities.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-text-muted uppercase tracking-wide mb-2">
+          <h3 className="text-[11px] uppercase tracking-widest font-semibold text-text-muted mb-2">
             Related
           </h3>
-          <ul className="space-y-1.5">
+          <div className="flex flex-wrap gap-2">
             {payload.relatedEntities.map((entity) => (
-              <li
+              <span
                 key={entity.id}
-                className="flex items-center justify-between text-sm bg-surface-elevated rounded-lg px-3 py-2 border border-border"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface text-sm text-text"
               >
-                <div className="min-w-0">
-                  <span className="text-text truncate block">
-                    {entity.title}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    {humanize(entity.entityType)}
-                  </span>
-                </div>
-                {entity.status && (
-                  <div className="flex-shrink-0 ml-2">
-                    <StatusBadge status={entity.status} />
-                  </div>
-                )}
-              </li>
+                <span className="truncate max-w-[180px]">{entity.title}</span>
+                <span className="text-xs text-text-muted">
+                  {humanize(entity.entityType)}
+                </span>
+                {entity.status && <StatusBadge status={entity.status} />}
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
