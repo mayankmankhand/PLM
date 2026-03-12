@@ -24,8 +24,8 @@ cp .env.local.example .env.local
 # Also create .env with just DATABASE_URL (Prisma CLI needs this)
 # For tests: create .env.test with DATABASE_URL pointing to a separate test database
 
-# Push schema to database
-npx prisma db push
+# Set up database (uses migration with custom SQL constraints)
+npx prisma migrate deploy
 
 # Seed demo data
 npx prisma db seed
@@ -134,11 +134,13 @@ prisma/
 - **Issue #5**: Chat UI - single-panel streaming chat (DONE)
 - **Issue #6**: Context panel - tables, diagrams, detail views (DONE)
 - **Issue #7**: UI redesign + demo data (DONE)
-- **Issue #8**: Database hardening (partial unique indexes, check constraints)
+- **Issue #8**: Database hardening (partial unique indexes, check constraints) (DONE)
 - **Issue #9**: Document parsing pipeline - PDF, Word, URL (future)
-- **Issue #10**: V2 panel features - clickable rows, history, resize (future)
+- **Issue #10**: V2 panel features - clickable rows, history (future)
 - **Issue #11**: Audit log viewer in context panel (DONE)
 - **Issue #12**: Fix panel not opening on UI intent tool calls (DONE)
 - **Issue #13**: Warm earthy beige palette refresh (DONE)
 - **Issue #16**: Rename status enums for clarity (DONE)
 - **Issue #17**: Test database isolation (DONE)
+- **Issue #19**: Migration drift reset (DONE)
+- **Issue #20**: UI redesign - slate+teal palette, drag-to-resize panel, keyboard shortcuts, suggestion chips (DONE)
