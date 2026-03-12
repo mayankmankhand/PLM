@@ -186,35 +186,8 @@ Prisma's schema language cannot express partial unique indexes or CHECK constrai
 
 ### How They Are Applied
 
-- **Dev database**: Applied manually via `prisma db execute` after `prisma db push`
-- **Test database**: Applied automatically by `vitest.global-setup.ts` (idempotent `IF NOT EXISTS` guards)
-- **New environments**: Must run the SQL below after initial schema setup
-
-### SQL for New Environments
-
-```sql
--- Single-draft-per-procedure (partial unique index)
-CREATE UNIQUE INDEX IF NOT EXISTS "test_procedure_versions_single_draft"
-  ON "test_procedure_versions" ("test_procedure_id")
-  WHERE status = 'DRAFT';
-
--- Exclusive arc for attachments (exactly one parent FK non-null)
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'attachments_exclusive_parent'
-  ) THEN
-    ALTER TABLE "attachments" ADD CONSTRAINT "attachments_exclusive_parent"
-      CHECK (
-        (
-          CASE WHEN product_requirement_id IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN sub_requirement_id IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN test_procedure_id IS NOT NULL THEN 1 ELSE 0 END +
-          CASE WHEN test_case_id IS NOT NULL THEN 1 ELSE 0 END
-        ) = 1
-      );
-  END IF;
-END $$;
-```
+- **All environments**: Included in the `full_schema` migration file. Running `prisma migrate deploy` (or `prisma migrate dev`) applies them automatically.
+- **Test database**: `vitest.global-setup.ts` runs `prisma migrate deploy` before each test run.
 
 ### Verifying Constraints Exist
 
@@ -240,9 +213,9 @@ import { ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 attachments: { where: ACTIVE_ATTACHMENT_FILTER }
 ```
 
-### Known Limitation
+### Migration Setup
 
-The Prisma migration history does not include these custom constraints. The schema was applied via `prisma db push` (not `prisma migrate dev`) due to checksum drift on a prior migration. This means `prisma migrate deploy` alone will not create a complete database. See Issue #19 for the planned resolution.
+Custom constraints are included in the `full_schema` migration file (`prisma/migrations/20260312120202_full_schema/migration.sql`). Running `prisma migrate deploy` creates a complete database with all constraints - no separate SQL step needed. Resolved in Issue #19.
 
 ---
 

@@ -24,6 +24,8 @@
 
 - **Vitest `globalSetup` vs `setupFiles` matters for Prisma.** Prisma reads `DATABASE_URL` at module import time (when `src/lib/prisma.ts` loads). `setupFiles` runs after imports, so it's too late to swap the URL. `globalSetup` runs before any test file is loaded, so it can inject the right env var before Prisma ever sees it.
 - **Deterministic seed scripts don't clean up random orphans.** A delete-then-create seed using known UUIDs only removes rows it created. Test fixtures with random IDs survive re-seeding. If tests create data in a shared DB and cleanup fails (crash, Ctrl+C), those orphans accumulate. Solution: isolate tests in a separate database entirely.
+- **Prisma has an AI safety check for destructive operations.** `prisma migrate reset` detects when it's being run by an AI agent and blocks until explicit user consent is passed via the `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION` environment variable. The value must be the exact text of the user's consent message. Good guardrail, but expect it to interrupt automated workflows.
+- **Squash stale migrations early in solo projects.** Two migrations that drifted (modified after being applied) caused a cascade of workarounds (`db push` + raw SQL in test setup, manual constraint scripts, "Known Limitation" docs). Resetting to a single authoritative migration took 20 minutes and eliminated all of it. When there are no other environments depending on the history, a clean slate is simpler than patching drift.
 
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->

@@ -3,7 +3,7 @@
  *
  * Runs once before any test file is loaded. Three jobs:
  * 1. Load .env.test so DATABASE_URL points to the test database
- * 2. Push the latest Prisma schema to the test database (auto-sync)
+ * 2. Apply Prisma migrations to the test database (same path as production)
  * 3. Re-seed the test database so every run starts clean
  *
  * Why globalSetup instead of setupFiles?
@@ -52,44 +52,14 @@ export function setup() {
     );
   }
 
-  // Push the latest schema so the test DB always matches prisma/schema.prisma.
-  // This also applies raw SQL constraints (partial indexes, CHECK) that db push
-  // handles via the schema, though custom constraints need the seed or manual step.
-  console.log("[test-setup] Syncing test database schema...");
-  execSync("npx prisma db push --skip-generate --accept-data-loss", {
+  // Apply migrations so the test DB matches the migration history exactly.
+  // The full_schema migration includes custom SQL constraints (partial unique
+  // index + CHECK) so no separate raw SQL step is needed.
+  console.log("[test-setup] Applying migrations to test database...");
+  execSync("npx prisma migrate deploy", {
     stdio: "inherit",
     env: { ...process.env },
   });
-
-  // Apply custom SQL constraints that Prisma doesn't model natively.
-  // These are idempotent (IF NOT EXISTS / NOT VALID + VALIDATE) so safe to re-run.
-  console.log("[test-setup] Applying custom DB constraints...");
-  execSync(
-    `npx prisma db execute --schema prisma/schema.prisma --stdin <<'SQL'
-CREATE UNIQUE INDEX IF NOT EXISTS "test_procedure_versions_single_draft"
-  ON "test_procedure_versions" ("test_procedure_id")
-  WHERE "status" = 'DRAFT';
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'attachments_exclusive_parent'
-  ) THEN
-    ALTER TABLE "attachments" ADD CONSTRAINT "attachments_exclusive_parent"
-      CHECK (
-        (CASE WHEN "product_requirement_id" IS NOT NULL THEN 1 ELSE 0 END
-       + CASE WHEN "sub_requirement_id"     IS NOT NULL THEN 1 ELSE 0 END
-       + CASE WHEN "test_procedure_id"      IS NOT NULL THEN 1 ELSE 0 END
-       + CASE WHEN "test_case_id"           IS NOT NULL THEN 1 ELSE 0 END) = 1
-      );
-  END IF;
-END $$;
-SQL`,
-    {
-      stdio: "inherit",
-      env: { ...process.env },
-    }
-  );
 
   // Seed the test database so every run starts with a known state
   console.log("[test-setup] Seeding test database...");
