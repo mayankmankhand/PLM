@@ -1,4 +1,4 @@
-// Hardcoded demo users for development.
+// Hardcoded demo users for development (Friends characters).
 // This file is plain TypeScript (no Prisma imports) so it can run in Edge Middleware.
 
 export interface DemoTeam {
@@ -30,23 +30,44 @@ export const DEMO_TEAMS: DemoTeam[] = [
 export const DEMO_USERS: DemoUser[] = [
   {
     id: "b1c2d3e4-0001-4000-8000-000000000001",
-    name: "Alice Chen",
-    email: "alice@example.com",
-    role: "pm",
+    name: "Monica Geller",
+    email: "monica@example.com",
+    role: "engineer",
     teamId: DEMO_TEAMS[4].id, // Hardware
   },
   {
     id: "b1c2d3e4-0002-4000-8000-000000000002",
-    name: "Bob Smith",
-    email: "bob@example.com",
+    name: "Ross Geller",
+    email: "ross@example.com",
+    role: "engineer",
+    teamId: DEMO_TEAMS[3].id, // Algorithm
+  },
+  {
+    id: "b1c2d3e4-0003-4000-8000-000000000003",
+    name: "Rachel Green",
+    email: "rachel@example.com",
+    role: "engineer",
+    teamId: DEMO_TEAMS[2].id, // App
+  },
+  {
+    id: "b1c2d3e4-0004-4000-8000-000000000004",
+    name: "Chandler Bing",
+    email: "chandler@example.com",
     role: "engineer",
     teamId: DEMO_TEAMS[0].id, // Electrical
   },
   {
-    id: "b1c2d3e4-0003-4000-8000-000000000003",
-    name: "Carol Davis",
-    email: "carol@example.com",
-    role: "qa_lead",
+    id: "b1c2d3e4-0005-4000-8000-000000000005",
+    name: "Joey Tribbiani",
+    email: "joey@example.com",
+    role: "engineer",
+    teamId: DEMO_TEAMS[1].id, // Mechanical
+  },
+  {
+    id: "b1c2d3e4-0006-4000-8000-000000000006",
+    name: "Phoebe Buffay",
+    email: "phoebe@example.com",
+    role: "engineer",
     teamId: DEMO_TEAMS[5].id, // Testing
   },
 ];

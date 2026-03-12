@@ -83,13 +83,16 @@ GET /api/queries/recent-audit
 
 ### Auth
 
-V1 uses 3 hardcoded demo users. Set `x-demo-user-id` header to switch users (defaults to Alice):
+V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to switch users (defaults to Monica):
 
 | User | Role | Team |
 |------|------|------|
-| Alice Chen | pm | Platform Team |
-| Bob Smith | engineer | Platform Team |
-| Carol Davis | qa_lead | QA Team |
+| Monica Geller | engineer | Hardware |
+| Ross Geller | engineer | Algorithm |
+| Rachel Green | engineer | App |
+| Chandler Bing | engineer | Electrical |
+| Joey Tribbiani | engineer | Mechanical |
+| Phoebe Buffay | engineer | Testing |
 
 ## Scripts
 

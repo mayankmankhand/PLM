@@ -1,5 +1,5 @@
 // Demo user picker dropdown.
-// Lets users switch between Alice, Bob, and Carol to test
+// Lets users switch between six Friends characters to test
 // different team contexts and audit trails.
 // Switching clears the chat history (fresh conversation).
 
@@ -12,18 +12,33 @@ import { ChevronDown } from "lucide-react";
 const DEMO_USERS = [
   {
     id: "b1c2d3e4-0001-4000-8000-000000000001",
-    name: "Alice Chen",
-    role: "PM",
+    name: "Monica Geller",
+    role: "Engineer",
   },
   {
     id: "b1c2d3e4-0002-4000-8000-000000000002",
-    name: "Bob Smith",
+    name: "Ross Geller",
     role: "Engineer",
   },
   {
     id: "b1c2d3e4-0003-4000-8000-000000000003",
-    name: "Carol Davis",
-    role: "QA Lead",
+    name: "Rachel Green",
+    role: "Engineer",
+  },
+  {
+    id: "b1c2d3e4-0004-4000-8000-000000000004",
+    name: "Chandler Bing",
+    role: "Engineer",
+  },
+  {
+    id: "b1c2d3e4-0005-4000-8000-000000000005",
+    name: "Joey Tribbiani",
+    role: "Engineer",
+  },
+  {
+    id: "b1c2d3e4-0006-4000-8000-000000000006",
+    name: "Phoebe Buffay",
+    role: "Engineer",
   },
 ] as const;
 
