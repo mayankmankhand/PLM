@@ -20,6 +20,7 @@ Warm earthy beige palette. Background is visibly warm (not subtle off-white). Pr
 | Background | `#F8F0E3` | Page background, main canvas - visible warm beige |
 | Surface | `#F0E9DC` | Cards, panels, grouped sections - deeper warm beige |
 | Surface Elevated | `#FFFFFF` | Message containers, input fields, elevated elements |
+| Surface Hover | `#FBF5EC` | Row hover, interactive element hover on elevated surfaces |
 | Primary | `#B45309` (amber-700) | Buttons, CTAs, active states, primary actions |
 | Primary Soft | `#FEF3C7` (amber-100) | Light primary backgrounds, avatar containers |
 | Secondary | `#57534E` (stone-600) | Supporting elements, secondary buttons |

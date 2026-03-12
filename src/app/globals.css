@@ -23,6 +23,7 @@
   --color-text-muted: #6D6560;
   --color-border: #D6D3D1;
   --color-border-subtle: #E7E5E4;
+  --color-surface-hover: #FBF5EC; /* Hover state for rows/interactive elements on elevated surfaces */
 
   /* Semantic colors */
   --color-success: #16A34A;

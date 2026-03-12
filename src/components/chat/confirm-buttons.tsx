@@ -19,7 +19,7 @@ export function ConfirmButtons({ onConfirm, onReject }: ConfirmButtonsProps) {
         className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium
                    bg-success text-white rounded-lg
                    hover:bg-success/90 transition-colors duration-150
-                   focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2
+                   focus:outline-none focus:ring-2 focus:ring-success focus:ring-offset-2 focus:ring-offset-background
                    cursor-pointer"
         aria-label="Confirm action"
       >
@@ -31,7 +31,7 @@ export function ConfirmButtons({ onConfirm, onReject }: ConfirmButtonsProps) {
         className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium
                    bg-surface-elevated text-text border border-border rounded-lg
                    hover:bg-surface transition-colors duration-150
-                   focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                   focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background
                    cursor-pointer"
         aria-label="Reject action"
       >

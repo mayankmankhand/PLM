@@ -67,7 +67,7 @@ export function MessageList({
                 className="px-3.5 py-2 text-sm text-text bg-surface-elevated border border-border
                            rounded-xl hover:border-primary/30 hover:shadow-sm
                            transition-all duration-150
-                           focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background
                            cursor-pointer"
               >
                 {suggestion}
