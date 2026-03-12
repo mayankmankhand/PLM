@@ -65,7 +65,7 @@ export function UserPicker({ selectedUserId, onUserChange }: UserPickerProps) {
         onChange={(e) => onUserChange(e.target.value as DemoUserId)}
         className="appearance-none bg-surface-elevated border border-border rounded-lg
                    pl-3 pr-8 py-2 text-sm text-text
-                   focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                   focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-elevated
                    cursor-pointer transition-colors duration-150
                    hover:border-primary/30"
       >

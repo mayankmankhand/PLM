@@ -39,7 +39,7 @@ export function TableView({ payload }: TableViewProps) {
             {payload.columns.map((col) => (
               <th
                 key={col.key}
-                className="px-3 py-2 text-left font-medium text-text-muted text-xs uppercase tracking-wide bg-surface"
+                className="px-4 py-2.5 text-left font-medium text-text-muted text-xs uppercase tracking-wide bg-surface"
               >
                 {col.label}
               </th>
@@ -50,14 +50,14 @@ export function TableView({ payload }: TableViewProps) {
           {payload.rows.map((row, i) => (
             <tr
               key={i}
-              className="border-b border-border-subtle last:border-b-0 bg-surface-elevated hover:bg-background transition-colors duration-150"
+              className="border-b border-border-subtle last:border-b-0 bg-surface-elevated hover:bg-surface-hover transition-colors duration-150"
             >
               {payload.columns.map((col) => {
                 const value = String(row[col.key] ?? "-");
                 const isStatus = STATUS_COLUMN_KEYS.has(col.key.toLowerCase());
 
                 return (
-                  <td key={col.key} className="px-3 py-2 text-text">
+                  <td key={col.key} className="px-4 py-2.5 text-text">
                     {isStatus && value !== "-" ? (
                       <StatusBadge status={value} />
                     ) : (

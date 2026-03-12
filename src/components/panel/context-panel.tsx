@@ -89,14 +89,14 @@ export function ContextPanel() {
           aria-label="Close panel"
           className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted
                      hover:text-text hover:bg-surface transition-colors duration-150
-                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                     focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-elevated"
         >
           <X size={16} />
         </button>
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-5">
         {content?.type === "detail" && <DetailView payload={content} />}
         {content?.type === "table" && <TableView payload={content} />}
         {content?.type === "diagram" && <DiagramView payload={content} />}

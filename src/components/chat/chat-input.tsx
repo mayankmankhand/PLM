@@ -88,7 +88,7 @@ export function ChatInput({
           className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary text-white
                      flex items-center justify-center
                      hover:bg-primary/90 transition-colors duration-150
-                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                     focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-elevated
                      disabled:opacity-30 disabled:cursor-not-allowed
                      cursor-pointer"
           aria-label="Send message"
