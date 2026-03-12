@@ -14,8 +14,8 @@
 - **Design**: Warm earthy beige palette (#F8F0E3 bg, #B45309 amber primary), `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
 - **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams, audit log) via 4 UI intent tools
 - **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/approve`
-- **Auth**: 3 hardcoded demo users via Edge Middleware (V1)
-- **Seed**: Smartwatch PLM dataset (6 teams, 6 PRs, 8 SRs, 8 TPs, 8 TCs with mixed statuses)
+- **Auth**: 6 hardcoded demo users (Friends cast) via Edge Middleware (V1)
+- **Seed**: Smartwatch PLM dataset (6 teams, 10 PRs, 21 SRs, 18 TPs, 19 TPVs, 20 TCs, 6 attachments, 155 audit entries)
 - **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
 - **Audit**: Every mutation logged in same Prisma transaction
 
