@@ -1,13 +1,13 @@
 // Renders a single chat message row.
-// All messages are left-aligned in a centered column (modern AI chat style).
-// User messages get a subtle warm surface tint; assistant messages are transparent.
+// Assistant messages sit directly on background (no card). User messages in cool gray bubble.
+// See plm-redesign-spec-v3.md Section 6.1 for design rules.
 
 "use client";
 
 import type { UIMessage } from "ai";
+import type { ToolPartShape } from "@/types/panel";
 import ReactMarkdown from "react-markdown";
-import { Bot } from "lucide-react";
-import { ToolIndicator } from "./tool-indicator";
+import { ToolIndicator, ToolGroup } from "./tool-indicator";
 import { ConfirmButtons } from "./confirm-buttons";
 
 // Keywords that signal the AI is asking for confirmation.
@@ -57,53 +57,37 @@ export function MessageBubble({
     CONFIRM_KEYWORDS.some((kw) => fullText.toLowerCase().includes(kw));
 
   return (
-    <div className="flex gap-3">
-      {/* Avatar - only for assistant messages */}
-      <div className="flex-shrink-0 w-7 h-7 mt-1">
-        {!isUser && (
-          <div className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center">
-            <Bot size={16} className="text-primary" />
-          </div>
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        {/* Sender label */}
-        <p className="text-xs font-medium text-text-muted mb-1">
-          {isUser ? "You" : "PLM Assistant"}
-        </p>
-
-        {/* Tool call indicators (shown above the message text) */}
+    <div className={isUser ? "flex justify-end" : ""}>
+      <div className={isUser ? "max-w-[85%]" : "w-full"}>
+        {/* Tool call indicators - vertical stack, grouped when multiple */}
         {toolParts.length > 0 && (
-          <div className="mb-2 space-y-1.5">
-            {toolParts.map((part) => {
-              const toolPart = part as {
-                type: string;
-                toolName?: string;
-                toolCallId: string;
-                state: string;
-              };
-              const toolName =
-                toolPart.toolName ?? toolPart.type.replace("tool-", "");
-              return (
-                <ToolIndicator
-                  key={toolPart.toolCallId}
-                  toolName={toolName}
-                  state={toolPart.state}
-                />
-              );
-            })}
+          <div className="mb-2">
+            <ToolGroup count={toolParts.length}>
+              {toolParts.map((part) => {
+                const toolPart = part as ToolPartShape;
+                const toolName =
+                  toolPart.toolName ?? toolPart.type.replace("tool-", "");
+                return (
+                  <ToolIndicator
+                    key={toolPart.toolCallId}
+                    toolName={toolName}
+                    state={toolPart.state}
+                    output={toolPart.output}
+                  />
+                );
+              })}
+            </ToolGroup>
           </div>
         )}
 
         {/* Message content */}
         {fullText && (
           <div
-            className={`rounded-2xl px-4 py-3 ${
+            className={
               isUser
-                ? "bg-surface text-text"
+                ? "rounded-2xl px-4 py-2.5 bg-surface-hover text-text"
                 : ""
-            }`}
+            }
           >
             {isUser ? (
               <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
@@ -115,10 +99,14 @@ export function MessageBubble({
               </div>
             )}
 
-            {/* Streaming indicator - reserves min-height to prevent CLS */}
+            {/* Streaming indicator - three-dot CSS pulse animation */}
             {isStreaming && !isUser && (
-              <div className="streaming-indicator flex items-center">
-                <span className="inline-block w-1.5 h-5 bg-primary/60 animate-pulse ml-0.5 rounded-sm" />
+              <div className="streaming-indicator flex items-center mt-1">
+                <span className="streaming-dots">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </div>
             )}
           </div>

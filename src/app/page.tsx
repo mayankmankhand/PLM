@@ -8,7 +8,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { Bot } from "lucide-react";
 import {
   MessageList,
   ChatInput,
@@ -20,6 +19,7 @@ import { UI_INTENT_TOOLS } from "@/components/chat/tool-labels";
 import { ContextPanel } from "@/components/panel/context-panel";
 import { usePanelStore } from "@/stores/panel-store";
 import { PanelContentSchema } from "@/types/panel";
+import type { ToolPartShape } from "@/types/panel";
 
 export default function ChatPage() {
   // Track which demo user is selected. Changing users resets the chat.
@@ -101,14 +101,7 @@ export default function ChatPage() {
         // Match the same broad filter used in message-bubble.tsx.
         if (part.type !== "dynamic-tool" && !part.type.startsWith("tool-")) continue;
 
-        const toolPart = part as {
-          type: string;
-          toolName?: string;
-          toolCallId: string;
-          state: string;
-          output?: unknown;
-          errorText?: string;
-        };
+        const toolPart = part as ToolPartShape;
 
         // Extract tool name: prefer explicit toolName, fall back to type prefix.
         const toolName = toolPart.toolName ?? toolPart.type.replace("tool-", "");
@@ -165,6 +158,42 @@ export default function ChatPage() {
     }
   }, [chat.messages]);
 
+  // Ref to the composer textarea for Cmd+K focus shortcut
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Global keyboard shortcuts (Cmd+K focus, Cmd+\ toggle, Escape close)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey;
+
+      // Cmd/Ctrl+K - focus composer
+      if (mod && e.key === "k") {
+        e.preventDefault();
+        composerRef.current?.focus();
+      }
+
+      // Cmd/Ctrl+\ - toggle panel (R2: works both directions now)
+      if (mod && e.key === "\\") {
+        e.preventDefault();
+        const { isOpen, close, reopen } = usePanelStore.getState();
+        if (isOpen) close();
+        else reopen();
+      }
+
+      // Escape - close panel (R3: was missing, now implemented)
+      if (e.key === "Escape") {
+        const { isOpen, close } = usePanelStore.getState();
+        if (isOpen) {
+          e.preventDefault();
+          close();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // Chat is not ready to accept input while streaming or submitting.
   const isBusy = chat.status === "streaming" || chat.status === "submitted";
 
@@ -174,14 +203,11 @@ export default function ChatPage() {
       <div
         className="flex flex-col flex-1 min-w-0 transition-all duration-200 ease-out"
       >
-        {/* Top bar */}
-        <header className="flex items-center justify-between px-5 py-3 bg-surface-elevated border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center">
-              <Bot size={18} className="text-primary" />
-            </div>
-            <h1 className="text-lg font-semibold text-text">PLM Assistant</h1>
-          </div>
+        {/* Top bar - transparent, blends into page background (no distinct surface) */}
+        <header className="flex items-center justify-between h-12 px-4 border-b border-border/40">
+          <span className="text-sm font-medium text-text-muted tracking-wide">
+            PLM Assistant
+          </span>
           <UserPicker selectedUserId={userId} onUserChange={handleUserChange} />
         </header>
 
@@ -203,13 +229,18 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Composer */}
-        <ChatInput
-          input={input}
-          onInputChange={setInput}
-          onSend={handleSend}
-          isDisabled={isBusy}
-        />
+        {/* Composer - pinned to bottom, same max-w as message column */}
+        <div className="w-full px-4 pb-5 pt-2">
+          <div className="max-w-3xl mx-auto">
+            <ChatInput
+              input={input}
+              onInputChange={setInput}
+              onSend={handleSend}
+              isDisabled={isBusy}
+              composerRef={composerRef}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Context panel - slides in from right, controlled by AI tools */}

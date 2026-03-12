@@ -81,12 +81,39 @@ export const AuditPayloadSchema = z.object({
   entries: z.array(AuditEntrySchema).max(50, "Audit entries capped at 50"),
 });
 
+// -- Reserved types (defined now, implemented later - see spec Section 9) --
+export const DocumentPayloadSchema = z.object({
+  type: z.literal("document"),
+  title: z.string(),
+  markdown: z.string(),
+});
+
+export const ComparisonPayloadSchema = z.object({
+  type: z.literal("comparison"),
+  title: z.string(),
+  left: z.record(z.string(), z.unknown()),
+  right: z.record(z.string(), z.unknown()),
+});
+
+export const TimelinePayloadSchema = z.object({
+  type: z.literal("timeline"),
+  title: z.string(),
+  milestones: z.array(z.object({
+    label: z.string(),
+    date: z.string(),
+    status: z.string().optional(),
+  })),
+});
+
 // -- Discriminated union of all panel content types --
 export const PanelContentSchema = z.discriminatedUnion("type", [
   DetailPayloadSchema,
   TablePayloadSchema,
   DiagramPayloadSchema,
   AuditPayloadSchema,
+  DocumentPayloadSchema,
+  ComparisonPayloadSchema,
+  TimelinePayloadSchema,
 ]);
 
 // -- Error state (not part of the discriminated union - separate concern) --
@@ -104,7 +131,22 @@ export type PanelContent = z.infer<typeof PanelContentSchema>;
 export type AuditChangeItem = z.infer<typeof AuditChangeItemSchema>;
 export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 export type AuditPayload = z.infer<typeof AuditPayloadSchema>;
+export type DocumentPayload = z.infer<typeof DocumentPayloadSchema>;
+export type ComparisonPayload = z.infer<typeof ComparisonPayloadSchema>;
+export type TimelinePayload = z.infer<typeof TimelinePayloadSchema>;
 export type PanelError = z.infer<typeof PanelErrorSchema>;
 
 // The panel can show content or an error state
 export type PanelState = PanelContent | PanelError;
+
+// Shared shape for SDK tool parts (used in page.tsx and message-bubble.tsx).
+// The AI SDK's tool part types are generic and complex, so we cast to this
+// lightweight shape at the consumption boundary. (R17: single source of truth)
+export type ToolPartShape = {
+  type: string;
+  toolName?: string;
+  toolCallId: string;
+  state: string;
+  output?: unknown;
+  errorText?: string;
+};

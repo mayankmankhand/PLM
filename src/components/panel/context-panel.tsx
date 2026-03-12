@@ -1,11 +1,11 @@
 // Context panel wrapper - slides in from the right when the AI
-// calls a UI intent tool. Reads from the Zustand panel store
-// and delegates rendering to the appropriate content view.
+// calls a UI intent tool. Frosted glass surface with drag-to-resize.
+// See plm-redesign-spec-v3.md Sections 6.3 and 5.1.
 
 "use client";
 
-import { useEffect } from "react";
-import { X, Table2, FileText, GitBranch, AlertCircle, History } from "lucide-react";
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
+import { X, Table2, FileText, GitBranch, AlertCircle, History, FileCode, GitCompare, CalendarDays } from "lucide-react";
 import { usePanelStore } from "@/stores/panel-store";
 import { DetailView } from "./detail-view";
 import { TableView } from "./table-view";
@@ -13,10 +13,9 @@ import { DiagramView } from "./diagram-view";
 import { ErrorView } from "./error-view";
 import { AuditView } from "./audit-view";
 
-// Badge config for each content type.
-// Keys match PanelState["type"] values for type safety.
 import type { PanelState } from "@/types/panel";
 
+// Badge config for each content type - shown as a pill in the panel header.
 type BadgeConfig = { label: string; icon: typeof FileText };
 const TYPE_BADGES: Record<PanelState["type"], BadgeConfig> = {
   detail: { label: "Detail", icon: FileText },
@@ -24,21 +23,76 @@ const TYPE_BADGES: Record<PanelState["type"], BadgeConfig> = {
   diagram: { label: "Diagram", icon: GitBranch },
   audit: { label: "Audit", icon: History },
   error: { label: "Error", icon: AlertCircle },
+  // Reserved types (not rendered yet - see spec Section 9)
+  document: { label: "Document", icon: FileCode },
+  comparison: { label: "Comparison", icon: GitCompare },
+  timeline: { label: "Timeline", icon: CalendarDays },
 };
 
-export function ContextPanel() {
-  const { isOpen, content, close } = usePanelStore();
+// Panel width constraints
+const DEFAULT_WIDTH = 540;
+const MIN_WIDTH = 360;
+const MAX_WIDTH = 800;
 
-  // Close on Escape key
+// R1: Reactive desktop breakpoint check that avoids hydration mismatch.
+// useSyncExternalStore returns false on the server (getServerSnapshot),
+// then subscribes to matchMedia on the client for reactive updates.
+const DESKTOP_QUERY = "(min-width: 1024px)";
+function subscribeDesktop(cb: () => void) {
+  const mql = window.matchMedia(DESKTOP_QUERY);
+  mql.addEventListener("change", cb);
+  return () => mql.removeEventListener("change", cb);
+}
+function getDesktopSnapshot() {
+  return window.matchMedia(DESKTOP_QUERY).matches;
+}
+function getDesktopServerSnapshot() {
+  return false;
+}
+
+export function ContextPanel() {
+  const isDesktop = useSyncExternalStore(subscribeDesktop, getDesktopSnapshot, getDesktopServerSnapshot);
+  const { isOpen, content, close } = usePanelStore();
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
+  const [isDragging, setIsDragging] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(DEFAULT_WIDTH);
+
+  // Drag-to-resize: mousedown on the handle starts tracking
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = panelWidth;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, [panelWidth]);
+
+  // Track mouse movement and release during drag
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && isOpen) {
-        close();
-      }
+    if (!isDragging) return;
+
+    function onMouseMove(e: MouseEvent) {
+      // Dragging left = wider (delta is negative, so subtract)
+      const delta = startXRef.current - e.clientX;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidthRef.current + delta));
+      setPanelWidth(newWidth);
     }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, close]);
+
+    function onMouseUp() {
+      setIsDragging(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [isDragging]);
 
   const badge = content ? TYPE_BADGES[content.type] : null;
   const BadgeIcon = badge?.icon;
@@ -47,63 +101,74 @@ export function ContextPanel() {
 
   return (
     <>
-    {/* Backdrop overlay for mobile/tablet when panel is open */}
-    {isOpen && (
-      <div
-        className="fixed inset-0 bg-black/20 z-30 lg:hidden"
-        onClick={close}
-        aria-hidden="true"
-      />
-    )}
-    <aside
-      role="complementary"
-      aria-label="Context panel"
-      className={`
-        fixed top-0 right-0 h-dvh z-40
-        w-full md:w-[480px]
-        bg-surface border-l border-border
-        transform transition-transform ease-out
-        ${isOpen ? "translate-x-0" : "translate-x-full"}
-        flex flex-col
-        lg:static lg:h-auto lg:z-auto lg:w-[480px] lg:flex-shrink-0
-        ${isOpen ? "lg:flex" : "lg:hidden"}
-      `}
-      style={{
-        // Respect reduced motion preference
-        transitionDuration: "var(--panel-duration, 200ms)",
-      }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-surface-elevated border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          {BadgeIcon && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-text-muted bg-surface px-2 py-0.5 rounded-full">
-              <BadgeIcon size={12} />
-              {badge?.label}
-            </span>
-          )}
-          <h2 className="text-sm font-semibold text-text truncate">{title}</h2>
-        </div>
-        <button
+      {/* Backdrop overlay for mobile/tablet when panel is open */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-30 lg:hidden"
           onClick={close}
-          aria-label="Close panel"
-          className="w-11 h-11 flex items-center justify-center rounded-lg text-text-muted
-                     hover:text-text hover:bg-surface transition-colors duration-150
-                     focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-elevated"
-        >
-          <X size={16} />
-        </button>
-      </div>
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        ref={panelRef}
+        role="complementary"
+        aria-label="Context panel"
+        className={`
+          fixed top-0 right-0 h-dvh z-40
+          w-full md:w-[540px]
+          border-l border-border
+          flex flex-col
+          lg:static lg:h-auto lg:z-auto lg:flex-shrink-0
+          ${isOpen ? "lg:flex" : "lg:hidden"}
+          ${isDragging ? "" : "transform transition-all duration-250 ease-[cubic-bezier(0.165,0.85,0.45,1)]"}
+          ${isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
+        `}
+        style={{
+          // Desktop uses dynamic width from resize; mobile stays full-width
+          ...(isDesktop ? { width: `${panelWidth}px` } : {}),
+          backgroundColor: "var(--color-surface-glass)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        {/* Resize handle - invisible 6px strip on the left edge */}
+        <div
+          className={`panel-resize-handle hidden lg:block ${isDragging ? "active" : ""}`}
+          onMouseDown={handleMouseDown}
+        />
 
-      {/* Content area */}
-      <div className="flex-1 overflow-y-auto p-5">
-        {content?.type === "detail" && <DetailView payload={content} />}
-        {content?.type === "table" && <TableView payload={content} />}
-        {content?.type === "diagram" && <DiagramView payload={content} />}
-        {content?.type === "audit" && <AuditView payload={content} />}
-        {content?.type === "error" && <ErrorView payload={content} />}
-      </div>
-    </aside>
+        {/* Header - transparent, sits on the frosted panel surface */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {badge && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary-subtle px-2 py-0.5 rounded-full">
+                {BadgeIcon && <BadgeIcon size={12} />}
+                {badge.label}
+              </span>
+            )}
+            <h2 className="text-sm font-semibold text-text truncate">{title}</h2>
+          </div>
+          <button
+            onClick={close}
+            aria-label="Close panel"
+            title="Close panel"
+            className="p-1.5 rounded-lg text-text-muted
+                       hover:text-text hover:bg-surface-hover transition-colors duration-150
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {content?.type === "detail" && <DetailView payload={content} />}
+          {content?.type === "table" && <TableView payload={content} />}
+          {content?.type === "diagram" && <DiagramView payload={content} />}
+          {content?.type === "audit" && <AuditView payload={content} />}
+          {content?.type === "error" && <ErrorView payload={content} />}
+        </div>
+      </aside>
     </>
   );
 }

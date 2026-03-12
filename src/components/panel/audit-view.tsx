@@ -12,18 +12,18 @@ import { humanize } from "@/lib/format-utils";
 // Visual treatment for each audit action type.
 // Colors are component-local hex values (same pattern as StatusBadge).
 const ACTION_CONFIG: Record<string, { label: string; bg: string; text: string }> = {
-  CREATE:            { label: "Created",            bg: "#E6F2E0", text: "#3B6B35" },
+  CREATE:            { label: "Created",            bg: "#D1FAE5", text: "#065F46" },
   UPDATE:            { label: "Updated",            bg: "#FEF3C7", text: "#92400E" },
-  APPROVE:           { label: "Approved",            bg: "#DBEAFE", text: "#1E40AF" },
-  CANCEL:            { label: "Canceled",            bg: "#F0E9DC", text: "#6D6560" },
-  SKIP:              { label: "Skipped",             bg: "#F0E9DC", text: "#6D6560" },
-  ADD_ATTACHMENT:    { label: "Attachment added",   bg: "#E6F2E0", text: "#3B6B35" },
-  REMOVE_ATTACHMENT: { label: "Attachment removed", bg: "#F5E0D5", text: "#9B3030" },
-  CREATE_VERSION:    { label: "Version created",    bg: "#DBEAFE", text: "#1E40AF" },
+  APPROVE:           { label: "Approved",           bg: "#CCFBF1", text: "#0F766E" },
+  CANCEL:            { label: "Canceled",           bg: "#F1F5F9", text: "#64748B" },
+  SKIP:              { label: "Skipped",            bg: "#F1F5F9", text: "#64748B" },
+  ADD_ATTACHMENT:    { label: "Attachment added",   bg: "#D1FAE5", text: "#065F46" },
+  REMOVE_ATTACHMENT: { label: "Attachment removed", bg: "#FEE2E2", text: "#991B1B" },
+  CREATE_VERSION:    { label: "Version created",    bg: "#CCFBF1", text: "#0F766E" },
   RECORD_RESULT:     { label: "Result recorded",    bg: "#FEF3C7", text: "#92400E" },
 };
 
-const DEFAULT_ACTION = { label: "Unknown", bg: "#F0E9DC", text: "#6D6560" };
+const DEFAULT_ACTION = { label: "Unknown", bg: "#F1F5F9", text: "#64748B" };
 
 // Returns a human-friendly relative time string.
 function formatRelativeTime(isoDate: string): string {
@@ -146,7 +146,8 @@ export function AuditView({ payload }: AuditViewProps) {
                 <button
                   type="button"
                   onClick={() => toggleEntry(entry.id)}
-                  className="flex items-center gap-1 text-xs text-text-muted hover:text-text transition-colors duration-150"
+                  className="flex items-center gap-1 text-xs text-text-muted hover:text-text transition-colors duration-150
+                             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                 >
                   {isOpen ? (
                     <ChevronDown size={14} />

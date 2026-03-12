@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { DiagramPayload } from "@/types/panel";
 
@@ -16,9 +16,42 @@ interface DiagramViewProps {
 
 // Mermaid is loaded lazily on the client only.
 // We wrap the rendering logic in a component loaded via next/dynamic.
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.25;
+
 function MermaidRenderer({ syntax }: { syntax: string }) {
   const [error, setError] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Clean up copy timer on unmount (R8)
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    setZoom((z) => Math.min(MAX_ZOOM, z + ZOOM_STEP));
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP));
+  }, []);
+
+  const copySource = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(syntax);
+      setCopied(true);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API may not be available
+    }
+  }, [syntax]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,14 +116,60 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
   // Rendered SVG (sanitized by DOMPurify)
   if (svg) {
     return (
-      <div
-        className="overflow-x-auto rounded-lg bg-surface-elevated border border-border p-4 [&_svg]:max-w-full [&_svg]:h-auto"
-        dangerouslySetInnerHTML={{ __html: svg }}
-      />
+      <div className="space-y-2">
+        {/* Controls toolbar */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={zoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-surface-elevated border border-border text-sm text-text hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-label="Zoom out"
+          >
+            -
+          </button>
+          <span className="text-xs text-text-muted w-12 text-center tabular-nums">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={zoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-surface-elevated border border-border text-sm text-text hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={copySource}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-elevated border border-border text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          >
+            {copied ? "Copied!" : "Copy source"}
+          </button>
+        </div>
+
+        {/* Diagram with dot-grid background */}
+        <div
+          className="overflow-auto rounded-lg bg-surface-elevated border border-border p-4 bg-[radial-gradient(circle,#CBD5E1_1px,transparent_1px)] bg-[length:20px_20px]"
+        >
+          <div
+            className="[&_svg]:max-w-full [&_svg]:h-auto origin-top-left transition-transform duration-150"
+            style={{ transform: `scale(${zoom})` }}
+            dangerouslySetInnerHTML={{ __html: svg }}
+          />
+        </div>
+      </div>
     );
   }
 
   // Loading state
+  return <DiagramSpinner />;
+}
+
+// Shared spinner to avoid duplication (R18)
+function DiagramSpinner() {
   return (
     <div className="flex items-center justify-center py-8">
       <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -101,11 +180,7 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
 // Wrap in next/dynamic to prevent SSR
 const DynamicMermaid = dynamic(() => Promise.resolve(MermaidRenderer), {
   ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center py-8">
-      <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-    </div>
-  ),
+  loading: () => <DiagramSpinner />,
 });
 
 export function DiagramView({ payload }: DiagramViewProps) {

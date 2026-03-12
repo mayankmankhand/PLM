@@ -1,50 +1,112 @@
-// Shows an inline indicator when the AI is executing a tool.
-// Active tools pulse with animation; completed tools collapse to a checkmark.
-// Error tools show an alert with red styling.
+// Shows tool execution status as vertical rows with icon, label, and elapsed time.
+// Multiple tools are grouped under a collapsible "Used N tools" header.
+// Completed tools are expandable to show raw JSON output.
+// See plm-redesign-spec-v3.md Section 6.2 for design rules.
 
 "use client";
 
-import { CheckCircle2, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { CheckCircle2, AlertTriangle, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { getToolLabel } from "./tool-labels";
 
 interface ToolIndicatorProps {
   toolName: string;
   state: string;
+  output?: unknown;
 }
 
-export function ToolIndicator({ toolName, state }: ToolIndicatorProps) {
+// Single tool row - shows icon, label, and elapsed time.
+export function ToolIndicator({ toolName, state, output }: ToolIndicatorProps) {
   const label = getToolLabel(toolName);
+  const [elapsed, setElapsed] = useState(0);
+  const [showDetail, setShowDetail] = useState(false);
+  const startTime = useRef(Date.now());
 
-  // Determine if the tool is still running or has completed.
-  const isRunning =
-    state === "input-streaming" || state === "input-available";
+  const isRunning = state === "input-streaming" || state === "input-available";
   const isError = state === "output-error";
 
-  // Active: expanded with pulse animation
-  if (isRunning) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-soft text-primary text-[13px] font-medium">
-        <span className="w-2 h-2 rounded-full bg-primary animate-pulse-dot flex-shrink-0" />
-        <span>{label}...</span>
-      </div>
-    );
-  }
+  // Track elapsed time while running
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
-  // Error: expanded with alert styling
-  if (isError) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-danger/5 text-danger text-[13px] font-medium">
-        <AlertTriangle size={14} className="flex-shrink-0" />
-        <span>{label} failed</span>
-      </div>
-    );
-  }
+  // Format elapsed as "Xs" or "Xm Ys"
+  const elapsedText = elapsed < 60
+    ? `${elapsed}s`
+    : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
 
-  // Completed: collapsed single line with checkmark
   return (
-    <div className="flex items-center gap-1.5 text-[13px] font-medium text-success">
-      <CheckCircle2 size={14} className="flex-shrink-0" />
-      <span>{label}</span>
+    <div>
+      <button
+        type="button"
+        onClick={() => !isRunning && output && setShowDetail((prev) => !prev)}
+        className={`flex items-center gap-2 w-full text-left text-sm
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded ${
+          !isRunning && output ? "cursor-pointer" : "cursor-default"
+        }`}
+      >
+        {/* Status icon */}
+        {isRunning && (
+          <Loader2 size={14} className="text-primary animate-spin flex-shrink-0" />
+        )}
+        {isError && (
+          <AlertTriangle size={14} className="text-danger flex-shrink-0" />
+        )}
+        {!isRunning && !isError && (
+          <CheckCircle2 size={14} className="text-success flex-shrink-0" />
+        )}
+
+        {/* Label */}
+        <span className={isError ? "text-danger text-sm" : "text-text-muted text-sm"}>
+          {isRunning ? `${label}...` : isError ? `${label} failed` : label}
+        </span>
+
+        {/* Elapsed time */}
+        {(isRunning || elapsed > 0) && (
+          <span className="text-text-subtle text-xs ml-auto">{elapsedText}</span>
+        )}
+      </button>
+
+      {/* Expandable detail panel for completed tools */}
+      {showDetail && output != null && (
+        <pre className="bg-surface rounded-lg p-3 text-xs font-mono mt-1 overflow-x-auto text-text-muted">
+          {JSON.stringify(output, null, 2)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+// Groups multiple tool indicators under a collapsible header.
+interface ToolGroupProps {
+  children: React.ReactNode;
+  count: number;
+}
+
+export function ToolGroup({ children, count }: ToolGroupProps) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Don't show group header for a single tool
+  if (count <= 1) {
+    return <div className="space-y-1.5">{children}</div>;
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        type="button"
+        onClick={() => setCollapsed((prev) => !prev)}
+        className="flex items-center gap-1 text-xs text-text-muted hover:text-text transition-colors cursor-pointer rounded
+                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+        <span>Used {count} tools</span>
+      </button>
+      {!collapsed && children}
     </div>
   );
 }
