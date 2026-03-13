@@ -18,6 +18,7 @@
 - **Seed**: Smartwatch PLM dataset (6 teams, 10 PRs, 21 SRs, 18 TPs, 19 TPVs, 20 TCs, 6 attachments, 155 audit entries)
 - **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
 - **Audit**: Every mutation logged in same Prisma transaction
+- **Security**: Rate limiting on `/api/chat` (10 req/min per IP via in-memory sliding window in `src/lib/rate-limit.ts`), security headers in `next.config.ts` (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy), `skipHtml` on ReactMarkdown, trace logging guarded behind `NODE_ENV !== 'production'`
 
 ## Who I Am
 

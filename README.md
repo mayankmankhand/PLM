@@ -11,6 +11,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest (isolated test database via `vitest.global-setup.ts`)
 - **Auth**: Demo users via Edge Middleware (hardcoded for V1)
+- **Security**: Rate limiting (chat endpoint), security headers, HTML stripping in markdown
 
 ## Quick Start
 
@@ -145,4 +146,5 @@ prisma/
 - **Issue #17**: Test database isolation (DONE)
 - **Issue #19**: Migration drift reset (DONE)
 - **Issue #20**: UI redesign - slate+teal palette, drag-to-resize panel, keyboard shortcuts, suggestion chips (DONE)
+- **Issue #22**: Security audit - rate limiting, security headers, XSS hardening, production logging guard (DONE)
 - **Issue #25**: Match UI to prototype pixel-perfect - CSS reset fix, always-fixed panel, composer polish (DONE)
