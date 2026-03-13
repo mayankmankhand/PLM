@@ -95,7 +95,7 @@ export function MessageBubble({
               </p>
             ) : (
               <div className="chat-markdown">
-                <ReactMarkdown>{fullText}</ReactMarkdown>
+                <ReactMarkdown skipHtml={true}>{fullText}</ReactMarkdown>
               </div>
             )}
 

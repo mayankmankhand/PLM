@@ -9,9 +9,29 @@ import { handleApiError } from "@/lib/api-utils";
 import { buildSystemPrompt } from "@/lib/ai/system-prompt";
 import { createAllTools } from "@/lib/ai/tools";
 import { createTraceLogger } from "@/lib/ai/trace-logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit by IP before doing any real work.
+    // Protects the Anthropic API bill from abuse.
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const rateCheck = checkRateLimit(ip);
+    if (!rateCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: `Too many requests. Please try again in ${rateCheck.retryAfter} seconds.`,
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rateCheck.retryAfter),
+          },
+        },
+      );
+    }
+
     // Build RequestContext from middleware headers (same pattern as other routes).
     // This identifies which demo user is chatting.
     const ctx = getRequestContext(request);

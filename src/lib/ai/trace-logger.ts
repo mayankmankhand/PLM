@@ -118,7 +118,10 @@ export function createTraceLogger(requestId: string, userId: string) {
         elapsedMs: Date.now() - startTime,
       };
 
-      console.log("[llm-trace]", JSON.stringify(entry));
+      // Only emit trace logs outside production
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[llm-trace]", JSON.stringify(entry));
+      }
     },
   };
 }
