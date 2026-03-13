@@ -212,8 +212,9 @@ export function createUIIntentTools() {
       description:
         "Display a table of query results in the context panel. " +
         "Use this to show lists like uncovered sub-requirements, untested procedures, " +
-        "search results, or any entity list the user asks to see. " +
-        "Results are capped at 15 rows.",
+        "search results, aggregations, or any entity list the user asks to see. " +
+        "Results are capped at 15 rows. If isTruncated is true, tell the user more results exist " +
+        "and suggest narrowing with filters (e.g. team).",
       inputSchema: z.object({
         queryType: z.enum([
           "uncoveredSubRequirements",
@@ -223,16 +224,26 @@ export function createUIIntentTools() {
           "allTestProcedures",
           "allTestCases",
           "searchResults",
+          "testResultSummary",
+          "coverageByTeam",
+          "testCasesForRequirement",
         ]).describe("Which query to run"),
-        searchQuery: z.string().optional().describe("Search term (only for searchResults queryType)"),
+        searchQuery: z.string().optional()
+          .describe("Search term (only for searchResults queryType)"),
         entityType: z
           .enum(["ProductRequirement", "SubRequirement", "TestProcedure", "TestCase"])
           .optional()
           .describe("Entity type filter (only for searchResults queryType)"),
+        team: z.string().optional()
+          .describe("Team name filter (for allSubRequirements, allTestProcedures)"),
+        requirementId: z.string().uuid().optional()
+          .describe("Product requirement ID (required for testCasesForRequirement). Use searchByTitle first if user gives a name."),
       }),
       execute: async (args): Promise<TablePayload | { error: string }> => {
         try {
           switch (args.queryType) {
+            // ─── Existing queries (enriched with cross-entity columns) ───
+
             case "uncoveredSubRequirements": {
               const data = await prisma.subRequirement.findMany({
                 where: { testProcedures: { none: {} } },
@@ -241,11 +252,13 @@ export function createUIIntentTools() {
                   title: true,
                   status: true,
                   team: { select: { name: true } },
-                  productRequirement: { select: { title: true } },
+                  productRequirement: { select: { title: true, status: true } },
                 },
-                take: 15,
+                take: 16, // Fetch one extra to detect truncation
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
                 title: "Uncovered Sub-Requirements",
@@ -253,14 +266,17 @@ export function createUIIntentTools() {
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "team", label: "Team" },
-                  { key: "requirement", label: "Requirement" },
+                  { key: "productRequirement", label: "Product Requirement" },
+                  { key: "parentStatus", label: "PR Status" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   title: d.title,
                   status: d.status,
                   team: d.team.name,
-                  requirement: d.productRequirement.title,
+                  productRequirement: d.productRequirement.title,
+                  parentStatus: d.productRequirement.status,
                 })),
+                isTruncated,
               };
             }
 
@@ -270,31 +286,56 @@ export function createUIIntentTools() {
                 select: {
                   id: true,
                   versionNumber: true,
-                  testProcedure: { select: { title: true } },
+                  testProcedure: {
+                    select: {
+                      title: true,
+                      subRequirement: {
+                        select: {
+                          title: true,
+                          team: { select: { name: true } },
+                        },
+                      },
+                    },
+                  },
                 },
-                take: 15,
+                take: 16,
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
                 title: "Untested Procedure Versions",
                 columns: [
                   { key: "procedure", label: "Procedure" },
                   { key: "version", label: "Version" },
+                  { key: "subRequirement", label: "Sub-Requirement" },
+                  { key: "team", label: "Team" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   procedure: d.testProcedure.title,
                   version: `v${d.versionNumber}`,
+                  subRequirement: d.testProcedure.subRequirement.title,
+                  team: d.testProcedure.subRequirement.team.name,
                 })),
+                isTruncated,
               };
             }
 
             case "allRequirements": {
               const data = await prisma.productRequirement.findMany({
-                select: { id: true, title: true, status: true, createdAt: true },
-                take: 15,
+                select: {
+                  id: true,
+                  title: true,
+                  status: true,
+                  createdAt: true,
+                  creator: { select: { name: true } },
+                },
+                take: 16,
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
                 title: "Product Requirements",
@@ -302,66 +343,106 @@ export function createUIIntentTools() {
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "created", label: "Created" },
+                  { key: "createdBy", label: "Created By" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   title: d.title,
                   status: d.status,
                   created: formatDate(d.createdAt),
+                  createdBy: d.creator.name,
                 })),
+                isTruncated,
               };
             }
 
             case "allSubRequirements": {
+              // Optional team filter - case-insensitive partial match
+              const where = args.team
+                ? { team: { name: { contains: args.team, mode: "insensitive" as const } } }
+                : {};
               const data = await prisma.subRequirement.findMany({
+                where,
                 select: {
                   id: true,
                   title: true,
                   status: true,
                   team: { select: { name: true } },
+                  productRequirement: { select: { title: true, status: true } },
+                  creator: { select: { name: true } },
                 },
-                take: 15,
+                take: 16,
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
-                title: "Sub-Requirements",
+                title: args.team ? `Sub-Requirements - ${args.team}` : "Sub-Requirements",
                 columns: [
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "team", label: "Team" },
+                  { key: "productRequirement", label: "Product Requirement" },
+                  { key: "parentStatus", label: "PR Status" },
+                  { key: "createdBy", label: "Created By" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   title: d.title,
                   status: d.status,
                   team: d.team.name,
+                  productRequirement: d.productRequirement.title,
+                  parentStatus: d.productRequirement.status,
+                  createdBy: d.creator.name,
                 })),
+                isTruncated,
               };
             }
 
             case "allTestProcedures": {
+              // Optional team filter via sub-requirement's team
+              const where = args.team
+                ? { subRequirement: { team: { name: { contains: args.team, mode: "insensitive" as const } } } }
+                : {};
               const data = await prisma.testProcedure.findMany({
+                where,
                 select: {
                   id: true,
                   title: true,
                   status: true,
-                  subRequirement: { select: { title: true } },
+                  creator: { select: { name: true } },
+                  subRequirement: {
+                    select: {
+                      title: true,
+                      team: { select: { name: true } },
+                      productRequirement: { select: { title: true } },
+                    },
+                  },
                 },
-                take: 15,
+                take: 16,
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
-                title: "Test Procedures",
+                title: args.team ? `Test Procedures - ${args.team}` : "Test Procedures",
                 columns: [
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "subRequirement", label: "Sub-Requirement" },
+                  { key: "team", label: "Team" },
+                  { key: "productRequirement", label: "Product Requirement" },
+                  { key: "createdBy", label: "Created By" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   title: d.title,
                   status: d.status,
                   subRequirement: d.subRequirement.title,
+                  team: d.subRequirement.team.name,
+                  productRequirement: d.subRequirement.productRequirement.title,
+                  createdBy: d.creator.name,
                 })),
+                isTruncated,
               };
             }
 
@@ -372,13 +453,24 @@ export function createUIIntentTools() {
                   title: true,
                   status: true,
                   result: true,
+                  executedAt: true,
+                  executor: { select: { name: true } },
                   testProcedureVersion: {
-                    select: { testProcedure: { select: { title: true } } },
+                    select: {
+                      testProcedure: {
+                        select: {
+                          title: true,
+                          subRequirement: { select: { title: true } },
+                        },
+                      },
+                    },
                   },
                 },
-                take: 15,
+                take: 16,
                 orderBy: { createdAt: "desc" },
               });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
               return {
                 type: "table" as const,
                 title: "Test Cases",
@@ -387,13 +479,20 @@ export function createUIIntentTools() {
                   { key: "status", label: "Status" },
                   { key: "result", label: "Result" },
                   { key: "procedure", label: "Procedure" },
+                  { key: "subRequirement", label: "Sub-Requirement" },
+                  { key: "executedBy", label: "Executed By" },
+                  { key: "executedAt", label: "Executed" },
                 ],
-                rows: data.map((d) => ({
+                rows: rows.map((d) => ({
                   title: d.title,
                   status: d.status,
                   result: d.result ?? "-",
                   procedure: d.testProcedureVersion.testProcedure.title,
+                  subRequirement: d.testProcedureVersion.testProcedure.subRequirement.title,
+                  executedBy: d.executor?.name ?? "-",
+                  executedAt: d.executedAt ? formatDate(d.executedAt) : "-",
                 })),
+                isTruncated,
               };
             }
 
@@ -446,12 +545,13 @@ export function createUIIntentTools() {
               ]);
 
               // Flatten in fixed order: Requirements, Sub-Reqs, Procedures, Test Cases
-              const rows: Record<string, unknown>[] = [
+              const allRows: Record<string, unknown>[] = [
                 ...reqs.map((d) => ({ type: "Requirement", title: d.title, status: d.status })),
                 ...subs.map((d) => ({ type: "Sub-Req", title: d.title, status: d.status })),
                 ...procs.map((d) => ({ type: "Procedure", title: d.title, status: d.status })),
                 ...cases.map((d) => ({ type: "Test Case", title: d.title, status: d.status })),
-              ].slice(0, 15);
+              ];
+              const isTruncated = allRows.length > 15;
 
               return {
                 type: "table" as const,
@@ -461,7 +561,203 @@ export function createUIIntentTools() {
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                 ],
-                rows,
+                rows: allRows.slice(0, 15),
+                isTruncated,
+              };
+            }
+
+            // ─── New aggregation queries (Issue #24) ─────────────────
+
+            case "testResultSummary": {
+              // Pass/fail/blocked/skipped/pending counts grouped by procedure.
+              // Only includes ACTIVE procedures (CANCELED ones are excluded).
+              // Sorted by failed DESC to surface most-problematic procedures first.
+              const procedures = await prisma.testProcedure.findMany({
+                where: { status: "ACTIVE" },
+                select: {
+                  title: true,
+                  subRequirement: {
+                    select: {
+                      title: true,
+                      team: { select: { name: true } },
+                    },
+                  },
+                  versions: {
+                    select: {
+                      testCases: {
+                        select: { status: true },
+                      },
+                    },
+                  },
+                },
+              });
+
+              // Aggregate test case statuses per procedure
+              const summaryRows = procedures.map((p) => {
+                const counts = { passed: 0, failed: 0, blocked: 0, skipped: 0, pending: 0 };
+                for (const v of p.versions) {
+                  for (const tc of v.testCases) {
+                    if (tc.status === "PASSED") counts.passed++;
+                    else if (tc.status === "FAILED") counts.failed++;
+                    else if (tc.status === "BLOCKED") counts.blocked++;
+                    else if (tc.status === "SKIPPED") counts.skipped++;
+                    else counts.pending++;
+                  }
+                }
+                const total = counts.passed + counts.failed + counts.blocked + counts.skipped + counts.pending;
+                return {
+                  procedure: p.title,
+                  subRequirement: p.subRequirement.title,
+                  team: p.subRequirement.team.name,
+                  passed: counts.passed,
+                  failed: counts.failed,
+                  blocked: counts.blocked,
+                  skipped: counts.skipped,
+                  pending: counts.pending,
+                  total,
+                };
+              });
+
+              // Sort by failed count DESC, then total DESC
+              summaryRows.sort((a, b) => b.failed - a.failed || b.total - a.total);
+              const isTruncated = summaryRows.length > 15;
+
+              return {
+                type: "table" as const,
+                title: "Test Result Summary by Procedure",
+                columns: [
+                  { key: "procedure", label: "Procedure" },
+                  { key: "subRequirement", label: "Sub-Requirement" },
+                  { key: "team", label: "Team" },
+                  { key: "passed", label: "Passed" },
+                  { key: "failed", label: "Failed" },
+                  { key: "blocked", label: "Blocked" },
+                  { key: "skipped", label: "Skipped" },
+                  { key: "pending", label: "Pending" },
+                  { key: "total", label: "Total" },
+                ],
+                rows: summaryRows.slice(0, 15),
+                isTruncated,
+              };
+            }
+
+            case "coverageByTeam": {
+              // SR count, TP count, uncovered count per team.
+              // Sorted by uncovered DESC to surface least-covered teams first.
+              const teams = await prisma.team.findMany({
+                select: {
+                  name: true,
+                  subRequirements: {
+                    select: {
+                      id: true,
+                      testProcedures: { select: { id: true } },
+                    },
+                  },
+                },
+                take: 16, // Fetch one extra to detect truncation
+              });
+
+              const coverageRows = teams.map((t) => {
+                const srCount = t.subRequirements.length;
+                const tpCount = t.subRequirements.reduce(
+                  (sum, sr) => sum + sr.testProcedures.length, 0
+                );
+                const uncovered = t.subRequirements.filter(
+                  (sr) => sr.testProcedures.length === 0
+                ).length;
+                const coveragePercent = srCount > 0
+                  ? `${Math.round(((srCount - uncovered) / srCount) * 100)}%`
+                  : "-";
+                return {
+                  team: t.name,
+                  subRequirements: srCount,
+                  testProcedures: tpCount,
+                  uncovered,
+                  coveragePercent,
+                };
+              });
+
+              coverageRows.sort((a, b) => b.uncovered - a.uncovered);
+              const isTruncated = coverageRows.length > 15;
+
+              return {
+                type: "table" as const,
+                title: "Test Coverage by Team",
+                columns: [
+                  { key: "team", label: "Team" },
+                  { key: "subRequirements", label: "Sub-Reqs" },
+                  { key: "testProcedures", label: "Procedures" },
+                  { key: "uncovered", label: "Uncovered" },
+                  { key: "coveragePercent", label: "Coverage" },
+                ],
+                rows: coverageRows.slice(0, 15),
+                isTruncated,
+              };
+            }
+
+            case "testCasesForRequirement": {
+              // Flattened TC list for a given product requirement ID.
+              // Skips intermediate layers (SR -> TP -> TPV) for a direct view.
+              if (!args.requirementId) {
+                return { error: "ValidationError: requirementId is required for testCasesForRequirement. Use searchByTitle first if user gives a name." };
+              }
+
+              const data = await prisma.testCase.findMany({
+                where: {
+                  testProcedureVersion: {
+                    testProcedure: {
+                      subRequirement: {
+                        productRequirementId: args.requirementId,
+                      },
+                    },
+                  },
+                },
+                select: {
+                  title: true,
+                  status: true,
+                  result: true,
+                  executedAt: true,
+                  executor: { select: { name: true } },
+                  testProcedureVersion: {
+                    select: {
+                      testProcedure: {
+                        select: {
+                          title: true,
+                          subRequirement: { select: { title: true } },
+                        },
+                      },
+                    },
+                  },
+                },
+                take: 16,
+                // Surface pending/failed first (status ASC: BLOCKED, FAILED, PASSED, PENDING, SKIPPED)
+                orderBy: { status: "asc" },
+              });
+              const isTruncated = data.length > 15;
+              const rows = data.slice(0, 15);
+
+              return {
+                type: "table" as const,
+                title: "Test Cases for Requirement",
+                columns: [
+                  { key: "title", label: "Title" },
+                  { key: "status", label: "Status" },
+                  { key: "result", label: "Result" },
+                  { key: "procedure", label: "Procedure" },
+                  { key: "subRequirement", label: "Sub-Requirement" },
+                  { key: "executedBy", label: "Executed By" },
+                  { key: "executedAt", label: "Executed" },
+                ],
+                rows: rows.map((d) => ({
+                  title: d.title,
+                  status: d.status,
+                  result: d.result ?? "-",
+                  procedure: d.testProcedureVersion.testProcedure.title,
+                  subRequirement: d.testProcedureVersion.testProcedure.subRequirement.title,
+                  executedBy: d.executor?.name ?? "-",
+                  executedAt: d.executedAt ? formatDate(d.executedAt) : "-",
+                })),
+                isTruncated,
               };
             }
           }

@@ -237,6 +237,75 @@ describe("TablePayloadSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts table with isTruncated flag", () => {
+    const result = TablePayloadSchema.safeParse({
+      type: "table",
+      title: "Truncated Results",
+      columns: [{ key: "name", label: "Name" }],
+      rows: [{ name: "Test" }],
+      isTruncated: true,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isTruncated).toBe(true);
+    }
+  });
+
+  it("accepts table without isTruncated (backward compatible)", () => {
+    const result = TablePayloadSchema.safeParse({
+      type: "table",
+      title: "Old Format",
+      columns: [{ key: "name", label: "Name" }],
+      rows: [{ name: "Test" }],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isTruncated).toBeUndefined();
+    }
+  });
+
+  it("accepts enriched table with cross-entity columns", () => {
+    const result = TablePayloadSchema.safeParse({
+      type: "table",
+      title: "Product Requirements",
+      columns: [
+        { key: "title", label: "Title" },
+        { key: "status", label: "Status" },
+        { key: "created", label: "Created" },
+        { key: "createdBy", label: "Created By" },
+      ],
+      rows: [{
+        title: "Core Features",
+        status: "APPROVED",
+        created: "Feb 1, 2026",
+        createdBy: "Monica Geller",
+      }],
+      isTruncated: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts aggregation table with numeric values", () => {
+    const result = TablePayloadSchema.safeParse({
+      type: "table",
+      title: "Test Result Summary by Procedure",
+      columns: [
+        { key: "procedure", label: "Procedure" },
+        { key: "passed", label: "Passed" },
+        { key: "failed", label: "Failed" },
+        { key: "total", label: "Total" },
+      ],
+      rows: [{
+        procedure: "GPS Accuracy Test",
+        passed: 3,
+        failed: 1,
+        total: 4,
+      }],
+      isTruncated: false,
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe("DiagramPayloadSchema", () => {
