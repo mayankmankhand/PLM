@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { PrismaClient } from "@prisma/client";
-import { writeAuditLog } from "@/services/audit.service";
 import * as prService from "@/services/product-requirement.service";
 import * as srService from "@/services/sub-requirement.service";
 import * as tpService from "@/services/test-procedure.service";
@@ -526,5 +525,291 @@ describe("TestCase lifecycle", () => {
     await expect(
       tcService.recordTestResult(tc.id, { result: "PASS" }, ctx)
     ).rejects.toThrow("skipped");
+  });
+});
+
+// ─── Cascade Cancellation ───────────────────────────────
+
+describe("Cascade cancellation", () => {
+  // Helper: build a full PR -> SR -> TP (with approved version) -> TC hierarchy
+  async function buildHierarchy() {
+    const pr = await prService.createProductRequirement(
+      { title: "Cascade PR", description: "For cascade tests" },
+      ctx
+    );
+    await prService.approveProductRequirement(pr.id, ctx);
+
+    const sr = await srService.createSubRequirement(
+      {
+        title: "Cascade SR",
+        description: "Desc",
+        productRequirementId: pr.id,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+    await srService.approveSubRequirement(sr.id, ctx);
+
+    const tp = await tpService.createTestProcedure(
+      {
+        title: "Cascade TP",
+        subRequirementId: sr.id,
+        description: "Desc",
+        steps: "Steps",
+      },
+      ctx
+    );
+    await tpService.approveTestProcedureVersion(tp.versions[0].id, ctx);
+
+    const tc1 = await tcService.createTestCase(
+      {
+        title: "Cascade TC1",
+        description: "Desc",
+        testProcedureVersionId: tp.versions[0].id,
+      },
+      ctx
+    );
+    const tc2 = await tcService.createTestCase(
+      {
+        title: "Cascade TC2",
+        description: "Desc",
+        testProcedureVersionId: tp.versions[0].id,
+      },
+      ctx
+    );
+
+    return { pr, sr, tp, versionId: tp.versions[0].id, tc1, tc2 };
+  }
+
+  // Helper: clean up a full hierarchy
+  async function cleanupHierarchy(prId: string) {
+    const srs = await prisma.subRequirement.findMany({
+      where: { productRequirementId: prId },
+    });
+    for (const sr of srs) {
+      const procs = await prisma.testProcedure.findMany({
+        where: { subRequirementId: sr.id },
+        include: { versions: { include: { testCases: true } } },
+      });
+      for (const proc of procs) {
+        for (const ver of proc.versions) {
+          for (const tc of ver.testCases) {
+            await prisma.auditLog.deleteMany({ where: { entityId: tc.id } });
+            await prisma.testCase.delete({ where: { id: tc.id } });
+          }
+          await prisma.auditLog.deleteMany({ where: { entityId: ver.id } });
+          await prisma.testProcedureVersion.delete({ where: { id: ver.id } });
+        }
+        await prisma.auditLog.deleteMany({ where: { entityId: proc.id } });
+        await prisma.testProcedure.delete({ where: { id: proc.id } });
+      }
+      await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
+      await prisma.subRequirement.delete({ where: { id: sr.id } });
+    }
+    await prisma.auditLog.deleteMany({ where: { entityId: prId } });
+    await prisma.productRequirement.delete({ where: { id: prId } });
+  }
+
+  it("cancel TP cascades to skip all TCs", async () => {
+    const h = await buildHierarchy();
+
+    await tpService.cancelTestProcedure(h.tp.id, ctx);
+
+    const tc1 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc1.id } });
+    const tc2 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc2.id } });
+    expect(tc1.status).toBe("SKIPPED");
+    expect(tc2.status).toBe("SKIPPED");
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cancel TP silently skips already-SKIPPED TCs", async () => {
+    const h = await buildHierarchy();
+
+    // Pre-skip one TC
+    await tcService.skipTestCase(h.tc1.id, ctx);
+
+    await tpService.cancelTestProcedure(h.tp.id, ctx);
+
+    const tc1 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc1.id } });
+    const tc2 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc2.id } });
+    expect(tc1.status).toBe("SKIPPED");
+    expect(tc2.status).toBe("SKIPPED");
+
+    // Only one SKIP audit log for tc1 (the pre-skip), not two
+    const tc1Logs = await prisma.auditLog.findMany({
+      where: { entityId: h.tc1.id, action: "SKIP" },
+    });
+    expect(tc1Logs).toHaveLength(1);
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cancel SR cascades to TPs and TCs", async () => {
+    const h = await buildHierarchy();
+
+    await srService.cancelSubRequirement(h.sr.id, ctx);
+
+    const sr = await prisma.subRequirement.findUniqueOrThrow({ where: { id: h.sr.id } });
+    const tp = await prisma.testProcedure.findUniqueOrThrow({ where: { id: h.tp.id } });
+    const tc1 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc1.id } });
+    const tc2 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc2.id } });
+
+    expect(sr.status).toBe("CANCELED");
+    expect(tp.status).toBe("CANCELED");
+    expect(tc1.status).toBe("SKIPPED");
+    expect(tc2.status).toBe("SKIPPED");
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cancel PR cascades to SRs, TPs, and TCs", async () => {
+    const h = await buildHierarchy();
+
+    await prService.cancelProductRequirement(h.pr.id, ctx);
+
+    const pr = await prisma.productRequirement.findUniqueOrThrow({ where: { id: h.pr.id } });
+    const sr = await prisma.subRequirement.findUniqueOrThrow({ where: { id: h.sr.id } });
+    const tp = await prisma.testProcedure.findUniqueOrThrow({ where: { id: h.tp.id } });
+    const tc1 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc1.id } });
+
+    expect(pr.status).toBe("CANCELED");
+    expect(sr.status).toBe("CANCELED");
+    expect(tp.status).toBe("CANCELED");
+    expect(tc1.status).toBe("SKIPPED");
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cascade silently skips already-CANCELED children", async () => {
+    const h = await buildHierarchy();
+
+    // Pre-cancel the TP directly
+    await tpService.cancelTestProcedure(h.tp.id, ctx);
+
+    // Now cancel the SR - TP should be silently skipped
+    await srService.cancelSubRequirement(h.sr.id, ctx);
+
+    const tp = await prisma.testProcedure.findUniqueOrThrow({ where: { id: h.tp.id } });
+    expect(tp.status).toBe("CANCELED");
+
+    // Only one CANCEL audit log for the TP (the pre-cancel), not two
+    const tpLogs = await prisma.auditLog.findMany({
+      where: { entityId: h.tp.id, action: "CANCEL" },
+    });
+    expect(tpLogs).toHaveLength(1);
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cascade creates audit logs for every changed entity", async () => {
+    const h = await buildHierarchy();
+
+    await prService.cancelProductRequirement(h.pr.id, ctx);
+
+    // PR gets a CANCEL log
+    const prLogs = await prisma.auditLog.findMany({
+      where: { entityId: h.pr.id, action: "CANCEL" },
+    });
+    expect(prLogs).toHaveLength(1);
+
+    // SR gets a CANCEL log
+    const srLogs = await prisma.auditLog.findMany({
+      where: { entityId: h.sr.id, action: "CANCEL" },
+    });
+    expect(srLogs).toHaveLength(1);
+
+    // TP gets a CANCEL log
+    const tpLogs = await prisma.auditLog.findMany({
+      where: { entityId: h.tp.id, action: "CANCEL" },
+    });
+    expect(tpLogs).toHaveLength(1);
+
+    // Both TCs get SKIP logs
+    const tc1Logs = await prisma.auditLog.findMany({
+      where: { entityId: h.tc1.id, action: "SKIP" },
+    });
+    const tc2Logs = await prisma.auditLog.findMany({
+      where: { entityId: h.tc2.id, action: "SKIP" },
+    });
+    expect(tc1Logs).toHaveLength(1);
+    expect(tc2Logs).toHaveLength(1);
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cancel TP skips TCs across multiple versions", async () => {
+    const h = await buildHierarchy();
+
+    // Create v2 (draft) with its own TC
+    const v2 = await tpService.createTestProcedureVersion(
+      h.tp.id,
+      { description: "V2 desc", steps: "V2 steps" },
+      ctx
+    );
+    const tc3 = await tcService.createTestCase(
+      {
+        title: "Cascade TC3 on v2",
+        description: "Desc",
+        testProcedureVersionId: v2.id,
+      },
+      ctx
+    );
+
+    await tpService.cancelTestProcedure(h.tp.id, ctx);
+
+    // TCs on v1 (approved) and v2 (draft) both get skipped
+    const tc1 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc1.id } });
+    const tc2 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc2.id } });
+    const tc3After = await prisma.testCase.findUniqueOrThrow({ where: { id: tc3.id } });
+    expect(tc1.status).toBe("SKIPPED");
+    expect(tc2.status).toBe("SKIPPED");
+    expect(tc3After.status).toBe("SKIPPED");
+
+    await cleanupHierarchy(h.pr.id);
+  });
+
+  it("cancel PR with no children succeeds", async () => {
+    // PR with zero SRs - cascade loop just doesn't execute
+    const pr = await prService.createProductRequirement(
+      { title: "Empty PR", description: "No children" },
+      ctx
+    );
+    await prService.approveProductRequirement(pr.id, ctx);
+
+    await prService.cancelProductRequirement(pr.id, ctx);
+
+    const result = await prisma.productRequirement.findUniqueOrThrow({ where: { id: pr.id } });
+    expect(result.status).toBe("CANCELED");
+
+    await prisma.auditLog.deleteMany({ where: { entityId: pr.id } });
+    await prisma.productRequirement.delete({ where: { id: pr.id } });
+  });
+
+  it("cancel PR cascades to multiple SRs and their children", async () => {
+    const h = await buildHierarchy();
+
+    // Add a second SR (DRAFT, no TPs) under the same PR
+    const sr2 = await srService.createSubRequirement(
+      {
+        title: "Cascade SR2",
+        description: "Desc",
+        productRequirementId: h.pr.id,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+
+    await prService.cancelProductRequirement(h.pr.id, ctx);
+
+    const sr1After = await prisma.subRequirement.findUniqueOrThrow({ where: { id: h.sr.id } });
+    const sr2After = await prisma.subRequirement.findUniqueOrThrow({ where: { id: sr2.id } });
+    const tpAfter = await prisma.testProcedure.findUniqueOrThrow({ where: { id: h.tp.id } });
+
+    expect(sr1After.status).toBe("CANCELED");
+    expect(sr2After.status).toBe("CANCELED"); // DRAFT SR also gets cascade-canceled
+    expect(tpAfter.status).toBe("CANCELED");
+
+    await cleanupHierarchy(h.pr.id);
   });
 });
