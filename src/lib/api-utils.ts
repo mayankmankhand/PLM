@@ -4,12 +4,13 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
-import { LifecycleError, NotFoundError } from "./errors";
+import { AuthError, LifecycleError, NotFoundError } from "./errors";
 
 /**
  * Convert any caught error into an appropriate NextResponse.
  *
  * - ZodError          -> 400 with validation details
+ * - AuthError         -> 401 Unauthorized (missing auth headers)
  * - LifecycleError    -> 409 Conflict (action not allowed in current state)
  * - NotFoundError     -> 404
  * - Prisma P2025      -> 404 (record not found)
@@ -21,6 +22,13 @@ export function handleApiError(error: unknown): NextResponse {
     return NextResponse.json(
       { error: "Validation failed", details: error.errors },
       { status: 400 }
+    );
+  }
+
+  if (error instanceof AuthError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 401 }
     );
   }
 

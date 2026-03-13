@@ -1,6 +1,7 @@
 // Extracts a RequestContext from incoming API requests.
 // Relies on headers set by the Edge Middleware in src/middleware.ts.
 
+import { AuthError } from "./errors";
 import { getUserById } from "./demo-users";
 
 export interface RequestContext {
@@ -17,24 +18,24 @@ export interface RequestContext {
  *   - x-demo-user-id  (required)
  *   - x-request-id    (required)
  *
- * Throws if the user cannot be found (should not happen when middleware is in place).
+ * Throws AuthError if headers are missing or user is invalid.
  */
 export function getRequestContext(request: Request): RequestContext {
   const userId = request.headers.get("x-demo-user-id");
   const requestId = request.headers.get("x-request-id");
 
   if (!userId) {
-    throw new Error("Missing x-demo-user-id header. Is the middleware running?");
+    throw new AuthError("Missing x-demo-user-id header. Is the middleware running?");
   }
 
   if (!requestId) {
-    throw new Error("Missing x-request-id header. Is the middleware running?");
+    throw new AuthError("Missing x-request-id header. Is the middleware running?");
   }
 
   const user = getUserById(userId);
 
   if (!user) {
-    throw new Error(`Unknown user id: ${userId}`);
+    throw new AuthError("Invalid user credentials");
   }
 
   return {

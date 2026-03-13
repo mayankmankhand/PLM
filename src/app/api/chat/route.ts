@@ -11,6 +11,9 @@ import { createAllTools } from "@/lib/ai/tools";
 import { createTraceLogger } from "@/lib/ai/trace-logger";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+// 50KB cap - prevents oversized payloads from burning LLM tokens.
+const MAX_BODY_BYTES = 51_200;
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limit by IP before doing any real work.
@@ -32,15 +35,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fast-path: reject obviously oversized payloads via Content-Length header.
+    // This is cheap (no body read) but advisory - the header can be spoofed.
+    const contentLength = parseInt(request.headers.get("content-length") ?? "0", 10);
+    if (contentLength > MAX_BODY_BYTES) {
+      return new Response(
+        JSON.stringify({ error: "Request too large. Maximum size is 50KB." }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     // Build RequestContext from middleware headers (same pattern as other routes).
     // This identifies which demo user is chatting.
     const ctx = getRequestContext(request);
+
+    // Real enforcement: read body as text and check actual byte length.
+    // Catches cases where Content-Length is missing, spoofed, or stripped by proxies.
+    const rawBody = await request.text();
+    if (rawBody.length > MAX_BODY_BYTES) {
+      return new Response(
+        JSON.stringify({ error: "Request too large. Maximum size is 50KB." }),
+        { status: 413, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
     // Parse the request body. The Vercel AI SDK's useChat sends UIMessages
     // with a `parts` array (text, tool calls, tool results). We use
     // convertToModelMessages() to transform them into the format streamText expects.
     // No custom Zod validation here - the SDK handles the message contract.
-    const body = await request.json();
+    const body = JSON.parse(rawBody);
     const { messages: uiMessages } = body;
 
     if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
