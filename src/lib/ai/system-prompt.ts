@@ -2,6 +2,33 @@
 // Encodes domain rules, lifecycle constraints, and behavioral instructions
 // so the LLM can manage PLM entities through conversation.
 
+import { DEMO_TEAMS, DEMO_USERS } from "@/lib/demo-users";
+
+// Build the Teams & Users section dynamically from demo-users.ts
+// so there's a single source of truth for team/user data.
+function buildTeamsAndUsersSection(): string {
+  const teamRows = DEMO_TEAMS.map((t) => `| ${t.name} | ${t.id} |`).join("\n");
+
+  const teamById = new Map(DEMO_TEAMS.map((t) => [t.id, t.name]));
+  const userRows = DEMO_USERS.map(
+    (u) => `| ${u.name} | ${teamById.get(u.teamId)} | ${u.id} |`
+  ).join("\n");
+
+  return `## Teams & Users
+
+You already know every team and user in the system. When the user refers to a team or person by name, use the IDs below. Never ask the user for UUIDs.
+
+### Teams
+| Team | ID |
+|------|-----|
+${teamRows}
+
+### Users
+| Name | Team | ID |
+|------|------|-----|
+${userRows}`;
+}
+
 export const SYSTEM_PROMPT = `You are a PLM (Product Lifecycle Management) assistant. You help users manage product requirements, test procedures, and test cases through conversation. You have tools to create, update, query, and transition these entities.
 
 ## Domain Model
@@ -74,29 +101,7 @@ Rules:
 - If the conversation has moved on to other topics since you proposed the action, re-confirm before executing.
 - If you proposed multiple actions at once, ask the user to specify which one(s) to proceed with.
 
-## Teams & Users
-
-You already know every team and user in the system. When the user refers to a team or person by name, use the IDs below. Never ask the user for UUIDs.
-
-### Teams
-| Team | ID |
-|------|-----|
-| Electrical | a1b2c3d4-0001-4000-8000-000000000001 |
-| Mechanical | a1b2c3d4-0002-4000-8000-000000000002 |
-| App | a1b2c3d4-0003-4000-8000-000000000003 |
-| Algorithm | a1b2c3d4-0004-4000-8000-000000000004 |
-| Hardware | a1b2c3d4-0005-4000-8000-000000000005 |
-| Testing | a1b2c3d4-0006-4000-8000-000000000006 |
-
-### Users
-| Name | Team | ID |
-|------|------|-----|
-| Monica Geller | Hardware | b1c2d3e4-0001-4000-8000-000000000001 |
-| Ross Geller | Algorithm | b1c2d3e4-0002-4000-8000-000000000002 |
-| Rachel Green | App | b1c2d3e4-0003-4000-8000-000000000003 |
-| Chandler Bing | Electrical | b1c2d3e4-0004-4000-8000-000000000004 |
-| Joey Tribbiani | Mechanical | b1c2d3e4-0005-4000-8000-000000000005 |
-| Phoebe Buffay | Testing | b1c2d3e4-0006-4000-8000-000000000006 |
+{{TEAMS_AND_USERS}}
 
 ## Anti-Hallucination Rules
 
@@ -149,10 +154,9 @@ Every mutation you perform is automatically logged in the audit trail with your 
 
 /**
  * Builds the system prompt for the PLM chat endpoint.
- * Currently returns the static prompt, but this function exists so we can
- * inject dynamic context in the future (e.g., current user role, team,
- * active filters, or org-specific rules).
+ * Injects dynamic context (team/user mappings) from demo-users.ts
+ * so the prompt stays in sync with the source of truth.
  */
 export function buildSystemPrompt(): string {
-  return SYSTEM_PROMPT;
+  return SYSTEM_PROMPT.replace("{{TEAMS_AND_USERS}}", buildTeamsAndUsersSection());
 }
