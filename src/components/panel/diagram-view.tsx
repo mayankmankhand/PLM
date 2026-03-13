@@ -26,6 +26,10 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
   const [zoom, setZoom] = useState(1);
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // Ref to the scrollable container (for measuring available width)
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Ref to the div wrapping the injected SVG (for querying the SVG element)
+  const svgWrapperRef = useRef<HTMLDivElement>(null);
 
   // Clean up copy timer on unmount (R8)
   useEffect(() => {
@@ -40,6 +44,32 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
 
   const zoomOut = useCallback(() => {
     setZoom((z) => Math.max(MIN_ZOOM, z - ZOOM_STEP));
+  }, []);
+
+  // Fit diagram to container width by calculating the ratio of
+  // available space to the SVG's intrinsic (natural) width.
+  // Uses a ref for zoom so the callback doesn't recreate on every zoom change.
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+
+  const fitToView = useCallback(() => {
+    const container = containerRef.current;
+    const svgWrapper = svgWrapperRef.current;
+    if (!container || !svgWrapper) return;
+    const svgEl = svgWrapper.querySelector("svg");
+    if (!svgEl) return;
+    // Get SVG's intrinsic width (before any CSS transform).
+    // Mermaid v11 SVGs typically have a width attribute; viewBox is the fallback.
+    // getBoundingClientRect returns the transformed size, so divide by current zoom.
+    const widthAttr = svgEl.getAttribute("width");
+    const intrinsicWidth = widthAttr
+      ? parseFloat(widthAttr)
+      : svgEl.viewBox?.baseVal?.width || svgEl.getBoundingClientRect().width / zoomRef.current;
+    if (intrinsicWidth <= 0) return;
+    // Available width = container width minus padding (16px each side from p-4)
+    const availableWidth = container.clientWidth - 32;
+    const fitZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, availableWidth / intrinsicWidth));
+    setZoom(fitZoom);
   }, []);
 
   const copySource = useCallback(async () => {
@@ -140,6 +170,14 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
           >
             +
           </button>
+          <button
+            onClick={fitToView}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-elevated border border-border text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+            aria-label="Fit diagram to panel width"
+          >
+            Fit
+          </button>
           <div className="flex-1" />
           <button
             onClick={copySource}
@@ -152,10 +190,12 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
 
         {/* Diagram with dot-grid background */}
         <div
-          className="overflow-auto rounded-lg bg-surface-elevated border border-border p-4 bg-[radial-gradient(circle,#CBD5E1_1px,transparent_1px)] bg-[length:20px_20px]"
+          ref={containerRef}
+          className="overflow-auto max-h-[60vh] rounded-lg bg-surface-elevated border border-border p-4 bg-[radial-gradient(circle,#CBD5E1_1px,transparent_1px)] bg-[length:20px_20px]"
         >
           <div
-            className="[&_svg]:max-w-full [&_svg]:h-auto origin-top-left transition-transform duration-150"
+            ref={svgWrapperRef}
+            className="origin-top-left transition-transform duration-150"
             style={{ transform: `scale(${zoom})` }}
             dangerouslySetInnerHTML={{ __html: svg }}
           />

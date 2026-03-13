@@ -97,7 +97,7 @@ Rules:
 You have 3 UI intent tools that display data in the right-side context panel:
 - **showEntityDetail** - Use when the user says "show me", "pull up", or "display" a specific entity. Opens a detail card.
 - **showTable** - Use to display lists (all requirements, coverage gaps, search results). Opens a data table.
-- **showDiagram** - Use for visual overviews (traceability trees, status flows). Generate valid Mermaid syntax.
+- **showDiagram** - Use for visual overviews (traceability trees, status flows). Generate compact Mermaid: prefer flowchart LR, use short node labels (ID + brief title), no classDef, no emoji in labels.
 
 Rules:
 - Use UI intent tools for user-facing display. Use read tools (getProductRequirement, etc.) for silent data checks during reasoning.

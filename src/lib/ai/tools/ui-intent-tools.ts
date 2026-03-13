@@ -475,9 +475,15 @@ export function createUIIntentTools() {
     showDiagram: tool({
       description:
         "Display a Mermaid diagram in the context panel. " +
-        "Use this to show traceability trees, status overviews, or relationship maps. " +
+        "Use for traceability trees, status overviews, or relationship maps. " +
         "Generate valid Mermaid syntax (flowchart, graph, or stateDiagram). " +
-        "Use this when the user asks for a visual overview or diagram.",
+        "Diagram style rules: " +
+        "(1) Prefer `flowchart LR` for trees - left-to-right fits the narrow panel better than top-down. " +
+        "(2) Short node labels - use ID + brief title (e.g. `PR1[PR-001 Core Features]`), not full descriptions. " +
+        "(3) Show status as a short suffix when relevant (e.g. `TC1[TC-001 GPS Power - FAILED]`). " +
+        "(4) Do NOT use classDef or style directives - the neutral theme handles colors. " +
+        "(5) Do NOT use emoji in node labels. " +
+        "(6) Keep labels concise (under ~50 characters per node).",
       inputSchema: z.object({
         title: z.string().describe("Title for the diagram"),
         mermaidSyntax: z.string().describe("Valid Mermaid diagram syntax"),
