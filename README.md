@@ -11,7 +11,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest (isolated test database via `vitest.global-setup.ts`)
 - **Auth**: Demo users via Edge Middleware (hardcoded for V1)
-- **Security**: Rate limiting (chat endpoint), security headers, HTML stripping in markdown
+- **Security**: Rate limiting (chat endpoint), security headers, HTML stripping in markdown, UUID validation in middleware
 
 ## Quick Start
 
@@ -101,7 +101,7 @@ V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to sw
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (74 tests, uses .env.test database)
+npm run test         # Run tests (101 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -147,4 +147,13 @@ prisma/
 - **Issue #19**: Migration drift reset (DONE)
 - **Issue #20**: UI redesign - slate+teal palette, drag-to-resize panel, keyboard shortcuts, suggestion chips (DONE)
 - **Issue #22**: Security audit - rate limiting, security headers, XSS hardening, production logging guard (DONE)
+- **Issue #23**: Usable Mermaid diagrams - fix rendering, zoom controls, compact LLM-guided syntax (DONE)
+- **Issue #24**: Cross-entity panel data - enriched queries, aggregations, truncation detection (DONE)
 - **Issue #25**: Match UI to prototype pixel-perfect - CSS reset fix, always-fixed panel, composer polish (DONE)
+- **Issue #26**: Full-stack audit - 11 quick fixes applied (perf, validation, a11y, cleanup) (DONE)
+- **Issue #29**: Cascade cancellation - propagate cancel to children (planned)
+- **Issue #30**: Chat endpoint hardening - streaming error recovery, input limits (planned)
+- **Issue #31**: Audit source threading - distinguish chat vs API mutations (planned)
+- **Issue #32**: Team data isolation - scope queries by user's team (planned)
+- **Issue #33**: Attachment hardening - file size limits, type validation (planned)
+- **Issue #34**: Frontend resilience - error boundaries, retry logic (planned)
