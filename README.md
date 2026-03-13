@@ -115,7 +115,8 @@ src/
     globals.css      # Tailwind v4 + design tokens
   components/chat/   # Chat UI components (8 files)
   components/panel/  # Context panel views (detail, table, diagram, audit, error)
-  stores/            # Zustand stores (panel state)
+  hooks/             # Shared React hooks (useDesktopBreakpoint)
+  stores/            # Zustand stores (panel state + width)
   types/             # Shared TypeScript types + Zod schemas (panel payloads)
   lib/ai/            # LLM layer: system prompt, 29 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
@@ -144,3 +145,4 @@ prisma/
 - **Issue #17**: Test database isolation (DONE)
 - **Issue #19**: Migration drift reset (DONE)
 - **Issue #20**: UI redesign - slate+teal palette, drag-to-resize panel, keyboard shortcuts, suggestion chips (DONE)
+- **Issue #25**: Match UI to prototype pixel-perfect - CSS reset fix, always-fixed panel, composer polish (DONE)
