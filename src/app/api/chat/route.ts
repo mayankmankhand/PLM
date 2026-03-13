@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
     // For example, "create a requirement and publish it" needs 2 steps.
     // Default is stepCountIs(1) which would stop after one tool call.
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      // Model is configurable via ANTHROPIC_MODEL env var in .env.local.
+      // Defaults to Haiku 4.5 - swap to Sonnet 4.6 when ready.
+      model: anthropic(process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001"),
       system: buildSystemPrompt(),
       messages: modelMessages,
       tools,
