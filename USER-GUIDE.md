@@ -40,12 +40,12 @@ Product Requirement
 ### Create things
 
 - "Create a new product requirement called Battery Life Optimization"
-- "Add a sub-requirement for the App team under PR-001"
-- "Create a test procedure for SR-005"
+- "Add a sub-requirement for the App team under Heart Rate Monitoring"
+- "Create a test procedure for BLE Pairing Validation"
 
 ### Look things up
 
-- "Show me the details for SR-005"
+- "Show me the details for GPS Receiver"
 - "What test procedures exist for the Electrical team?"
 - "List all product requirements"
 
@@ -57,26 +57,26 @@ Product Requirement
 
 ### Visualize
 
-- "Draw a traceability diagram for PR-001"
+- "Draw a traceability diagram for Core Features"
 - "Show me the status lifecycle for test cases"
 
 ### Track changes
 
-- "Show the audit log for PR-001"
+- "Show the audit log for Heart Rate Monitoring"
 - "What changes happened today?"
-- "Who approved SR-003?"
+- "Who approved BLE Pairing Validation?"
 
 ### Manage lifecycle
 
-- "Approve product requirement PR-001"
-- "Record a PASS result for TC-003"
-- "Cancel sub-requirement SR-010"
+- "Approve product requirement Battery Life Optimization"
+- "Record a PASS result for Resting HR accuracy test"
+- "Cancel sub-requirement Indoor Navigation"
 
 ### Analyze coverage
 
 - "Show test result summary"
 - "What's the coverage by team?"
-- "Show test cases for requirement PR-002"
+- "Show test cases for requirement Connectivity"
 
 ---
 
