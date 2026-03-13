@@ -9,6 +9,7 @@ import { createTestCaseTools } from "./test-case-tools";
 import { createReadTools } from "./read-tools";
 import { createQueryTools } from "./query-tools";
 import { createUIIntentTools } from "./ui-intent-tools";
+import { withTimeout } from "./with-timeout";
 
 /**
  * Creates all LLM tools, bound to the given RequestContext.
@@ -20,7 +21,7 @@ import { createUIIntentTools } from "./ui-intent-tools";
  * Returns a flat object suitable for passing to Vercel AI SDK's streamText().
  */
 export function createAllTools(ctx: RequestContext) {
-  return {
+  const tools = {
     ...createProductRequirementTools(ctx),
     ...createSubRequirementTools(ctx),
     ...createTestProcedureTools(ctx),
@@ -29,6 +30,20 @@ export function createAllTools(ctx: RequestContext) {
     ...createQueryTools(),
     ...createUIIntentTools(),
   };
+
+  // Wrap every tool's execute with a 30s timeout.
+  // If a tool hangs, the LLM gets an error message instead of the stream dying.
+  // Cast needed because the SDK's tool() return type doesn't expose a generic
+  // execute accessor. If the SDK renames execute, this loop silently stops
+  // wrapping - check on SDK upgrades.
+  for (const [name, t] of Object.entries(tools)) {
+    const toolObj = t as { execute?: (...args: unknown[]) => Promise<unknown> };
+    if (toolObj.execute) {
+      toolObj.execute = withTimeout(name, toolObj.execute) as typeof toolObj.execute;
+    }
+  }
+
+  return tools;
 }
 
 // Re-export individual creators for cases where only a subset is needed
