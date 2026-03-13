@@ -37,6 +37,8 @@ export const DetailPayloadSchema = z.object({
 });
 
 // -- Table payload: shows rows and columns (query results, search results) --
+// isTruncated is optional for backward compatibility with historical chat logs.
+// When true, the LLM should warn the user that more results exist.
 export const TablePayloadSchema = z.object({
   type: z.literal("table"),
   title: z.string(),
@@ -49,6 +51,7 @@ export const TablePayloadSchema = z.object({
   rows: z
     .array(z.record(z.string(), z.unknown()))
     .max(15, "Tables are capped at 15 rows in V1"),
+  isTruncated: z.boolean().optional(),
 });
 
 // -- Diagram payload: Mermaid syntax string for visual rendering --
