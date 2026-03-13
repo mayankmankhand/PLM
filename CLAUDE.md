@@ -17,7 +17,7 @@
 - **Auth**: 6 hardcoded demo users (Friends cast) via Edge Middleware (V1)
 - **Seed**: Smartwatch PLM dataset (6 teams, 10 PRs, 21 SRs, 18 TPs, 19 TPVs, 20 TCs, 6 attachments, 155 audit entries)
 - **Versioning**: Two-entity pattern for test procedures (logical entity + immutable version snapshots)
-- **Audit**: Every mutation logged in same Prisma transaction
+- **Audit**: Every mutation logged in same Prisma transaction, `AuditSource` type (`"api" | "chat"`) on `RequestContext` threads source through to `writeAuditLog` (chat route overrides to `"chat"`)
 - **Security**: Rate limiting on `/api/chat` (10 req/min per IP via in-memory sliding window in `src/lib/rate-limit.ts`), security headers in `next.config.ts` (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy), `skipHtml` on ReactMarkdown, DOMPurify on Mermaid SVG (`ADD_TAGS: ["foreignObject", "style"]` to preserve text labels while sanitizing), trace logging guarded behind `NODE_ENV !== 'production'`, UUID format validation on `x-demo-user-id` header in Edge Middleware
 - **Performance**: Zustand individual selectors (not bare `usePanelStore()`), `React.memo` on MessageBubble, `useCallback` for chip handlers, `.trim()` on all Zod string inputs
 - **Accessibility**: `aria-expanded` on toggle buttons, `aria-label` on icon-only buttons, `title` tooltips on truncated text

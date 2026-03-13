@@ -101,7 +101,7 @@ V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to sw
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (101 tests, uses .env.test database)
+npm run test         # Run tests (124 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -159,9 +159,9 @@ prisma/
 - **Issue #25**: Match UI to prototype pixel-perfect - CSS reset fix, always-fixed panel, composer polish (DONE)
 - **Issue #26**: Full-stack audit - 11 quick fixes applied (perf, validation, a11y, cleanup) (DONE)
 - **Issue #27**: Documentation overhaul - user guide, roadmap, archive outdated UI spec (DONE)
-- **Issue #29**: Cascade cancellation - propagate cancel to children (planned)
-- **Issue #30**: Chat endpoint hardening - streaming error recovery, input limits (planned)
-- **Issue #31**: Audit source threading - distinguish chat vs API mutations (planned)
+- **Issue #29**: Cascade cancellation - propagate cancel to children (DONE)
+- **Issue #30**: Chat endpoint hardening - streaming error recovery, input limits (DONE)
+- **Issue #31**: Audit source threading - distinguish chat vs API mutations (DONE)
 - **Issue #32**: Team data isolation - scope queries by user's team (planned)
 - **Issue #33**: Attachment hardening - file size limits, type validation (planned)
 - **Issue #34**: Frontend resilience - error boundaries, retry logic (planned)
