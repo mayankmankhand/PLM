@@ -1,14 +1,62 @@
 // Sub-Requirement service - domain commands with lifecycle enforcement.
 // Sub-requirements inherit team context and require an approved parent for approval.
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
+import { cascadeCancelTestProcedure } from "./test-procedure.service";
 import type {
   CreateSubRequirementInput,
   UpdateSubRequirementInput,
 } from "@/schemas/sub-requirement.schema";
+
+// ─── Cascade helper (used by PR cancel) ─────────────────
+
+/**
+ * Cancel a single sub-requirement and cascade to its TPs and TCs.
+ * Already-CANCELED SRs are silently skipped. Cancels regardless of current
+ * status (bypasses the entry-point APPROVED-only guard for cascade scenarios
+ * where a parent PR is canceled and DRAFT child SRs must also be canceled).
+ * Call within an existing transaction.
+ */
+export async function cascadeCancelSubRequirement(
+  tx: Prisma.TransactionClient,
+  subRequirementId: string,
+  ctx: RequestContext
+) {
+  const sr = await tx.subRequirement.findUniqueOrThrow({
+    where: { id: subRequirementId },
+  });
+
+  // Already canceled - skip silently
+  if (sr.status === "CANCELED") return;
+
+  await tx.subRequirement.update({
+    where: { id: subRequirementId },
+    data: { status: "CANCELED" },
+  });
+
+  await writeAuditLog(tx, {
+    actorId: ctx.userId,
+    action: "CANCEL",
+    entityType: "SubRequirement",
+    entityId: subRequirementId,
+    requestId: ctx.requestId,
+    changes: { status: { from: sr.status, to: "CANCELED" } },
+  });
+
+  // Cascade to all child test procedures (and their test cases)
+  const procedures = await tx.testProcedure.findMany({
+    where: { subRequirementId },
+    select: { id: true },
+  });
+
+  for (const tp of procedures) {
+    await cascadeCancelTestProcedure(tx, tp.id, ctx);
+  }
+}
 
 // ─── Create ──────────────────────────────────────────────
 
@@ -135,7 +183,7 @@ export async function approveSubRequirement(
   });
 }
 
-// ─── Cancel ─────────────────────────────────────────────
+// ─── Cancel (with cascade to TPs and TCs) ──────────────
 
 export async function cancelSubRequirement(
   id: string,
@@ -152,7 +200,8 @@ export async function cancelSubRequirement(
       );
     }
 
-    const updated = await tx.subRequirement.update({
+    // Cancel SR (skip the re-fetch since we already checked status)
+    await tx.subRequirement.update({
       where: { id },
       data: { status: "CANCELED" },
     });
@@ -166,6 +215,16 @@ export async function cancelSubRequirement(
       changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });
 
-    return updated;
+    // Cascade to all child TPs and TCs
+    const procedures = await tx.testProcedure.findMany({
+      where: { subRequirementId: id },
+      select: { id: true },
+    });
+
+    for (const tp of procedures) {
+      await cascadeCancelTestProcedure(tx, tp.id, ctx);
+    }
+
+    return tx.subRequirement.findUniqueOrThrow({ where: { id } });
   });
 }

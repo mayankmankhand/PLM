@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
+import { cascadeCancelSubRequirement } from "./sub-requirement.service";
 import type {
   CreateProductRequirementInput,
   UpdateProductRequirementInput,
@@ -116,7 +117,7 @@ export async function approveProductRequirement(
   });
 }
 
-// ─── Cancel ─────────────────────────────────────────────
+// ─── Cancel (with cascade to SRs, TPs, and TCs) ────────
 
 export async function cancelProductRequirement(
   id: string,
@@ -133,7 +134,8 @@ export async function cancelProductRequirement(
       );
     }
 
-    const updated = await tx.productRequirement.update({
+    // Cancel the PR itself
+    await tx.productRequirement.update({
       where: { id },
       data: { status: "CANCELED" },
     });
@@ -147,6 +149,16 @@ export async function cancelProductRequirement(
       changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });
 
-    return updated;
+    // Cascade to all child sub-requirements (and their TPs and TCs)
+    const subReqs = await tx.subRequirement.findMany({
+      where: { productRequirementId: id },
+      select: { id: true },
+    });
+
+    for (const sr of subReqs) {
+      await cascadeCancelSubRequirement(tx, sr.id, ctx);
+    }
+
+    return tx.productRequirement.findUniqueOrThrow({ where: { id } });
   });
 }

@@ -2,6 +2,7 @@
 // Creating a procedure also creates a draft v1 version.
 // Only one draft version is allowed per procedure (enforced here + DB partial unique index).
 
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError } from "@/lib/errors";
@@ -11,6 +12,78 @@ import type {
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
 } from "@/schemas/test-procedure.schema";
+
+// ─── Cascade helpers (used by parent cancel functions) ──────
+
+/**
+ * Skip all non-SKIPPED test cases under a test procedure.
+ * Uses a Prisma relation filter to find TCs across all versions in one query.
+ * Already-SKIPPED TCs are silently skipped. Call within an existing transaction.
+ */
+export async function cascadeSkipTestCases(
+  tx: Prisma.TransactionClient,
+  testProcedureId: string,
+  ctx: RequestContext
+) {
+  const testCases = await tx.testCase.findMany({
+    where: {
+      testProcedureVersion: { testProcedureId },
+      status: { not: "SKIPPED" },
+    },
+    select: { id: true, status: true },
+  });
+
+  for (const tc of testCases) {
+    await tx.testCase.update({
+      where: { id: tc.id },
+      data: { status: "SKIPPED" },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "SKIP",
+      entityType: "TestCase",
+      entityId: tc.id,
+      requestId: ctx.requestId,
+      changes: { status: { from: tc.status, to: "SKIPPED" } },
+    });
+  }
+}
+
+/**
+ * Cancel a single test procedure and skip all its test cases.
+ * Already-CANCELED TPs are silently skipped. Cancels regardless of current
+ * status (bypasses the entry-point ACTIVE-only guard for cascade scenarios).
+ * Call within an existing transaction.
+ */
+export async function cascadeCancelTestProcedure(
+  tx: Prisma.TransactionClient,
+  testProcedureId: string,
+  ctx: RequestContext
+) {
+  const tp = await tx.testProcedure.findUniqueOrThrow({
+    where: { id: testProcedureId },
+  });
+
+  // Already canceled - skip silently
+  if (tp.status === "CANCELED") return;
+
+  await tx.testProcedure.update({
+    where: { id: testProcedureId },
+    data: { status: "CANCELED" },
+  });
+
+  await writeAuditLog(tx, {
+    actorId: ctx.userId,
+    action: "CANCEL",
+    entityType: "TestProcedure",
+    entityId: testProcedureId,
+    requestId: ctx.requestId,
+    changes: { status: { from: tp.status, to: "CANCELED" } },
+  });
+
+  await cascadeSkipTestCases(tx, testProcedureId, ctx);
+}
 
 // ─── Create (logical procedure + draft v1) ───────────────
 
@@ -196,7 +269,7 @@ export async function approveTestProcedureVersion(
   });
 }
 
-// ─── Cancel procedure ───────────────────────────────────
+// ─── Cancel procedure (with cascade to test cases) ──────
 
 export async function cancelTestProcedure(
   id: string,
@@ -211,7 +284,8 @@ export async function cancelTestProcedure(
       throw new LifecycleError("Procedure is already canceled.");
     }
 
-    const updated = await tx.testProcedure.update({
+    // Cancel TP + skip all child TCs (skip the re-fetch since we already checked status)
+    await tx.testProcedure.update({
       where: { id },
       data: { status: "CANCELED" },
     });
@@ -225,6 +299,8 @@ export async function cancelTestProcedure(
       changes: { status: { from: existing.status, to: "CANCELED" } },
     });
 
-    return updated;
+    await cascadeSkipTestCases(tx, id, ctx);
+
+    return tx.testProcedure.findUniqueOrThrow({ where: { id } });
   });
 }
