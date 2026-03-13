@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const CreateAttachmentInput = z
   .object({
-    fileName: z.string().min(1, "File name is required").max(255),
+    fileName: z.string().trim().min(1, "File name is required").max(255),
     fileType: z.enum(["DOCUMENT", "IMAGE", "SPREADSHEET", "OTHER"]),
     productRequirementId: z
       .string()

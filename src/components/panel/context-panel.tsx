@@ -36,7 +36,11 @@ const MAX_WIDTH = 800;
 
 export function ContextPanel() {
   const isDesktop = useDesktopBreakpoint();
-  const { isOpen, content, close, panelWidth, setPanelWidth } = usePanelStore();
+  const isOpen = usePanelStore((s) => s.isOpen);
+  const content = usePanelStore((s) => s.content);
+  const close = usePanelStore((s) => s.close);
+  const panelWidth = usePanelStore((s) => s.panelWidth);
+  const setPanelWidth = usePanelStore((s) => s.setPanelWidth);
   const [isDragging, setIsDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const startXRef = useRef(0);
@@ -128,7 +132,7 @@ export function ContextPanel() {
                 {badge.label}
               </span>
             )}
-            <h2 className="text-sm font-semibold text-text truncate">{title}</h2>
+            <h2 className="text-sm font-semibold text-text truncate" title={title}>{title}</h2>
           </div>
           <button
             onClick={close}

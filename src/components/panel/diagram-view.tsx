@@ -181,6 +181,7 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
           <div className="flex-1" />
           <button
             onClick={copySource}
+            aria-label="Copy diagram source to clipboard"
             className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-surface-elevated border border-border text-xs text-text-muted hover:bg-surface-hover hover:text-text transition-colors
                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           >

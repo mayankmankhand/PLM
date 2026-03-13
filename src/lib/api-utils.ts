@@ -61,13 +61,3 @@ export function handleApiError(error: unknown): NextResponse {
     { status: 500 }
   );
 }
-
-/**
- * Parse pagination search params using defaults (page=1, limit=20).
- */
-export function parsePagination(searchParams: URLSearchParams) {
-  return {
-    page: Number(searchParams.get("page") ?? "1"),
-    limit: Number(searchParams.get("limit") ?? "20"),
-  };
-}

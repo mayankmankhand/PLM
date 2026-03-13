@@ -44,6 +44,7 @@ export function ToolIndicator({ toolName, state, output }: ToolIndicatorProps) {
       <button
         type="button"
         onClick={() => !isRunning && output && setShowDetail((prev) => !prev)}
+        aria-expanded={!isRunning && output ? showDetail : undefined}
         className={`flex items-center gap-2 w-full text-left text-sm
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded ${
           !isRunning && output ? "cursor-pointer" : "cursor-default"
@@ -100,6 +101,7 @@ export function ToolGroup({ children, count }: ToolGroupProps) {
       <button
         type="button"
         onClick={() => setCollapsed((prev) => !prev)}
+        aria-expanded={!collapsed}
         className="flex items-center gap-1 text-xs text-text-muted hover:text-text transition-colors cursor-pointer rounded
                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >

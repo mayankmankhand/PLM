@@ -4,8 +4,8 @@ import { z } from "zod";
 // Used when creating a new product requirement (starts as DRAFT).
 
 export const CreateProductRequirementInput = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  description: z.string().min(1, "Description is required"),
+  title: z.string().trim().min(1, "Title is required").max(255),
+  description: z.string().trim().min(1, "Description is required"),
 });
 
 export type CreateProductRequirementInput = z.infer<
@@ -17,9 +17,10 @@ export type CreateProductRequirementInput = z.infer<
 
 export const UpdateProductRequirementInput = z
   .object({
-    title: z.string().min(1, "Title cannot be empty").max(255).optional(),
+    title: z.string().trim().min(1, "Title cannot be empty").max(255).optional(),
     description: z
       .string()
+      .trim()
       .min(1, "Description cannot be empty")
       .optional(),
   })

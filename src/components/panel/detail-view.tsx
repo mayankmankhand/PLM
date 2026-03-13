@@ -91,7 +91,7 @@ export function DetailView({ payload }: DetailViewProps) {
                 key={entity.id}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface text-sm text-text"
               >
-                <span className="truncate max-w-[180px]">{entity.title}</span>
+                <span className="truncate max-w-[180px]" title={entity.title}>{entity.title}</span>
                 <span className="text-xs text-text-muted">
                   {humanize(entity.entityType)}
                 </span>

@@ -146,6 +146,7 @@ export function AuditView({ payload }: AuditViewProps) {
                 <button
                   type="button"
                   onClick={() => toggleEntry(entry.id)}
+                  aria-expanded={isOpen}
                   className="flex items-center gap-1 text-xs text-text-muted hover:text-text transition-colors duration-150
                              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-elevated"
                 >

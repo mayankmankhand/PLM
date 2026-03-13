@@ -4,6 +4,7 @@
 
 "use client";
 
+import { memo } from "react";
 import type { UIMessage } from "ai";
 import type { ToolPartShape } from "@/types/panel";
 import ReactMarkdown from "react-markdown";
@@ -32,7 +33,7 @@ interface MessageBubbleProps {
   onReject: () => void;
 }
 
-export function MessageBubble({
+export const MessageBubble = memo(function MessageBubble({
   message,
   isStreaming,
   showConfirmButtons,
@@ -119,4 +120,4 @@ export function MessageBubble({
       </div>
     </div>
   );
-}
+});

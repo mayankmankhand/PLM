@@ -36,6 +36,8 @@ export function formatToolError(error: unknown): string {
 
   // Unexpected errors - log for debugging
   const message = error instanceof Error ? error.message : "Unknown error";
-  console.error("[tool-wrapper] Unexpected error:", error);
+  if (process.env.NODE_ENV !== "production") {
+    console.error("[tool-wrapper] Unexpected error:", error);
+  }
   return `Error: ${message}`;
 }

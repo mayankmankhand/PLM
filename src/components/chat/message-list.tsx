@@ -71,6 +71,14 @@ export function MessageList({
     setShowScrollPill(false);
   }
 
+  const handleChipClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const text = e.currentTarget.dataset.suggestion;
+      if (text) onSendMessage(text);
+    },
+    [onSendMessage]
+  );
+
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center pt-[18vh] pb-6 px-4">
@@ -88,7 +96,8 @@ export function MessageList({
             {SUGGESTIONS.map((suggestion) => (
               <button
                 key={suggestion}
-                onClick={() => onSendMessage(suggestion)}
+                data-suggestion={suggestion}
+                onClick={handleChipClick}
                 className="px-4 py-2 rounded-full border border-border text-[13px] font-medium text-text
                            hover:bg-surface-hover hover:border-primary/30
                            transition-all duration-150

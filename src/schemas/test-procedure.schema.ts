@@ -5,10 +5,10 @@ import { z } from "zod";
 // in a single request. This keeps the API simple for callers.
 
 export const CreateTestProcedureInput = z.object({
-  title: z.string().min(1, "Title is required").max(255),
+  title: z.string().trim().min(1, "Title is required").max(255),
   subRequirementId: z.string().uuid("Must be a valid UUID"),
-  description: z.string().min(1, "Description is required"),
-  steps: z.string().min(1, "Steps are required"),
+  description: z.string().trim().min(1, "Description is required"),
+  steps: z.string().trim().min(1, "Steps are required"),
 });
 
 export type CreateTestProcedureInput = z.infer<
@@ -20,8 +20,8 @@ export type CreateTestProcedureInput = z.infer<
 // The version number is auto-incremented by the service layer.
 
 export const CreateTestProcedureVersionInput = z.object({
-  description: z.string().min(1, "Description is required"),
-  steps: z.string().min(1, "Steps are required"),
+  description: z.string().trim().min(1, "Description is required"),
+  steps: z.string().trim().min(1, "Steps are required"),
 });
 
 export type CreateTestProcedureVersionInput = z.infer<
@@ -35,9 +35,10 @@ export const UpdateTestProcedureVersionInput = z
   .object({
     description: z
       .string()
+      .trim()
       .min(1, "Description cannot be empty")
       .optional(),
-    steps: z.string().min(1, "Steps cannot be empty").optional(),
+    steps: z.string().trim().min(1, "Steps cannot be empty").optional(),
   })
   .refine((data) => data.description !== undefined || data.steps !== undefined, {
     message: "At least one field (description or steps) must be provided",
