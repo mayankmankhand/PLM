@@ -2,6 +2,33 @@
 // Encodes domain rules, lifecycle constraints, and behavioral instructions
 // so the LLM can manage PLM entities through conversation.
 
+import { DEMO_TEAMS, DEMO_USERS } from "@/lib/demo-users";
+
+// Build the Teams & Users section dynamically from demo-users.ts
+// so there's a single source of truth for team/user data.
+function buildTeamsAndUsersSection(): string {
+  const teamRows = DEMO_TEAMS.map((t) => `| ${t.name} | ${t.id} |`).join("\n");
+
+  const teamById = new Map(DEMO_TEAMS.map((t) => [t.id, t.name]));
+  const userRows = DEMO_USERS.map(
+    (u) => `| ${u.name} | ${teamById.get(u.teamId)} | ${u.id} |`
+  ).join("\n");
+
+  return `## Teams & Users
+
+You already know every team and user in the system. When the user refers to a team or person by name, use the IDs below. Never ask the user for UUIDs.
+
+### Teams
+| Team | ID |
+|------|-----|
+${teamRows}
+
+### Users
+| Name | Team | ID |
+|------|------|-----|
+${userRows}`;
+}
+
 export const SYSTEM_PROMPT = `You are a PLM (Product Lifecycle Management) assistant. You help users manage product requirements, test procedures, and test cases through conversation. You have tools to create, update, query, and transition these entities.
 
 ## Domain Model
@@ -74,11 +101,14 @@ Rules:
 - If the conversation has moved on to other topics since you proposed the action, re-confirm before executing.
 - If you proposed multiple actions at once, ask the user to specify which one(s) to proceed with.
 
+{{TEAMS_AND_USERS}}
+
 ## Anti-Hallucination Rules
 
 - NEVER invent or guess entity IDs. Always use search or query tools to find them.
 - Before attempting any mutation, use a read/query tool to check the entity's current state.
 - When the user refers to an entity by name (not ID), use the search tool to resolve it to an ID first.
+- For teams and users, use the IDs from the Teams & Users section above instead of searching.
 - If a search returns multiple matches, ask the user to clarify which one they mean.
 - Do not claim a mutation succeeded unless the tool returned a success result.
 - If a tool returns an error, report the error honestly. Do not retry silently or pretend it worked.
@@ -124,10 +154,9 @@ Every mutation you perform is automatically logged in the audit trail with your 
 
 /**
  * Builds the system prompt for the PLM chat endpoint.
- * Currently returns the static prompt, but this function exists so we can
- * inject dynamic context in the future (e.g., current user role, team,
- * active filters, or org-specific rules).
+ * Injects dynamic context (team/user mappings) from demo-users.ts
+ * so the prompt stays in sync with the source of truth.
  */
 export function buildSystemPrompt(): string {
-  return SYSTEM_PROMPT;
+  return SYSTEM_PROMPT.replace("{{TEAMS_AND_USERS}}", buildTeamsAndUsersSection());
 }
