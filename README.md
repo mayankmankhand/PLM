@@ -129,6 +129,13 @@ prisma/
   seed.ts            # Demo data seeder
 ```
 
+## Documentation
+
+- [USER-GUIDE.md](USER-GUIDE.md) - What the app does, how to use the chat, example prompts
+- [ROADMAP.md](ROADMAP.md) - V1 summary, V2/V3 planned features
+- [STATUS-GUIDE.md](STATUS-GUIDE.md) - Full lifecycle status reference
+- [DATABASE.md](DATABASE.md) - Schema documentation and seed data
+
 ## Issues & Roadmap
 
 - **Issue #3**: Project foundation + database (DONE)
@@ -151,9 +158,12 @@ prisma/
 - **Issue #24**: Cross-entity panel data - enriched queries, aggregations, truncation detection (DONE)
 - **Issue #25**: Match UI to prototype pixel-perfect - CSS reset fix, always-fixed panel, composer polish (DONE)
 - **Issue #26**: Full-stack audit - 11 quick fixes applied (perf, validation, a11y, cleanup) (DONE)
+- **Issue #27**: Documentation overhaul - user guide, roadmap, archive outdated UI spec (DONE)
 - **Issue #29**: Cascade cancellation - propagate cancel to children (planned)
 - **Issue #30**: Chat endpoint hardening - streaming error recovery, input limits (planned)
 - **Issue #31**: Audit source threading - distinguish chat vs API mutations (planned)
 - **Issue #32**: Team data isolation - scope queries by user's team (planned)
 - **Issue #33**: Attachment hardening - file size limits, type validation (planned)
 - **Issue #34**: Frontend resilience - error boundaries, retry logic (planned)
+- **Issue #35**: Configurable AI model via env var (DONE)
+- **Issue #37**: Human-readable short IDs for entities (planned)
