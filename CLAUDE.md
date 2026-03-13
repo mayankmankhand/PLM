@@ -9,7 +9,7 @@
 **PLM** - Product Lifecycle Management system for managing requirements, test procedures, and test cases.
 
 - **Stack**: Next.js 16 (App Router) + TypeScript + Prisma ORM + Neon PostgreSQL + Tailwind CSS v4 + Zod + Vitest
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 tools, model configurable via `ANTHROPIC_MODEL` env var, default Haiku 4.5)
 - **UI**: Dual-panel chat app with `@ai-sdk/react` useChat hook, Zustand panel store, react-markdown, lucide-react icons
 - **Design**: Cool slate+teal palette (#F4F5F7 bg, #0D9488 teal primary), DM Sans + JetBrains Mono fonts, frosted glass surfaces, `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
 - **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams, audit log) via 4 UI intent tools. Always-fixed overlay with frosted glass (`backdrop-blur`), drag-to-resize (540px default, 360-800px via Zustand `panelWidth`), keyboard shortcuts (Cmd+K focus, Cmd+\ toggle, Escape close), shared `useDesktopBreakpoint` hook for hydration-safe media queries. Diagrams render at natural SVG size (no max-w-full) with zoom controls (+/-, Fit button, Copy source), max-h-[60vh] container, LLM guided to generate compact `flowchart LR` with short labels and no classDef. showTable supports 10 query types (7 enriched list/gap queries + 3 aggregations) with cross-entity columns, team filter, fetch-16-return-15 truncation detection (`isTruncated` flag on TablePayload)
