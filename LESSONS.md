@@ -27,6 +27,10 @@
 - **Prisma has an AI safety check for destructive operations.** `prisma migrate reset` detects when it's being run by an AI agent and blocks until explicit user consent is passed via the `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION` environment variable. The value must be the exact text of the user's consent message. Good guardrail, but expect it to interrupt automated workflows.
 - **Squash stale migrations early in solo projects.** Two migrations that drifted (modified after being applied) caused a cascade of workarounds (`db push` + raw SQL in test setup, manual constraint scripts, "Known Limitation" docs). Resetting to a single authoritative migration took 20 minutes and eliminated all of it. When there are no other environments depending on the history, a clean slate is simpler than patching drift.
 
+- **Set up `.gitignore` before creating secret files.** If a secret is committed even once, it lives in git history forever - rotating the key doesn't remove it from old commits. Our `.gitignore` excluded `.env`, `.env*.local`, and `.env.test` from day one, so no secrets ever hit the repo. But secrets shown in any tool output (like a Claude conversation or CI logs) should also be treated as compromised and rotated immediately.
+- **Rate limiting protects your wallet, not just your server.** On an AI-powered app, the most important endpoint to rate-limit isn't your heaviest database query - it's your LLM chat endpoint. Each request costs real money (Anthropic API calls). A simple in-memory sliding window (no Redis needed at demo scale) took 60 lines of TypeScript and prevents bill shock.
+- **Security headers are free defense.** Four lines in `next.config.ts` add X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Permissions-Policy. No code changes, no dependencies, no performance cost. Skip CSP initially (Next.js inline scripts break strict CSP without nonce configuration) and skip HSTS (Vercel adds it automatically).
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
