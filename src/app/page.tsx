@@ -16,7 +16,7 @@ import {
 } from "@/components/chat";
 import type { DemoUserId } from "@/components/chat";
 import { UI_INTENT_TOOLS } from "@/components/chat/tool-labels";
-import { ContextPanel } from "@/components/panel/context-panel";
+import { ContextPanel } from "@/components/panel";
 import { usePanelStore } from "@/stores/panel-store";
 import { PanelContentSchema } from "@/types/panel";
 import type { ToolPartShape } from "@/types/panel";

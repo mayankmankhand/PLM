@@ -11,11 +11,11 @@ import { DEMO_USERS, getUserById } from "./lib/demo-users";
 // This makes it easy to hit APIs during development without extra setup.
 const DEFAULT_USER_ID = DEMO_USERS[0].id;
 
+// Pre-compiled regex for UUID format validation (avoids re-creating on every request)
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export function middleware(request: NextRequest) {
   const userIdHeader = request.headers.get("x-demo-user-id");
-
-  // Validate UUID format if header is provided (defense-in-depth)
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (userIdHeader && !UUID_RE.test(userIdHeader)) {
     return NextResponse.json(
       { error: "Unauthorized - invalid user id format" },
