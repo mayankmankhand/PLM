@@ -12,7 +12,7 @@
 - **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 tools)
 - **UI**: Dual-panel chat app with `@ai-sdk/react` useChat hook, Zustand panel store, react-markdown, lucide-react icons
 - **Design**: Cool slate+teal palette (#F4F5F7 bg, #0D9488 teal primary), DM Sans + JetBrains Mono fonts, frosted glass surfaces, `.chat-markdown` CSS class for assistant messages, StatusBadge shared component
-- **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams, audit log) via 4 UI intent tools. Always-fixed overlay with frosted glass (`backdrop-blur`), drag-to-resize (540px default, 360-800px via Zustand `panelWidth`), keyboard shortcuts (Cmd+K focus, Cmd+\ toggle, Escape close), shared `useDesktopBreakpoint` hook for hydration-safe media queries
+- **Panel**: AI-controlled context panel (detail views, data tables, Mermaid diagrams, audit log) via 4 UI intent tools. Always-fixed overlay with frosted glass (`backdrop-blur`), drag-to-resize (540px default, 360-800px via Zustand `panelWidth`), keyboard shortcuts (Cmd+K focus, Cmd+\ toggle, Escape close), shared `useDesktopBreakpoint` hook for hydration-safe media queries. Diagrams render at natural SVG size (no max-w-full) with zoom controls (+/-, Fit button, Copy source), max-h-[60vh] container, LLM guided to generate compact `flowchart LR` with short labels and no classDef
 - **API pattern**: Domain commands (not raw CRUD) - e.g. `POST /api/product-requirements/:id/approve`
 - **Auth**: 6 hardcoded demo users (Friends cast) via Edge Middleware (V1)
 - **Seed**: Smartwatch PLM dataset (6 teams, 10 PRs, 21 SRs, 18 TPs, 19 TPVs, 20 TCs, 6 attachments, 155 audit entries)
