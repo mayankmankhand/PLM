@@ -43,6 +43,7 @@ export async function cascadeCancelSubRequirement(
     action: "CANCEL",
     entityType: "SubRequirement",
     entityId: subRequirementId,
+    source: ctx.source,
     requestId: ctx.requestId,
     changes: { status: { from: sr.status, to: "CANCELED" } },
   });
@@ -85,6 +86,7 @@ export async function createSubRequirement(
       action: "CREATE",
       entityType: "SubRequirement",
       entityId: subReq.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         title: input.title,
@@ -133,6 +135,7 @@ export async function updateSubRequirement(
       action: "UPDATE",
       entityType: "SubRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes,
     });
@@ -175,6 +178,7 @@ export async function approveSubRequirement(
       action: "APPROVE",
       entityType: "SubRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
@@ -211,6 +215,7 @@ export async function cancelSubRequirement(
       action: "CANCEL",
       entityType: "SubRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });

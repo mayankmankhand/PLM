@@ -3,13 +3,14 @@
 // and its audit record are committed atomically.
 
 import { Prisma, AuditAction } from "@prisma/client";
+import type { AuditSource } from "@/lib/request-context";
 
 export interface AuditEntry {
   actorId: string;
   action: AuditAction;
   entityType: string;
   entityId: string;
-  source?: string;    // "api" | "chat" | "table" - defaults to "api"
+  source?: AuditSource; // defaults to "api" if omitted
   requestId?: string;
   changes?: Record<string, unknown>;
 }

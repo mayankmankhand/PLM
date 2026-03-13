@@ -44,6 +44,7 @@ export async function cascadeSkipTestCases(
       action: "SKIP",
       entityType: "TestCase",
       entityId: tc.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: tc.status, to: "SKIPPED" } },
     });
@@ -78,6 +79,7 @@ export async function cascadeCancelTestProcedure(
     action: "CANCEL",
     entityType: "TestProcedure",
     entityId: testProcedureId,
+    source: ctx.source,
     requestId: ctx.requestId,
     changes: { status: { from: tp.status, to: "CANCELED" } },
   });
@@ -124,6 +126,7 @@ export async function createTestProcedure(
       action: "CREATE",
       entityType: "TestProcedure",
       entityId: procedure.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         title: input.title,
@@ -179,6 +182,7 @@ export async function createTestProcedureVersion(
       action: "CREATE_VERSION",
       entityType: "TestProcedureVersion",
       entityId: version.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         testProcedureId: procedureId,
@@ -226,6 +230,7 @@ export async function updateTestProcedureVersion(
       action: "UPDATE",
       entityType: "TestProcedureVersion",
       entityId: versionId,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes,
     });
@@ -261,6 +266,7 @@ export async function approveTestProcedureVersion(
       action: "APPROVE",
       entityType: "TestProcedureVersion",
       entityId: versionId,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
@@ -295,6 +301,7 @@ export async function cancelTestProcedure(
       action: "CANCEL",
       entityType: "TestProcedure",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: existing.status, to: "CANCELED" } },
     });

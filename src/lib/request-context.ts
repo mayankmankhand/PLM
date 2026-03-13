@@ -4,11 +4,16 @@
 import { AuthError } from "./errors";
 import { getUserById } from "./demo-users";
 
+
+// Source tracks where a mutation originated, so audit logs can distinguish
+// API calls from chat-initiated actions.
+export type AuditSource = "api" | "chat";
 export interface RequestContext {
   userId: string;
   teamId: string;
   role: string;
   requestId: string;
+  source: AuditSource;
 }
 
 /**
@@ -43,5 +48,6 @@ export function getRequestContext(request: Request): RequestContext {
     teamId: user.teamId,
     role: user.role,
     requestId,
+    source: "api",
   };
 }

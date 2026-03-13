@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Build RequestContext from middleware headers (same pattern as other routes).
     // This identifies which demo user is chatting.
-    const ctx = getRequestContext(request);
+    const ctx = { ...getRequestContext(request), source: "chat" as const };
 
     // Real enforcement: read body as text and check actual byte length.
     // Catches cases where Content-Length is missing, spoofed, or stripped by proxies.

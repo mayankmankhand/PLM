@@ -49,6 +49,7 @@ export async function addAttachment(
       action: "ADD_ATTACHMENT",
       entityType: "Attachment",
       entityId: attachment.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         fileName: input.fileName,
@@ -88,6 +89,7 @@ export async function removeAttachment(
       action: "REMOVE_ATTACHMENT",
       entityType: "Attachment",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         fileName: existing.fileName,

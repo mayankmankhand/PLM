@@ -31,6 +31,7 @@ export async function createProductRequirement(
       action: "CREATE",
       entityType: "ProductRequirement",
       entityId: requirement.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { title: input.title, description: input.description },
     });
@@ -74,6 +75,7 @@ export async function updateProductRequirement(
       action: "UPDATE",
       entityType: "ProductRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes,
     });
@@ -109,6 +111,7 @@ export async function approveProductRequirement(
       action: "APPROVE",
       entityType: "ProductRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: "DRAFT", to: "APPROVED" } },
     });
@@ -145,6 +148,7 @@ export async function cancelProductRequirement(
       action: "CANCEL",
       entityType: "ProductRequirement",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: "APPROVED", to: "CANCELED" } },
     });

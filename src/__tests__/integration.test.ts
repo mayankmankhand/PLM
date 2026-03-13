@@ -17,6 +17,7 @@ const ctx: RequestContext = {
   teamId: DEMO_TEAMS[0].id,
   role: "pm",
   requestId: "integration-test-request",
+  source: "api",
 };
 
 // Track all entity IDs created during the test so we can clean them up.
@@ -261,6 +262,42 @@ describe("Full traceability chain", () => {
     const tcActions = tcLogs.map((l) => l.action);
     expect(tcActions).toContain("CREATE");
     expect(tcActions).toContain("RECORD_RESULT");
+  });
+});
+
+// ─── Audit Source Threading ─────────────────────────────
+
+describe("Audit source threading", () => {
+  it("logs source: 'api' for API-context mutations", async () => {
+    // Create a requirement with the default API context
+    const pr = await prService.createProductRequirement(
+      { title: "Source Test PR", description: "Verify source field" },
+      ctx
+    );
+    createdIds.productRequirements.push(pr.id);
+
+    const logs = await prisma.auditLog.findMany({
+      where: { entityId: pr.id },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].source).toBe("api");
+  });
+
+  it("logs source: 'chat' for chat-context mutations", async () => {
+    // Create a context that simulates the chat route override
+    const chatCtx: RequestContext = { ...ctx, source: "chat" };
+
+    const pr = await prService.createProductRequirement(
+      { title: "Chat Source PR", description: "Verify chat source" },
+      chatCtx
+    );
+    createdIds.productRequirements.push(pr.id);
+
+    const logs = await prisma.auditLog.findMany({
+      where: { entityId: pr.id },
+    });
+    expect(logs).toHaveLength(1);
+    expect(logs[0].source).toBe("chat");
   });
 });
 

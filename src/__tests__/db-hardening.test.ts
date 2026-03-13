@@ -21,6 +21,7 @@ const ctx: RequestContext = {
   teamId: DEMO_TEAMS[0].id,
   role: "engineer",
   requestId: "db-hardening-test",
+  source: "api",
 };
 
 // Track created entities for cleanup

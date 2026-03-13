@@ -20,6 +20,7 @@ const ctx: RequestContext = {
   teamId: DEMO_TEAMS[0].id,
   role: "pm",
   requestId: "test-request-id",
+  source: "api",
 };
 
 beforeAll(async () => {

@@ -38,6 +38,7 @@ export async function createTestCase(
       action: "CREATE",
       entityType: "TestCase",
       entityId: testCase.id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         title: input.title,
@@ -99,6 +100,7 @@ export async function recordTestResult(
       action: "RECORD_RESULT",
       entityType: "TestCase",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: {
         result: input.result,
@@ -136,6 +138,7 @@ export async function skipTestCase(
       action: "SKIP",
       entityType: "TestCase",
       entityId: id,
+      source: ctx.source,
       requestId: ctx.requestId,
       changes: { status: { from: existing.status, to: "SKIPPED" } },
     });
