@@ -20,13 +20,19 @@ import { ContextPanel } from "@/components/panel/context-panel";
 import { usePanelStore } from "@/stores/panel-store";
 import { PanelContentSchema } from "@/types/panel";
 import type { ToolPartShape } from "@/types/panel";
+import { useDesktopBreakpoint } from "@/hooks/use-desktop-breakpoint";
 
 export default function ChatPage() {
+  // Desktop breakpoint for panel-aware padding
+  const isDesktop = useDesktopBreakpoint();
+
   // Track which demo user is selected. Changing users resets the chat.
   const [userId, setUserId] = useState<DemoUserId>(DEFAULT_USER_ID);
 
-  // Panel state - reset on user switch
+  // Panel state - reset on user switch, read isOpen + width for layout padding
   const resetPanel = usePanelStore((s) => s.reset);
+  const isPanelOpen = usePanelStore((s) => s.isOpen);
+  const panelWidth = usePanelStore((s) => s.panelWidth);
 
   // Memoize the transport so it only recreates when the user changes.
   // The transport adds the demo user header to every request.
@@ -199,13 +205,14 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-dvh bg-background">
-      {/* Chat column - compresses when panel is open on desktop */}
+      {/* Chat column - adds right padding when panel overlays on desktop */}
       <div
         className="flex flex-col flex-1 min-w-0 transition-all duration-200 ease-out"
+        style={isDesktop && isPanelOpen ? { paddingRight: panelWidth } : undefined}
       >
         {/* Top bar - transparent, blends into page background (no distinct surface) */}
-        <header className="flex items-center justify-between h-12 px-4 border-b border-border/40">
-          <span className="text-sm font-medium text-text-muted tracking-wide">
+        <header className="flex items-center justify-between h-12 px-5 border-b border-border/40">
+          <span className="text-[13px] font-semibold text-text-muted tracking-[0.04em] uppercase">
             PLM Assistant
           </span>
           <UserPicker selectedUserId={userId} onUserChange={handleUserChange} />
@@ -230,7 +237,7 @@ export default function ChatPage() {
         )}
 
         {/* Composer - pinned to bottom, same max-w as message column */}
-        <div className="w-full px-4 pb-5 pt-2">
+        <div className="w-full px-5 pb-5 pt-2">
           <div className="max-w-3xl mx-auto">
             <ChatInput
               input={input}

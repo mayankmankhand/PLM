@@ -12,10 +12,14 @@ import { StatusBadge } from "./status-badge";
 // Column keys that contain status values (rendered as badges instead of text).
 const STATUS_COLUMN_KEYS = new Set(["status", "result"]);
 
+// Matches "id" as a standalone word or suffix (e.g. "id", "prId", "testId")
+// but not inside words like "valid" or "sub-requirement".
+const ID_COLUMN_RE = /(?:^|[^a-z])id$/i;
+
 /** Return a fixed col width based on the column key, or undefined for auto. */
 function colWidth(key: string): string | undefined {
   const k = key.toLowerCase();
-  if (k.includes("id")) return "68px";
+  if (ID_COLUMN_RE.test(k)) return "68px";
   if (k.includes("status") || k.includes("result")) return "90px";
   if (k.includes("team") || k.includes("ref") || k.includes("type")) return "85px";
   return undefined;
@@ -24,6 +28,11 @@ function colWidth(key: string): string | undefined {
 /** True when the column should use nowrap. */
 function isFixedColumn(key: string): boolean {
   return colWidth(key) !== undefined;
+}
+
+/** True when the column is an ID column (for mono font styling). */
+function isIdColumn(key: string): boolean {
+  return ID_COLUMN_RE.test(key.toLowerCase());
 }
 
 interface TableViewProps {
@@ -66,7 +75,7 @@ export function TableView({ payload }: TableViewProps) {
               {payload.columns.map((col) => (
                 <th
                   key={col.key}
-                  className="sticky top-0 z-10 bg-surface/95 backdrop-blur-sm px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted"
+                  className="sticky top-0 z-10 bg-surface px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-text-muted"
                   style={
                     isFixedColumn(col.key)
                       ? { whiteSpace: "nowrap" }
@@ -91,11 +100,12 @@ export function TableView({ payload }: TableViewProps) {
                     col.key.toLowerCase()
                   );
                   const fixed = isFixedColumn(col.key);
+                  const isId = isIdColumn(col.key);
 
                   return (
                     <td
                       key={col.key}
-                      className="px-3.5 py-2.5 text-text"
+                      className={`px-3.5 py-2.5 ${isId ? "font-mono text-[12px] text-text-muted" : "text-text"}`}
                       style={
                         fixed
                           ? { whiteSpace: "nowrap" }
@@ -117,7 +127,7 @@ export function TableView({ payload }: TableViewProps) {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border-subtle px-3.5 py-2 text-xs text-text-muted">
+      <div className="border-t border-border-subtle px-3.5 py-2 text-[11px] text-text-subtle">
         Showing {payload.rows.length}{" "}
         {payload.rows.length === 1 ? "row" : "rows"}
       </div>

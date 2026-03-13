@@ -5,7 +5,7 @@
 "use client";
 
 import { useRef, useEffect, type KeyboardEvent, type FormEvent } from "react";
-import { SendHorizontal } from "lucide-react";
+import { ArrowUp, Paperclip } from "lucide-react";
 
 interface ChatInputProps {
   input: string;
@@ -69,7 +69,7 @@ export function ChatInput({
       onSubmit={handleSubmit}
       className="rounded-2xl bg-white border border-border
                  shadow
-                 p-3 flex flex-col gap-2"
+                 px-4 pt-3 pb-2.5 flex flex-col gap-2"
     >
       <textarea
         ref={textareaRef}
@@ -86,20 +86,42 @@ export function ChatInput({
                    disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Chat message input"
       />
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {/* Attach button - non-functional in V1, visual only */}
         <button
-          type="submit"
-          disabled={isDisabled || !input.trim()}
-          className="flex-shrink-0 rounded-lg bg-primary text-white px-3 py-1.5
+          type="button"
+          disabled
+          className="flex-shrink-0 w-[32px] h-[32px] rounded-lg
                      flex items-center justify-center
-                     hover:bg-primary-hover transition-colors duration-150
-                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white
-                     disabled:opacity-30 disabled:cursor-not-allowed
-                     cursor-pointer"
-          aria-label="Send message"
+                     text-text-muted
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label="Attach file (coming soon)"
+          title="Attach file (coming soon)"
         >
-          <SendHorizontal size={16} />
+          <Paperclip size={16} />
         </button>
+
+        <div className="flex items-center gap-2">
+          {/* Cmd+K keyboard hint - visual only, shortcut already works */}
+          <span className="text-[11px] text-text-subtle hidden sm:inline">
+            <kbd className="px-1.5 py-0.5 rounded bg-surface text-text-muted font-mono text-[10px]">⌘K</kbd>
+            {" "}to focus
+          </span>
+
+          <button
+            type="submit"
+            disabled={isDisabled || !input.trim()}
+            className="flex-shrink-0 w-[34px] h-[34px] rounded-[10px] bg-primary text-white
+                       flex items-center justify-center
+                       hover:bg-primary-hover transition-colors duration-150
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-white
+                       disabled:opacity-30 disabled:cursor-not-allowed
+                       cursor-pointer"
+            aria-label="Send message"
+          >
+            <ArrowUp size={16} strokeWidth={2.5} />
+          </button>
+        </div>
       </div>
     </form>
   );

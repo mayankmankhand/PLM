@@ -4,9 +4,10 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { X, Table2, FileText, GitBranch, AlertCircle, History, FileCode, GitCompare, CalendarDays } from "lucide-react";
-import { usePanelStore } from "@/stores/panel-store";
+import { usePanelStore, DEFAULT_PANEL_WIDTH } from "@/stores/panel-store";
+import { useDesktopBreakpoint } from "@/hooks/use-desktop-breakpoint";
 import { DetailView } from "./detail-view";
 import { TableView } from "./table-view";
 import { DiagramView } from "./diagram-view";
@@ -29,45 +30,28 @@ const TYPE_BADGES: Record<PanelState["type"], BadgeConfig> = {
   timeline: { label: "Timeline", icon: CalendarDays },
 };
 
-// Panel width constraints
-const DEFAULT_WIDTH = 540;
+// Panel width constraints (default lives in panel-store.ts)
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 800;
 
-// R1: Reactive desktop breakpoint check that avoids hydration mismatch.
-// useSyncExternalStore returns false on the server (getServerSnapshot),
-// then subscribes to matchMedia on the client for reactive updates.
-const DESKTOP_QUERY = "(min-width: 1024px)";
-function subscribeDesktop(cb: () => void) {
-  const mql = window.matchMedia(DESKTOP_QUERY);
-  mql.addEventListener("change", cb);
-  return () => mql.removeEventListener("change", cb);
-}
-function getDesktopSnapshot() {
-  return window.matchMedia(DESKTOP_QUERY).matches;
-}
-function getDesktopServerSnapshot() {
-  return false;
-}
-
 export function ContextPanel() {
-  const isDesktop = useSyncExternalStore(subscribeDesktop, getDesktopSnapshot, getDesktopServerSnapshot);
-  const { isOpen, content, close } = usePanelStore();
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
+  const isDesktop = useDesktopBreakpoint();
+  const { isOpen, content, close, panelWidth, setPanelWidth } = usePanelStore();
   const [isDragging, setIsDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
   const startXRef = useRef(0);
-  const startWidthRef = useRef(DEFAULT_WIDTH);
+  const startWidthRef = useRef(DEFAULT_PANEL_WIDTH);
 
   // Drag-to-resize: mousedown on the handle starts tracking
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!isOpen) return;
     e.preventDefault();
     setIsDragging(true);
     startXRef.current = e.clientX;
     startWidthRef.current = panelWidth;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
-  }, [panelWidth]);
+  }, [isOpen, panelWidth]);
 
   // Track mouse movement and release during drag
   useEffect(() => {
@@ -118,10 +102,8 @@ export function ContextPanel() {
           w-full md:w-[540px]
           border-l border-border
           flex flex-col
-          lg:static lg:h-auto lg:z-auto lg:flex-shrink-0
-          ${isOpen ? "lg:flex" : "lg:hidden"}
           ${isDragging ? "" : "transform transition-all duration-250 ease-[cubic-bezier(0.165,0.85,0.45,1)]"}
-          ${isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"}
+          ${isOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}
         `}
         style={{
           // Desktop uses dynamic width from resize; mobile stays full-width
@@ -141,7 +123,7 @@ export function ContextPanel() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             {badge && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-primary bg-primary-subtle px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-primary bg-primary-subtle px-2.5 py-0.5 rounded-full">
                 {BadgeIcon && <BadgeIcon size={12} />}
                 {badge.label}
               </span>

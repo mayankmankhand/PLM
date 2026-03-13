@@ -49,7 +49,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
     return (
       <span
-        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide"
+        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.02em]"
         style={inlineStyle}
       >
         {status}
@@ -60,7 +60,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   // Unknown statuses fall back to Tailwind @theme classes.
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide ${DEFAULT_STYLE.bg} ${DEFAULT_STYLE.text}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.02em] ${DEFAULT_STYLE.bg} ${DEFAULT_STYLE.text}`}
     >
       {status}
     </span>

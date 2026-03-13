@@ -11,10 +11,14 @@ import type {
   PanelState,
 } from "@/types/panel";
 
+// Default panel width in pixels (used by context-panel.tsx and page.tsx)
+export const DEFAULT_PANEL_WIDTH = 540;
+
 interface PanelStore {
   // State
   isOpen: boolean;
   content: PanelState | null;
+  panelWidth: number;
 
   // Actions - each one opens the panel with the given content
   showDetail: (payload: DetailPayload) => void;
@@ -25,6 +29,8 @@ interface PanelStore {
   close: () => void;
   // Re-open the panel with its existing content (used by Cmd+\ toggle)
   reopen: () => void;
+  // Update panel width during drag-to-resize
+  setPanelWidth: (width: number) => void;
   // Reset everything (e.g. on user switch)
   reset: () => void;
 }
@@ -32,6 +38,7 @@ interface PanelStore {
 export const usePanelStore = create<PanelStore>((set) => ({
   isOpen: false,
   content: null,
+  panelWidth: DEFAULT_PANEL_WIDTH,
 
   showDetail: (payload) => set({ isOpen: true, content: payload }),
   showTable: (payload) => set({ isOpen: true, content: payload }),
@@ -47,6 +54,9 @@ export const usePanelStore = create<PanelStore>((set) => ({
   reopen: () =>
     set((state) => (state.content ? { isOpen: true } : {})),
 
+  // Update panel width during drag-to-resize (called from context-panel.tsx)
+  setPanelWidth: (width) => set({ panelWidth: width }),
+
   // Full reset clears content too
-  reset: () => set({ isOpen: false, content: null }),
+  reset: () => set({ isOpen: false, content: null, panelWidth: DEFAULT_PANEL_WIDTH }),
 }));

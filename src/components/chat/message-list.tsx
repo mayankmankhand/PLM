@@ -15,6 +15,7 @@ const SUGGESTIONS = [
   "What's untested?",
   "GPS traceability diagram",
   "Recent audit log",
+  "Failed test cases",
 ];
 
 interface MessageListProps {
@@ -72,13 +73,13 @@ export function MessageList({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+      <div className="flex-1 flex flex-col items-center pt-[18vh] pb-6 px-4">
         <div className="max-w-3xl w-full text-center">
           {/* Clean text-only empty state - no icons, no images */}
           <h2 className="text-2xl font-semibold text-text">
             What would you like to work on?
           </h2>
-          <p className="text-base text-text-muted mt-2">
+          <p className="text-[15px] text-text-muted mt-2">
             Ask about requirements, test cases, or traceability.
           </p>
 
@@ -88,7 +89,7 @@ export function MessageList({
               <button
                 key={suggestion}
                 onClick={() => onSendMessage(suggestion)}
-                className="px-4 py-2 rounded-full border border-border text-sm text-text
+                className="px-4 py-2 rounded-full border border-border text-[13px] font-medium text-text
                            hover:bg-surface-hover hover:border-primary/30
                            transition-all duration-150
                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background
@@ -109,7 +110,7 @@ export function MessageList({
 
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+      <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
         {messages.map((message, index) => (
           <MessageBubble
             key={message.id}
@@ -129,6 +130,7 @@ export function MessageList({
       {showScrollPill && (
         <button
           onClick={scrollToBottom}
+          aria-label="Scroll to latest message"
           className="absolute bottom-4 left-1/2 -translate-x-1/2
                      bg-primary text-white rounded-full px-4 py-1.5 text-sm
                      shadow-lg cursor-pointer
