@@ -15,7 +15,7 @@ PLM is a chat-driven tool for managing product requirements, test procedures, an
 
 ## What's in the System
 
-PLM tracks five entity types, organized in a hierarchy:
+PLM tracks five core entity types, organized in a hierarchy. Attachments (PDFs, images, spreadsheets) can be linked to any entity but are not part of the traceability chain.
 
 | Entity | What it is | Example |
 |--------|-----------|---------|
@@ -40,12 +40,12 @@ Product Requirement
 ### Create things
 
 - "Create a new product requirement called Battery Life Optimization"
-- "Add a sub-requirement for the App team under PR-001"
-- "Create a test procedure for SR-005"
+- "Add a sub-requirement for the App team under Heart Rate Monitoring"
+- "Create a test procedure for BLE Pairing Validation"
 
 ### Look things up
 
-- "Show me the details for SR-005"
+- "Show me the details for GPS Receiver"
 - "What test procedures exist for the Electrical team?"
 - "List all product requirements"
 
@@ -57,26 +57,26 @@ Product Requirement
 
 ### Visualize
 
-- "Draw a traceability diagram for PR-001"
-- "Show me the status flow for test cases"
+- "Draw a traceability diagram for Core Features"
+- "Show me the status lifecycle for test cases"
 
 ### Track changes
 
-- "Show the audit log for PR-001"
+- "Show the audit log for Heart Rate Monitoring"
 - "What changes happened today?"
-- "Who approved SR-003?"
+- "Who approved BLE Pairing Validation?"
 
 ### Manage lifecycle
 
-- "Approve product requirement PR-001"
-- "Record a PASS result for TC-003"
-- "Cancel sub-requirement SR-010"
+- "Approve product requirement Battery Life Optimization"
+- "Record a PASS result for Resting HR accuracy test"
+- "Cancel sub-requirement Indoor Navigation"
 
 ### Analyze coverage
 
 - "Show test result summary"
 - "What's the coverage by team?"
-- "Show test cases for requirement PR-002"
+- "Show test cases for requirement Connectivity"
 
 ---
 
@@ -100,7 +100,7 @@ The panel on the right side of the screen displays structured data that the assi
 
 ## Demo Users
 
-Pick any user from the dropdown. Your choice determines who appears as the creator or actor in audit logs and entity records.
+Pick any user from the dropdown. All demo users have the "engineer" role. Your choice determines who appears as the creator or actor in audit logs and entity records.
 
 | Name | Team |
 |------|------|
@@ -117,12 +117,14 @@ Pick any user from the dropdown. Your choice determines who appears as the creat
 
 Each entity type follows a specific lifecycle:
 
-- **Product Requirements and Sub-Requirements**: Draft -> Approved -> Canceled
+- **Product Requirements and Sub-Requirements**: Draft -> Approved. Approved -> Canceled. (Draft items cannot be canceled directly.)
 - **Test Procedures**: Active -> Canceled
-- **Test Procedure Versions**: Draft -> Approved (locked permanently)
-- **Test Cases**: Pending -> Passed / Failed / Blocked / Skipped
+- **Test Procedure Versions**: Draft -> Approved (locked permanently). To revise an approved version, create a new draft version.
+- **Test Cases**: Pending -> Passed / Failed / Blocked / Skipped. Skipped is permanent and cannot be undone.
 
-**Key rule:** A sub-requirement can only be approved if its parent product requirement is already approved.
+**Key rules:**
+- A sub-requirement can only be approved if its parent product requirement is already approved.
+- Only one draft version per test procedure is allowed at a time.
 
 See [STATUS-GUIDE.md](STATUS-GUIDE.md) for the full status reference, including all allowed transitions and restrictions.
 
@@ -135,8 +137,9 @@ The app comes pre-loaded with a smartwatch PLM dataset so you can start explorin
 - 10 product requirements
 - 21 sub-requirements
 - 18 test procedures
+- 19 test procedure versions
 - 20 test cases
 - 6 attachments
 - 155 audit log entries
 
-The data covers 6 teams and includes entities in various lifecycle states, so you can see how approvals, test results, and traceability work without creating anything first.
+The data covers 6 teams and includes entities in various lifecycle states (including multiple procedure versions), so you can see how approvals, test results, and traceability work without creating anything first.

@@ -6,7 +6,8 @@ What's built, what's next, and what's out of scope for the PLM system.
 
 - AI chat assistant with 29 tools for managing requirements, test procedures, and test cases
 - Context panel with detail views, data tables, Mermaid diagrams, and audit logs
-- Status workflows with approval chains (Draft -> Approved -> Canceled)
+- Status workflows with lifecycle rules (Draft -> Approved -> Canceled)
+- Attachment metadata tracking with soft-delete
 - Two-entity versioning for test procedures (immutable snapshots)
 - Full audit logging on every mutation
 - Cross-entity queries (coverage analysis, test result summaries, gap detection)
@@ -15,9 +16,9 @@ What's built, what's next, and what's out of scope for the PLM system.
 
 ## V2 - Planned
 
-**Document Attachments** - Upload and parse PDFs, Word docs, and other files. The assistant will be able to read document contents and reference them in conversations.
+**Document Parsing** - Expand the existing attachment system with file upload and AI-powered content extraction. The assistant will be able to read PDFs, Word docs, and other files, then reference their contents in conversations.
 
-**Editable Context Panel** - Edit entity fields directly in the panel's detail views and tables. Changes save to the database without switching to chat.
+**Editable Context Panel** - Edit entity fields directly in the panel's detail views and tables. Changes save to the database without switching to chat, preserving all existing audit logging and validation rules.
 
 **Requirements Traceability Matrix** - A single table view mapping every requirement to its sub-requirements, test procedures, and test results. Shows coverage gaps at a glance across the entire project.
 
