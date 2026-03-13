@@ -6,6 +6,7 @@ import { createProductRequirementTools } from "./product-requirement-tools";
 import { createSubRequirementTools } from "./sub-requirement-tools";
 import { createTestProcedureTools } from "./test-procedure-tools";
 import { createTestCaseTools } from "./test-case-tools";
+import { createAttachmentTools } from "./attachment-tools";
 import { createReadTools } from "./read-tools";
 import { createQueryTools } from "./query-tools";
 import { createUIIntentTools } from "./ui-intent-tools";
@@ -26,6 +27,7 @@ export function createAllTools(ctx: RequestContext) {
     ...createSubRequirementTools(ctx),
     ...createTestProcedureTools(ctx),
     ...createTestCaseTools(ctx),
+    ...createAttachmentTools(ctx),
     ...createReadTools(),
     ...createQueryTools(),
     ...createUIIntentTools(),
@@ -51,6 +53,7 @@ export { createProductRequirementTools } from "./product-requirement-tools";
 export { createSubRequirementTools } from "./sub-requirement-tools";
 export { createTestProcedureTools } from "./test-procedure-tools";
 export { createTestCaseTools } from "./test-case-tools";
+export { createAttachmentTools } from "./attachment-tools";
 export { createReadTools } from "./read-tools";
 export { createQueryTools } from "./query-tools";
 export { createUIIntentTools } from "./ui-intent-tools";

@@ -5,6 +5,7 @@
 import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { writeAuditLog } from "./audit.service";
+import { LifecycleError } from "@/lib/errors";
 import type { CreateAttachmentInput } from "@/schemas/attachment.schema";
 
 // ─── Add attachment (stubbed storage) ────────────────────
@@ -14,16 +15,35 @@ export async function addAttachment(
   ctx: RequestContext
 ) {
   return prisma.$transaction(async (tx) => {
-    // Verify the parent entity exists
+    // Verify the parent entity exists and is not CANCELED
     if (input.productRequirementId) {
-      await tx.productRequirement.findUniqueOrThrow({ where: { id: input.productRequirementId } });
+      const pr = await tx.productRequirement.findUniqueOrThrow({
+        where: { id: input.productRequirementId },
+        select: { status: true },
+      });
+      if (pr.status === "CANCELED") {
+        throw new LifecycleError("Cannot add attachment to a canceled product requirement");
+      }
     }
     if (input.subRequirementId) {
-      await tx.subRequirement.findUniqueOrThrow({ where: { id: input.subRequirementId } });
+      const sr = await tx.subRequirement.findUniqueOrThrow({
+        where: { id: input.subRequirementId },
+        select: { status: true },
+      });
+      if (sr.status === "CANCELED") {
+        throw new LifecycleError("Cannot add attachment to a canceled sub-requirement");
+      }
     }
     if (input.testProcedureId) {
-      await tx.testProcedure.findUniqueOrThrow({ where: { id: input.testProcedureId } });
+      const tp = await tx.testProcedure.findUniqueOrThrow({
+        where: { id: input.testProcedureId },
+        select: { status: true },
+      });
+      if (tp.status === "CANCELED") {
+        throw new LifecycleError("Cannot add attachment to a canceled test procedure");
+      }
     }
+    // TestCase has no CANCELED status - existence check only
     if (input.testCaseId) {
       await tx.testCase.findUniqueOrThrow({ where: { id: input.testCaseId } });
     }
@@ -82,7 +102,10 @@ export async function removeAttachment(
     // Soft-delete: mark as REMOVED instead of hard-deleting.
     // TODO: When real blob storage is added, schedule file deletion
     // for REMOVED attachments (e.g. background cleanup job).
-    await tx.attachment.update({ where: { id }, data: { status: "REMOVED" } });
+    const updated = await tx.attachment.update({
+      where: { id },
+      data: { status: "REMOVED" },
+    });
 
     await writeAuditLog(tx, {
       actorId: ctx.userId,
@@ -97,6 +120,6 @@ export async function removeAttachment(
       },
     });
 
-    return existing;
+    return updated;
   });
 }
