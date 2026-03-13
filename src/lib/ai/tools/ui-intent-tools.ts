@@ -29,6 +29,19 @@ function formatDate(date: Date | string): string {
   });
 }
 
+// Map Prisma attachment rows to the DetailPayload attachment shape.
+function mapAttachments(
+  attachments: Array<{ id: string; fileName: string; fileType: string; createdAt: Date; uploader: { name: string } }>
+): Array<{ id: string; fileName: string; fileType: string; uploadedBy: string; createdAt: string }> {
+  return attachments.map((a) => ({
+    id: a.id,
+    fileName: a.fileName,
+    fileType: a.fileType,
+    uploadedBy: a.uploader.name,
+    createdAt: formatDate(a.createdAt),
+  }));
+}
+
 // Normalize raw changes JSON from the database into typed change items.
 // The changes column stores freeform JSON - this extracts field/old/new
 // pairs and caps at 10 items. Malformed data collapses to empty array.
@@ -102,6 +115,7 @@ export function createUIIntentTools() {
                   status: sr.status,
                   entityType: "SubRequirement",
                 })),
+                attachments: mapAttachments(data.attachments),
               };
             }
 
@@ -125,6 +139,7 @@ export function createUIIntentTools() {
                   status: tp.status,
                   entityType: "TestProcedure",
                 })),
+                attachments: mapAttachments(data.attachments),
               };
             }
 
@@ -146,9 +161,11 @@ export function createUIIntentTools() {
                   status: v.status,
                   entityType: "TestProcedureVersion",
                 })),
+                attachments: mapAttachments(data.attachments),
               };
             }
 
+            // No attachments - TPV has no attachment FK (attachments belong to parent TestProcedure)
             case "TestProcedureVersion": {
               const data = await fetchTestProcedureVersion(args.id);
               return {
@@ -191,6 +208,7 @@ export function createUIIntentTools() {
                 entityType: args.entityType,
                 title: data.title,
                 fields,
+                attachments: mapAttachments(data.attachments),
               };
             }
 

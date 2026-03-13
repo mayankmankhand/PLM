@@ -1,8 +1,9 @@
 // Renders entity detail content in the context panel.
-// Shows key-value fields with status badges and optional related entities list.
+// Shows key-value fields with status badges, optional related entities, and attachments.
 
 "use client";
 
+import { Paperclip } from "lucide-react";
 import type { DetailPayload } from "@/types/panel";
 import { humanize } from "@/lib/format-utils";
 import { StatusBadge } from "./status-badge";
@@ -97,6 +98,34 @@ export function DetailView({ payload }: DetailViewProps) {
                 </span>
                 {entity.status && <StatusBadge status={entity.status} />}
               </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Attachments - hidden when empty */}
+      {payload.attachments && payload.attachments.length > 0 && (
+        <div>
+          <h3 className="text-[11px] uppercase tracking-widest font-semibold text-text-muted mb-2">
+            Attachments ({payload.attachments.length})
+          </h3>
+          <div className="space-y-1.5">
+            {payload.attachments.map((att) => (
+              <div
+                key={att.id}
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-surface text-sm"
+              >
+                <Paperclip className="h-3.5 w-3.5 text-text-muted shrink-0" />
+                <span className="truncate text-text" title={att.fileName}>
+                  {att.fileName}
+                </span>
+                <span className="shrink-0 text-xs text-text-muted uppercase">
+                  {att.fileType}
+                </span>
+                <span className="ml-auto shrink-0 text-xs text-text-muted">
+                  {att.uploadedBy} - {att.createdAt}
+                </span>
+              </div>
             ))}
           </div>
         </div>

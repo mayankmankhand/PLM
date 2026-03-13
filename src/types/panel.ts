@@ -34,6 +34,18 @@ export const DetailPayloadSchema = z.object({
       }),
     )
     .optional(),
+  // Optional list of active attachments (files uploaded to this entity).
+  attachments: z
+    .array(
+      z.object({
+        id: z.string(),
+        fileName: z.string(),
+        fileType: z.string(),
+        uploadedBy: z.string(),
+        createdAt: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 // -- Table payload: shows rows and columns (query results, search results) --

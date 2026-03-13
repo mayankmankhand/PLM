@@ -2,10 +2,25 @@
 // Extracts common fetch logic so we don't duplicate queries.
 // Each function returns a compact, structured payload.
 
-import { prisma } from "@/lib/prisma";
+import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
+
+// Shared attachment select block used by all entity fetch functions.
+// fileUrl is deliberately excluded - no blob storage in V1, avoid leaking stub URLs.
+const ATTACHMENT_SELECT = {
+  where: ACTIVE_ATTACHMENT_FILTER,
+  select: {
+    id: true,
+    fileName: true,
+    fileType: true,
+    createdAt: true,
+    uploader: { select: { name: true } },
+  },
+  take: 20,
+  orderBy: { createdAt: "desc" as const },
+};
 
 /**
- * Fetch a product requirement with sub-requirements.
+ * Fetch a product requirement with sub-requirements and attachments.
  * Used by getProductRequirement (read tool) and showEntityDetail (UI intent).
  */
 export async function fetchProductRequirement(id: string) {
@@ -28,6 +43,7 @@ export async function fetchProductRequirement(id: string) {
         take: 20,
         orderBy: { createdAt: "desc" },
       },
+      attachments: ATTACHMENT_SELECT,
     },
   });
 }
@@ -61,6 +77,7 @@ export async function fetchSubRequirement(id: string) {
         take: 20,
         orderBy: { createdAt: "desc" },
       },
+      attachments: ATTACHMENT_SELECT,
     },
   });
 }
@@ -91,6 +108,7 @@ export async function fetchTestProcedure(id: string) {
         orderBy: { versionNumber: "desc" },
         take: 10,
       },
+      attachments: ATTACHMENT_SELECT,
     },
   });
 }
@@ -151,6 +169,7 @@ export async function fetchTestCase(id: string) {
           },
         },
       },
+      attachments: ATTACHMENT_SELECT,
     },
   });
 }
