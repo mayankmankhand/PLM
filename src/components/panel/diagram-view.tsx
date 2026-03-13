@@ -106,8 +106,12 @@ function MermaidRenderer({ syntax }: { syntax: string }) {
 
         // Sanitize SVG to prevent XSS from LLM-generated mermaid syntax.
         // DOMPurify strips event handlers and scripts from the SVG output.
+        // Mermaid uses <foreignObject> with HTML elements for text labels,
+        // plus <style> for theme colors - these must be allowed through.
         const cleanSvg = DOMPurify.sanitize(renderedSvg, {
           USE_PROFILES: { svg: true, svgFilters: true },
+          ADD_TAGS: ["foreignObject", "style"],
+          ADD_ATTR: ["xmlns"],
         });
 
         if (!cancelled) {
