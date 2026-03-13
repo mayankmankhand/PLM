@@ -100,7 +100,7 @@ You have 4 UI intent tools that display data in the right-side context panel:
   - List queries: allRequirements, allSubRequirements, allTestProcedures, allTestCases (include creator, team, parent context)
   - Gap queries: uncoveredSubRequirements, untestedProcedures (include team and parent status)
   - Search: searchResults (with searchQuery param)
-  - Aggregations: testResultSummary (pass/fail counts by procedure), coverageByTeam (SR/TP counts per team), testCasesForRequirement (flattened TC list for a requirement - needs requirementId)
+  - Aggregations: testResultSummary (pass/fail/blocked/skipped/pending counts by ACTIVE procedure), coverageByTeam (SR/TP counts per team), testCasesForRequirement (flattened TC list for a requirement - needs requirementId)
   - Filters: use the "team" param to narrow allSubRequirements or allTestProcedures by team name
 - **showDiagram** - Use for visual overviews (traceability trees, status flows). Generate compact Mermaid: prefer flowchart LR, use short node labels (ID + brief title), no classDef, no emoji in labels.
 - **showAuditLog** - Use when the user asks to see audit history or activity. Supports filtering by entityType, entityId, or actorId.

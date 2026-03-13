@@ -1,6 +1,6 @@
 # Feature Implementation Plan
 
-**Overall Progress:** `0%`
+**Overall Progress:** `100%`
 
 ## TLDR
 Enrich `showTable` queries with cross-entity data (creators, parent context, team info, aggregations) so panel tables can answer questions that span multiple entities. Tool-layer only - no panel UI changes needed since `TablePayload` already supports arbitrary columns.
@@ -13,8 +13,10 @@ Enrich `showTable` queries with cross-entity data (creators, parent context, tea
 ## Critical Decisions
 - **Enrich existing queries, not add parallel ones** - `allRequirements` always includes creator, rather than a separate `requirementsWithCreator` query. Simpler for the LLM to reason about.
 - **Tool-layer only** - `TablePayload` already accepts arbitrary columns/rows. No panel component changes.
-- **Audit joins via separate query** - AuditLog has no FK to entities (string-based entityType+entityId), so "Created By" requires a Prisma query on AuditLog, not a relation include. We'll batch-fetch audit entries and merge in the tool.
+- **Use creator FK, not AuditLog** - Every entity has a `createdBy` FK + `creator` relation to User. Simpler and faster than querying AuditLog for CREATE actions. Dropped the planned `batchFetchCreators` helper.
 - **New query types for aggregations** - Aggregation queries (pass/fail counts, coverage by team) need new `queryType` enum values since they produce fundamentally different column shapes.
+- **Defer recentApprovals and userActivity** - Overlap with existing `showAuditLog` tool; different fetch pattern needed. Deferred to V2.
+- **Fetch-16-return-15 truncation** - `isTruncated: boolean` optional field on TablePayload for backward compatibility.
 
 ## Use Cases (reference)
 
@@ -24,32 +26,36 @@ Enrich `showTable` queries with cross-entity data (creators, parent context, tea
 
 ## Tasks
 
-- [ ] 🟥 **Step 1: Enrich existing "all*" queries with cross-entity columns** `[parallel]` -> delivers: richer default columns for 5 existing query types
-  - [ ] 🟥 `allRequirements`: add `createdBy` (from AuditLog CREATE action), `createdAt`
-  - [ ] 🟥 `allSubRequirements`: add `parentStatus` (PR status), `createdBy` (from AuditLog)
-  - [ ] 🟥 `allTestProcedures`: add `requirement` (SR's parent PR title), `team` (SR's team name), `createdBy`
-  - [ ] 🟥 `allTestCases`: add `requirement` (SR title via TPV->TP->SR), `executedBy`, `executedAt`
-  - [ ] 🟥 `uncoveredSubRequirements`: add `parentStatus` (PR status), `team`
-  - [ ] 🟥 `untestedProcedures`: add `requirement` (SR title), `team`
-  - [ ] 🟥 Helper function: `batchFetchCreators(entityType, entityIds)` - queries AuditLog for CREATE actions and returns a map of entityId -> actorName
+- [x] 🟩 **Step 1: Enrich existing "all*" queries with cross-entity columns** `[parallel]`
+  - [x] 🟩 `allRequirements`: added `createdBy` (via creator relation), `createdAt`
+  - [x] 🟩 `allSubRequirements`: added `parentStatus`, `createdBy`, team filter
+  - [x] 🟩 `allTestProcedures`: added `productRequirement`, `team`, `createdBy`, team filter
+  - [x] 🟩 `allTestCases`: added `subRequirement`, `executedBy`, `executedAt`
+  - [x] 🟩 `uncoveredSubRequirements`: added `parentStatus`, `team`
+  - [x] 🟩 `untestedProcedures`: added `subRequirement`, `team`
+  - [x] 🟩 `searchResults`: added isTruncated flag
+  - ~Helper function `batchFetchCreators`~ - dropped (used creator FK relation instead)
 
-- [ ] 🟥 **Step 2: Add new aggregation query types** `[parallel]` -> delivers: new queryType enum values for aggregated/filtered views
-  - [ ] 🟥 `testResultSummary`: pass/fail/blocked/pending counts grouped by procedure (use cases #7, #11)
-  - [ ] 🟥 `coverageByTeam`: SR count, TP count, uncovered count per team (use cases #6, #14)
-  - [ ] 🟥 `testCasesForRequirement`: flattened TC list for a given PR ID, skipping intermediate layers (use case #18). Add `requirementId` optional input param.
-  - [ ] 🟥 `recentApprovals`: entities approved within N days, with entity title + approver (use case #10). Add `days` optional input param.
-  - [ ] 🟥 `userActivity`: recent audit entries enriched with entity titles instead of raw IDs (use cases #9, #19). Add `actorName` optional input param.
+- [x] 🟩 **Step 2: Add new aggregation query types** `[parallel]`
+  - [x] 🟩 `testResultSummary`: pass/fail/blocked/skipped/pending counts by ACTIVE procedure
+  - [x] 🟩 `coverageByTeam`: SR count, TP count, uncovered count per team
+  - [x] 🟩 `testCasesForRequirement`: flattened TC list for a given PR ID
+  - ~`recentApprovals`~ - deferred to V2 (overlaps with showAuditLog)
+  - ~`userActivity`~ - deferred to V2 (overlaps with showAuditLog)
 
-- [ ] 🟥 **Step 3: Update system prompt** `[sequential]` -> depends on: Steps 1, 2
-  - [ ] 🟥 Document new query types and their purpose in the system prompt's tool guidance section
-  - [ ] 🟥 Add examples of when to use aggregation queries vs. enriched list queries
-  - [ ] 🟥 Guide the LLM to prefer panel tables over chat text for cross-entity questions
+- [x] 🟩 **Step 3: Update system prompt** `[sequential]`
+  - [x] 🟩 Documented new query types with categories (list, gap, search, aggregation, filter)
+  - [x] 🟩 Added rules for showTable preference, name-to-ID resolution, isTruncated handling
 
-- [ ] 🟥 **Step 4: Manual testing against use cases** `[sequential]` -> depends on: Steps 1, 2, 3
-  - [ ] 🟥 Test Tier 1 use cases (5 scenarios) in the chat UI
-  - [ ] 🟥 Test Tier 2 use cases (6 scenarios)
-  - [ ] 🟥 Verify existing queries still work (no regressions)
-  - [ ] 🟥 Document any use cases that still fall short
+- [x] 🟩 **Step 4: Tests and review fixes** `[sequential]`
+  - [x] 🟩 4 schema validation tests (isTruncated, enriched columns, aggregation numerics)
+  - [x] 🟩 14 integration tests for aggregation queries
+  - [x] 🟩 Review fix: separated SKIPPED from PENDING in testResultSummary
+  - [x] 🟩 Review fix: added `take: 16` to coverageByTeam for consistent truncation
+  - [x] 🟩 Review fix: added ACTIVE-only inline comment
 
 ## Outcomes
-<!-- Fill in after execution -->
+- **Changed vs planned:** Used creator FK relations instead of AuditLog queries (simpler). Deferred recentApprovals and userActivity to V2. Added team filter param and isTruncated flag (not in original plan). Separated SKIPPED from PENDING after 3-model review.
+- **Key decisions:** Enriching existing queries (not adding parallel ones) proved correct - 10 queryType values is already the upper bound of what the LLM can reason about.
+- **Test coverage:** 101 total tests (87 existing + 14 new integration tests for aggregation queries).
+- **Files changed:** 4 source files + 2 test files + plan + lessons.

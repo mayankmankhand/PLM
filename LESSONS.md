@@ -31,6 +31,10 @@
 - **Rate limiting protects your wallet, not just your server.** On an AI-powered app, the most important endpoint to rate-limit isn't your heaviest database query - it's your LLM chat endpoint. Each request costs real money (Anthropic API calls). A simple in-memory sliding window (no Redis needed at demo scale) took 60 lines of TypeScript and prevents bill shock.
 - **Security headers are free defense.** Four lines in `next.config.ts` add X-Content-Type-Options, X-Frame-Options, Referrer-Policy, and Permissions-Policy. No code changes, no dependencies, no performance cost. Skip CSP initially (Next.js inline scripts break strict CSP without nonce configuration) and skip HSTS (Vercel adds it automatically).
 
+- **Check existing FK relations before building AuditLog queries.** The original plan for "Created By" columns proposed a `batchFetchCreators` helper that queried AuditLog for CREATE actions. Code review caught that every entity already has a `createdBy` FK + `creator` relation to User - a simple Prisma `select` join. The AuditLog approach would have been slower and more fragile.
+- **Three-model review consensus catches domain bugs.** All three reviewers (Claude, GPT, Gemini) independently flagged that SKIPPED test cases were being counted as PENDING in the aggregation query. Different signal, different meaning - SKIPPED is terminal, PENDING means not yet run. Without the review, users would see inflated "pending" counts.
+- **Fetch N+1, return N for truncation detection.** Query `take: 16` but only return 15 rows. If 16 come back, set `isTruncated: true` and tell the user more results exist. Simpler than running a separate COUNT query, and the extra row is discarded before reaching the client.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 

@@ -569,7 +569,8 @@ export function createUIIntentTools() {
             // ─── New aggregation queries (Issue #24) ─────────────────
 
             case "testResultSummary": {
-              // Pass/fail/blocked/pending counts grouped by procedure.
+              // Pass/fail/blocked/skipped/pending counts grouped by procedure.
+              // Only includes ACTIVE procedures (CANCELED ones are excluded).
               // Sorted by failed DESC to surface most-problematic procedures first.
               const procedures = await prisma.testProcedure.findMany({
                 where: { status: "ACTIVE" },
@@ -593,24 +594,26 @@ export function createUIIntentTools() {
 
               // Aggregate test case statuses per procedure
               const summaryRows = procedures.map((p) => {
-                const counts = { passed: 0, failed: 0, blocked: 0, pending: 0 };
+                const counts = { passed: 0, failed: 0, blocked: 0, skipped: 0, pending: 0 };
                 for (const v of p.versions) {
                   for (const tc of v.testCases) {
                     if (tc.status === "PASSED") counts.passed++;
                     else if (tc.status === "FAILED") counts.failed++;
                     else if (tc.status === "BLOCKED") counts.blocked++;
-                    else counts.pending++; // PENDING and SKIPPED
+                    else if (tc.status === "SKIPPED") counts.skipped++;
+                    else counts.pending++;
                   }
                 }
-                const total = counts.passed + counts.failed + counts.blocked + counts.pending;
+                const total = counts.passed + counts.failed + counts.blocked + counts.skipped + counts.pending;
                 return {
                   procedure: p.title,
                   subRequirement: p.subRequirement.title,
                   team: p.subRequirement.team.name,
-                  passed: total > 0 ? counts.passed : 0,
-                  failed: total > 0 ? counts.failed : 0,
-                  blocked: total > 0 ? counts.blocked : 0,
-                  pending: total > 0 ? counts.pending : 0,
+                  passed: counts.passed,
+                  failed: counts.failed,
+                  blocked: counts.blocked,
+                  skipped: counts.skipped,
+                  pending: counts.pending,
                   total,
                 };
               });
@@ -629,6 +632,7 @@ export function createUIIntentTools() {
                   { key: "passed", label: "Passed" },
                   { key: "failed", label: "Failed" },
                   { key: "blocked", label: "Blocked" },
+                  { key: "skipped", label: "Skipped" },
                   { key: "pending", label: "Pending" },
                   { key: "total", label: "Total" },
                 ],
@@ -650,6 +654,7 @@ export function createUIIntentTools() {
                     },
                   },
                 },
+                take: 16, // Fetch one extra to detect truncation
               });
 
               const coverageRows = teams.map((t) => {
