@@ -10,7 +10,7 @@
  * Run with: npx tsx prisma/seed.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { DEMO_TEAMS, DEMO_USERS } from "../src/lib/demo-users";
 
 const prisma = new PrismaClient();
@@ -182,7 +182,7 @@ type AuditEntry = {
   action: "CREATE" | "UPDATE" | "APPROVE" | "CANCEL" | "SKIP" | "ADD_ATTACHMENT" | "REMOVE_ATTACHMENT" | "CREATE_VERSION" | "RECORD_RESULT";
   entityType: string;
   entityId: string;
-  changes: Record<string, unknown>;
+  changes: Prisma.InputJsonObject;
   createdAt: Date;
 };
 
@@ -191,7 +191,7 @@ function audit(
   action: AuditEntry["action"],
   entityType: string,
   entityId: string,
-  changes: Record<string, unknown>,
+  changes: Prisma.InputJsonObject,
   day: number,
   hour: number,
 ): AuditEntry {

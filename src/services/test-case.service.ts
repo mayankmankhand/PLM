@@ -3,7 +3,7 @@
 // when the parent version is APPROVED.
 
 import { prisma } from "@/lib/prisma";
-import { TestCaseResult } from "@prisma/client";
+import { TestCaseResult, TestCaseStatus } from "@prisma/client";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
@@ -77,7 +77,7 @@ export async function recordTestResult(
     // Map result to status.
     // SKIPPED result means "skip this round, return to PENDING" - it's a temporary
     // deferment, not a terminal outcome. The test case can be re-executed later.
-    const statusMap: Record<TestCaseResult, string> = {
+    const statusMap: Record<TestCaseResult, TestCaseStatus> = {
       PASS: "PASSED",
       FAIL: "FAILED",
       BLOCKED: "BLOCKED",
