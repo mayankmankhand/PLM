@@ -3,7 +3,7 @@
 Be thorough but concise.
 
 **Use this when:** Evaluating user experience quality - usability, accessibility, user flows, and how the UI feels to use.
-**Don't use this when:** Reviewing code quality (/review-code), reviewing command prompts (/review-commands), checking plan completion (/review-plan), or doing a pre-release check (/review-full).
+**Don't use this when:** Testing a running web application in a browser (/review-browser). Reviewing code quality (/review-code), reviewing command prompts (/review-commands), checking plan completion (/review-plan), or doing a pre-release check (/review-full).
 
 **Important:** This command reviews artifacts - code, markup, specs, and screenshots. It does not evaluate a running application. When live interaction would be needed for a complete assessment, state that as a limitation in the summary.
 

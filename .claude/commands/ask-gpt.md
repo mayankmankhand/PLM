@@ -97,6 +97,8 @@ cat /tmp/ask-gpt-round-*.md > /tmp/ask-gpt-debate.md
 node scripts/ask-gpt.js summary --context-file /tmp/ask-gpt-context.md --debate-file /tmp/ask-gpt-debate.md
 ```
 
+</procedure>
+
 ## Step 6: Present Results to User
 
 Present the summary to the user in this format:
@@ -138,8 +140,6 @@ Ask the user:
 **CRITICAL**: Do NOT implement anything until the user explicitly approves.
 
 </rules>
-
-</procedure>
 
 ---
 

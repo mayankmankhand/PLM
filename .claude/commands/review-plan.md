@@ -3,7 +3,7 @@
 Did we build what we said we'd build? Compares implementation against plan/spec.
 
 **Use this when:** Checking if implementation matches a plan file in `.claude/plans/` - feature completeness, scope drift, quality gates.
-**Don't use this when:** Reviewing code quality (/review-code), reviewing command prompts (/review-commands), evaluating end-user UX (/review-ux), or doing a pre-release check (/review-full).
+**Don't use this when:** Reviewing code quality (/review-code), testing a running web app (/review-browser), reviewing command prompts (/review-commands), evaluating end-user UX (/review-ux), or doing a pre-release check (/review-full).
 
 ## CRITICAL RULES
 <rules>

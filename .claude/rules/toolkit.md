@@ -1,6 +1,6 @@
 # Toolkit Rules
 
-<!-- Toolkit version: 2.1 | Managed by LLM Peer Review. Do not edit - changes will be overwritten on update. -->
+<!-- Toolkit version: 3.0 | Managed by LLM Peer Review. Do not edit - changes will be overwritten on update. -->
 
 ## How We Work Together
 
@@ -27,7 +27,7 @@ We follow this flow for features:
 1. `/explore` - Understand the problem, ask clarifying questions
 2. `/create-plan` - Create a step-by-step plan with status tracking
 3. `/execute` - Build it, updating the plan as we go
-4. Run the appropriate `/review-*` command (report only, don't fix): `/review-code`, `/review-commands`, `/review-plan`, `/review-ux`, or `/review-full` - see command table below
+4. Run the appropriate `/review-*` command (report only, don't fix): `/review-code`, `/review-commands`, `/review-plan`, `/review-ux`, `/review-browser`, or `/review-full` - see command table below
 5. `/ask-gpt` or `/ask-gemini` - Get a second opinion via multi-model debate
 6. `/peer-review` - Evaluate debate findings (paste results here)
 7. `/document` - Update documentation
@@ -49,6 +49,7 @@ We follow this flow for features:
 | `/review-commands` | Review slash command prompts for quality and consistency |
 | `/review-plan` | Check if implementation matches the plan |
 | `/review-ux` | Evaluate UX quality from code and markup |
+| `/review-browser` | QA a running web app via headless browser - screenshots, interactions, diagnostics |
 | `/review-full` | Pre-release cross-domain check with go/no-go recommendation |
 | `/peer-review` | Evaluate feedback from other AI models |
 | `/document` | Update documentation after changes |
@@ -165,6 +166,7 @@ These are defined in `.claude/settings.local.json`. Each one exists for a reason
 | `npm install`, `npm uninstall` | Managing dependencies |
 | `node scripts/ask-gpt.js` | Running the ask-gpt debate script |
 | `node scripts/ask-gemini.js` | Running the ask-gemini debate script |
+| `node scripts/browse.js` | Running the headless browser QA script |
 | `Read`, `Edit`, `Write`, `Glob`, `Grep` | Claude's built-in file tools (included for documentation) |
 | `WebFetch` (github.com, raw.githubusercontent.com), `WebSearch` | Fetching GitHub content and web search |
 | `cp` | Copying files (e.g. `.env.local` into worktrees) |
