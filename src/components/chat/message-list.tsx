@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { UIMessage } from "ai";
 import { ArrowDown } from "lucide-react";
 import { MessageBubble } from "./message-bubble";
+import { ThinkingIndicator } from "./thinking-indicator";
 
 // Suggestion chips shown on the empty state to help users get started.
 const SUGGESTIONS = [
@@ -132,6 +133,8 @@ export function MessageList({
             onReject={onReject}
           />
         ))}
+        {/* Show thinking indicator while waiting for first AI token */}
+        {status === "submitted" && <ThinkingIndicator />}
         <div ref={bottomRef} />
       </div>
 
