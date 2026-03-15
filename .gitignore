@@ -6,6 +6,9 @@ node_modules/
 /out/
 next-env.d.ts
 
+# TypeScript
+tsconfig.tsbuildinfo
+
 # Environment (API keys)
 .env*.local
 .env
