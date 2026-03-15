@@ -15,6 +15,21 @@ export type CreateTestProcedureInput = z.infer<
   typeof CreateTestProcedureInput
 >;
 
+// ─── Update Procedure ────────────────────────────────────
+// Updates the logical procedure metadata (currently just title).
+
+export const UpdateTestProcedureInput = z
+  .object({
+    title: z.string().trim().min(1, "Title cannot be empty").max(255).optional(),
+  })
+  .refine((data) => data.title !== undefined, {
+    message: "At least one field (title) must be provided",
+  });
+
+export type UpdateTestProcedureInput = z.infer<
+  typeof UpdateTestProcedureInput
+>;
+
 // ─── Create Version ────────────────────────────────────
 // Creates a new DRAFT version on an existing procedure.
 // The version number is auto-incremented by the service layer.

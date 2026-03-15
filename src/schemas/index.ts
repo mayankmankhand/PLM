@@ -16,6 +16,7 @@ export {
 
 export {
   CreateTestProcedureInput,
+  UpdateTestProcedureInput,
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
   ApproveTestProcedureVersionInput,
@@ -24,6 +25,7 @@ export {
 
 export {
   CreateTestCaseInput,
+  UpdateTestCaseInput,
   RecordTestResultInput,
   SkipTestCaseInput,
 } from "./test-case.schema";

@@ -50,10 +50,11 @@ export function createSubRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Update a draft sub-requirement --
+    // -- Update a sub-requirement (DRAFT or APPROVED) --
     updateSubRequirement: tool({
       description:
-        "Update a sub-requirement that is still in DRAFT status. " +
+        "Update a sub-requirement (DRAFT or APPROVED). " +
+        "Title and description can be changed. CANCELED sub-requirements cannot be edited. " +
         "At least one of title or description must be provided.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the sub-requirement to update"),
@@ -106,11 +107,12 @@ export function createSubRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Cancel an approved sub-requirement --
+    // -- Cancel a sub-requirement (DRAFT or APPROVED) --
     cancelSubRequirement: tool({
       description:
-        "Mark an approved sub-requirement as canceled. " +
-        "Only APPROVED sub-requirements can be canceled. " +
+        "Mark a sub-requirement as canceled. " +
+        "DRAFT sub-requirements can be canceled only if they have no test procedures. " +
+        "APPROVED sub-requirements can be canceled (cascades to children). " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the sub-requirement to cancel"),

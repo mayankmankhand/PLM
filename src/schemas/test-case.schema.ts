@@ -11,6 +11,27 @@ export const CreateTestCaseInput = z.object({
 
 export type CreateTestCaseInput = z.infer<typeof CreateTestCaseInput>;
 
+// ─── Update ─────────────────────────────────────────────
+// Updates a test case's title and/or description.
+
+export const UpdateTestCaseInput = z
+  .object({
+    title: z.string().trim().min(1, "Title cannot be empty").max(255).optional(),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Description cannot be empty")
+      .optional(),
+  })
+  .refine(
+    (data) => data.title !== undefined || data.description !== undefined,
+    {
+      message: "At least one field (title or description) must be provided",
+    }
+  );
+
+export type UpdateTestCaseInput = z.infer<typeof UpdateTestCaseInput>;
+
 // ─── Record Result ─────────────────────────────────────
 // Records a pass/fail/blocked/skipped result on a test case.
 // These values match the TestCaseResult enum in Prisma.

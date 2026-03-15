@@ -43,6 +43,15 @@ Product Requirement
 - "Add a sub-requirement for the App team under Heart Rate Monitoring"
 - "Create a test procedure for BLE Pairing Validation"
 
+### Edit things
+
+- "Change the title of Heart Rate Monitoring to Continuous Heart Rate Monitoring"
+- "Update the description of GPS Receiver sub-requirement"
+- "Fix the typo in the Battery Runtime Test procedure name"
+- "Update the description of test case Resting HR accuracy"
+
+Editing works in most states. Draft entities allow full edits. Approved requirements and procedure versions allow title and description changes (for typo fixes). Pending test cases allow title and description edits. All edits are logged in the audit trail.
+
 ### Look things up
 
 - "Show me the details for GPS Receiver"
@@ -117,7 +126,7 @@ Pick any user from the dropdown. All demo users have the "engineer" role. Your c
 
 Each entity type follows a specific lifecycle:
 
-- **Product Requirements and Sub-Requirements**: Draft -> Approved. Approved -> Canceled. (Draft items cannot be canceled directly.)
+- **Product Requirements and Sub-Requirements**: Draft -> Approved -> Canceled. Draft items can also be canceled directly (if they have no children).
 - **Test Procedures**: Active -> Canceled
 - **Test Procedure Versions**: Draft -> Approved (locked permanently). To revise an approved version, create a new draft version.
 - **Test Cases**: Pending -> Passed / Failed / Blocked / Skipped. Skipped is permanent and cannot be undone.

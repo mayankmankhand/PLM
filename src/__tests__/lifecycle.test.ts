@@ -98,17 +98,22 @@ describe("ProductRequirement lifecycle", () => {
     expect(approved.status).toBe("APPROVED");
   });
 
-  it("rejects updating an approved requirement", async () => {
+  it("allows updating title and description on an approved requirement", async () => {
     const req = await prService.createProductRequirement(
-      { title: "No Edit", description: "Desc" },
+      { title: "Typo Here", description: "Old desc" },
       ctx
     );
     createdPrIds.push(req.id);
     await prService.approveProductRequirement(req.id, ctx);
 
-    await expect(
-      prService.updateProductRequirement(req.id, { title: "Nope" }, ctx)
-    ).rejects.toThrow("Only DRAFT");
+    const updated = await prService.updateProductRequirement(
+      req.id,
+      { title: "Fixed Title", description: "New desc" },
+      ctx
+    );
+    expect(updated.title).toBe("Fixed Title");
+    expect(updated.description).toBe("New desc");
+    expect(updated.status).toBe("APPROVED");
   });
 
   it("rejects approving an already approved requirement", async () => {
@@ -135,16 +140,56 @@ describe("ProductRequirement lifecycle", () => {
     expect(canceled.status).toBe("CANCELED");
   });
 
-  it("rejects canceling a draft requirement", async () => {
+  it("cancels a draft requirement with no children", async () => {
     const req = await prService.createProductRequirement(
       { title: "Draft Cancel", description: "Desc" },
       ctx
     );
     createdPrIds.push(req.id);
 
+    const canceled = await prService.cancelProductRequirement(req.id, ctx);
+    expect(canceled.status).toBe("CANCELED");
+  });
+
+  it("rejects canceling a draft requirement that has children", async () => {
+    const req = await prService.createProductRequirement(
+      { title: "Draft With Kids", description: "Desc" },
+      ctx
+    );
+    createdPrIds.push(req.id);
+
+    // Create a child sub-requirement
+    const sr = await srService.createSubRequirement(
+      {
+        title: "Child SR",
+        description: "Desc",
+        productRequirementId: req.id,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+
     await expect(
       prService.cancelProductRequirement(req.id, ctx)
-    ).rejects.toThrow("Only APPROVED");
+    ).rejects.toThrow("sub-requirements");
+
+    // Cleanup the SR so the PR can be cleaned up in afterEach
+    await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
+    await prisma.subRequirement.delete({ where: { id: sr.id } });
+  });
+
+  it("rejects updating a canceled requirement", async () => {
+    const req = await prService.createProductRequirement(
+      { title: "Cancel Then Edit", description: "Desc" },
+      ctx
+    );
+    createdPrIds.push(req.id);
+    await prService.approveProductRequirement(req.id, ctx);
+    await prService.cancelProductRequirement(req.id, ctx);
+
+    await expect(
+      prService.updateProductRequirement(req.id, { title: "Nope" }, ctx)
+    ).rejects.toThrow();
   });
 });
 
@@ -238,6 +283,81 @@ describe("SubRequirement lifecycle", () => {
     await expect(
       srService.approveSubRequirement(sr.id, ctx)
     ).rejects.toThrow("parent product requirement");
+  });
+
+  it("allows updating an approved sub-requirement title and description", async () => {
+    const sr = await srService.createSubRequirement(
+      {
+        title: "Typo SR",
+        description: "Old desc",
+        productRequirementId: parentId,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+    await srService.approveSubRequirement(sr.id, ctx);
+
+    const updated = await srService.updateSubRequirement(
+      sr.id,
+      { title: "Fixed SR", description: "New desc" },
+      ctx
+    );
+    expect(updated.title).toBe("Fixed SR");
+    expect(updated.status).toBe("APPROVED");
+  });
+
+  it("cancels a draft sub-requirement with no children", async () => {
+    const draftParent = await prService.createProductRequirement(
+      { title: "Draft Parent For Cancel", description: "Desc" },
+      ctx
+    );
+    extraPrIds.push(draftParent.id);
+
+    const sr = await srService.createSubRequirement(
+      {
+        title: "Draft SR Cancel",
+        description: "Desc",
+        productRequirementId: draftParent.id,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+
+    const canceled = await srService.cancelSubRequirement(sr.id, ctx);
+    expect(canceled.status).toBe("CANCELED");
+  });
+
+  it("rejects canceling a draft sub-requirement that has children", async () => {
+    const draftParent = await prService.createProductRequirement(
+      { title: "Draft Parent For Block", description: "Desc" },
+      ctx
+    );
+    extraPrIds.push(draftParent.id);
+
+    const sr = await srService.createSubRequirement(
+      {
+        title: "Draft SR With TP",
+        description: "Desc",
+        productRequirementId: draftParent.id,
+        teamId: DEMO_TEAMS[0].id,
+      },
+      ctx
+    );
+
+    // Create a test procedure under the SR
+    await tpService.createTestProcedure(
+      {
+        title: "Child TP",
+        subRequirementId: sr.id,
+        description: "Desc",
+        steps: "Steps",
+      },
+      ctx
+    );
+
+    await expect(
+      srService.cancelSubRequirement(sr.id, ctx)
+    ).rejects.toThrow("test procedures");
   });
 });
 
@@ -366,13 +486,34 @@ describe("TestProcedure lifecycle", () => {
     expect(v2.status).toBe("DRAFT");
   });
 
-  it("rejects updating an approved version", async () => {
+  it("allows updating description on an approved version", async () => {
     const proc = await tpService.createTestProcedure(
       {
-        title: "No Edit Approved",
+        title: "Edit Approved Desc",
+        subRequirementId: subReqId,
+        description: "Old desc",
+        steps: "Steps",
+      },
+      ctx
+    );
+    await tpService.approveTestProcedureVersion(proc.versions[0].id, ctx);
+
+    const updated = await tpService.updateTestProcedureVersion(
+      proc.versions[0].id,
+      { description: "Fixed desc" },
+      ctx
+    );
+    expect(updated.description).toBe("Fixed desc");
+    expect(updated.status).toBe("APPROVED");
+  });
+
+  it("rejects updating steps on an approved version", async () => {
+    const proc = await tpService.createTestProcedure(
+      {
+        title: "No Steps Edit",
         subRequirementId: subReqId,
         description: "Desc",
-        steps: "Steps",
+        steps: "Original steps",
       },
       ctx
     );
@@ -381,10 +522,47 @@ describe("TestProcedure lifecycle", () => {
     await expect(
       tpService.updateTestProcedureVersion(
         proc.versions[0].id,
-        { description: "Nope" },
+        { steps: "New steps" },
         ctx
       )
-    ).rejects.toThrow("Only DRAFT");
+    ).rejects.toThrow("steps");
+  });
+
+  it("allows updating title on an active procedure", async () => {
+    const proc = await tpService.createTestProcedure(
+      {
+        title: "Old Title",
+        subRequirementId: subReqId,
+        description: "Desc",
+        steps: "Steps",
+      },
+      ctx
+    );
+
+    const updated = await tpService.updateTestProcedure(
+      proc.id,
+      { title: "New Title" },
+      ctx
+    );
+    expect(updated.title).toBe("New Title");
+    expect(updated.status).toBe("ACTIVE");
+  });
+
+  it("rejects updating title on a canceled procedure", async () => {
+    const proc = await tpService.createTestProcedure(
+      {
+        title: "Cancel Then Edit",
+        subRequirementId: subReqId,
+        description: "Desc",
+        steps: "Steps",
+      },
+      ctx
+    );
+    await tpService.cancelTestProcedure(proc.id, ctx);
+
+    await expect(
+      tpService.updateTestProcedure(proc.id, { title: "Nope" }, ctx)
+    ).rejects.toThrow();
   });
 });
 
@@ -515,6 +693,57 @@ describe("TestCase lifecycle", () => {
     );
     const skipped = await tcService.skipTestCase(tc.id, ctx);
     expect(skipped.status).toBe("SKIPPED");
+  });
+
+  it("allows updating a pending test case", async () => {
+    const tc = await tcService.createTestCase(
+      {
+        title: "Old Title",
+        description: "Old desc",
+        testProcedureVersionId: approvedVersionId,
+      },
+      ctx
+    );
+    const updated = await tcService.updateTestCase(
+      tc.id,
+      { title: "New Title", description: "New desc" },
+      ctx
+    );
+    expect(updated.title).toBe("New Title");
+    expect(updated.description).toBe("New desc");
+    expect(updated.status).toBe("PENDING");
+  });
+
+  it("rejects updating a test case after recording a result", async () => {
+    const tc = await tcService.createTestCase(
+      {
+        title: "Passed TC",
+        description: "Desc",
+        testProcedureVersionId: approvedVersionId,
+      },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+
+    await expect(
+      tcService.updateTestCase(tc.id, { title: "Nope" }, ctx)
+    ).rejects.toThrow();
+  });
+
+  it("rejects updating a skipped test case", async () => {
+    const tc = await tcService.createTestCase(
+      {
+        title: "Skipped TC",
+        description: "Desc",
+        testProcedureVersionId: approvedVersionId,
+      },
+      ctx
+    );
+    await tcService.skipTestCase(tc.id, ctx);
+
+    await expect(
+      tcService.updateTestCase(tc.id, { title: "Nope" }, ctx)
+    ).rejects.toThrow();
   });
 
   it("rejects recording result on skipped test case", async () => {
