@@ -38,7 +38,7 @@ export type UpdateTestCaseInput = z.infer<typeof UpdateTestCaseInput>;
 
 export const RecordTestResultInput = z.object({
   result: z.enum(["PASS", "FAIL", "BLOCKED", "SKIPPED"]),
-  notes: z.string().optional(),
+  notes: z.string().trim().optional(),
 });
 
 export type RecordTestResultInput = z.infer<typeof RecordTestResultInput>;
@@ -53,3 +53,38 @@ export const SkipTestCaseInput = z.object({
 });
 
 export type SkipTestCaseInput = z.infer<typeof SkipTestCaseInput>;
+
+// ─── Correct Result ─────────────────────────────────────
+// Overwrites the result on an already-executed test case.
+// Reuses the same result enum minus SKIPPED (only PASS/FAIL/BLOCKED).
+// Notes are optional: provide a string to set, null to clear, omit to leave unchanged.
+
+export const CorrectTestResultInput = z.object({
+  result: z.enum(["PASS", "FAIL", "BLOCKED"]),
+  notes: z
+    .union([z.string().trim().min(1, "Notes cannot be empty"), z.null()])
+    .optional(),
+});
+
+export type CorrectTestResultInput = z.infer<typeof CorrectTestResultInput>;
+
+// ─── Re-Execute ─────────────────────────────────────────
+// Resets an executed test case back to PENDING so it can be run again.
+
+export const ReExecuteTestCaseInput = z.object({
+  confirmReExecute: z.literal(true, {
+    errorMap: () => ({ message: "confirmReExecute must be true" }),
+  }),
+});
+
+export type ReExecuteTestCaseInput = z.infer<typeof ReExecuteTestCaseInput>;
+
+// ─── Update Notes ───────────────────────────────────────
+// Sets or clears notes on an executed test case without changing the result.
+// Provide a string to set notes, or null to clear them.
+
+export const UpdateTestCaseNotesInput = z.object({
+  notes: z.union([z.string().trim().min(1, "Notes cannot be empty"), z.null()]),
+});
+
+export type UpdateTestCaseNotesInput = z.infer<typeof UpdateTestCaseNotesInput>;

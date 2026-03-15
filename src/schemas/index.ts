@@ -28,6 +28,9 @@ export {
   UpdateTestCaseInput,
   RecordTestResultInput,
   SkipTestCaseInput,
+  CorrectTestResultInput,
+  ReExecuteTestCaseInput,
+  UpdateTestCaseNotesInput,
 } from "./test-case.schema";
 
 export { CreateAttachmentInput } from "./attachment.schema";
