@@ -53,6 +53,9 @@ enum AuditAction {
   REMOVE_ATTACHMENT
   CREATE_VERSION
   RECORD_RESULT
+  CORRECT_RESULT
+  RE_EXECUTE
+  UPDATE_NOTES
 }
 
 enum AttachmentStatus {

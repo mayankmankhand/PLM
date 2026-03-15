@@ -761,6 +761,292 @@ describe("TestCase lifecycle", () => {
       tcService.recordTestResult(tc.id, { result: "PASS" }, ctx)
     ).rejects.toThrow("skipped");
   });
+
+  // ─── Correct Result ─────────────────────────────────────
+
+  it("corrects a PASS to FAIL", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct PASS->FAIL", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+
+    const corrected = await tcService.correctTestResult(tc.id, { result: "FAIL" }, ctx);
+    expect(corrected.result).toBe("FAIL");
+    expect(corrected.status).toBe("FAILED");
+  });
+
+  it("corrects a FAIL to PASS", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct FAIL->PASS", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "FAIL" }, ctx);
+
+    const corrected = await tcService.correctTestResult(tc.id, { result: "PASS" }, ctx);
+    expect(corrected.result).toBe("PASS");
+    expect(corrected.status).toBe("PASSED");
+  });
+
+  it("corrects a BLOCKED to PASS", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct BLOCKED->PASS", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "BLOCKED" }, ctx);
+
+    const corrected = await tcService.correctTestResult(tc.id, { result: "PASS" }, ctx);
+    expect(corrected.result).toBe("PASS");
+    expect(corrected.status).toBe("PASSED");
+  });
+
+  it("corrects result with notes update", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct With Notes", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS", notes: "Old notes" }, ctx);
+
+    const corrected = await tcService.correctTestResult(
+      tc.id,
+      { result: "FAIL", notes: "Actually failed" },
+      ctx
+    );
+    expect(corrected.result).toBe("FAIL");
+    expect(corrected.notes).toBe("Actually failed");
+  });
+
+  it("corrects result and clears notes with null", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct Clear Notes", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS", notes: "Some notes" }, ctx);
+
+    const corrected = await tcService.correctTestResult(
+      tc.id,
+      { result: "FAIL", notes: null },
+      ctx
+    );
+    expect(corrected.result).toBe("FAIL");
+    expect(corrected.notes).toBeNull();
+  });
+
+  it("rejects correcting to the same result", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Same Result", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+
+    await expect(
+      tcService.correctTestResult(tc.id, { result: "PASS" }, ctx)
+    ).rejects.toThrow("already PASS");
+  });
+
+  it("rejects correcting a PENDING test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Pending Correct", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+
+    await expect(
+      tcService.correctTestResult(tc.id, { result: "FAIL" }, ctx)
+    ).rejects.toThrow("PENDING");
+  });
+
+  it("rejects correcting a SKIPPED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Skipped Correct", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.skipTestCase(tc.id, ctx);
+
+    await expect(
+      tcService.correctTestResult(tc.id, { result: "FAIL" }, ctx)
+    ).rejects.toThrow("SKIPPED");
+  });
+
+  it("logs CORRECT_RESULT audit entry", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Correct Audit", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+    await tcService.correctTestResult(tc.id, { result: "FAIL" }, ctx);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { entityId: tc.id, action: "CORRECT_RESULT" },
+    });
+    expect(audit).not.toBeNull();
+    expect(audit!.actorId).toBe(ctx.userId);
+  });
+
+  it("preserves notes when correcting without passing notes", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Preserve Notes", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS", notes: "Keep these notes" }, ctx);
+
+    const corrected = await tcService.correctTestResult(tc.id, { result: "FAIL" }, ctx);
+    expect(corrected.result).toBe("FAIL");
+    expect(corrected.notes).toBe("Keep these notes");
+  });
+
+  // ─── Re-Execute ─────────────────────────────────────────
+
+  it("re-executes a FAILED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute FAIL", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "FAIL", notes: "Bug found" }, ctx);
+
+    const reset = await tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx);
+    expect(reset.status).toBe("PENDING");
+    expect(reset.result).toBeNull();
+    expect(reset.notes).toBeNull();
+    expect(reset.executedBy).toBeNull();
+    expect(reset.executedAt).toBeNull();
+  });
+
+  it("re-executes a BLOCKED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute BLOCKED", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "BLOCKED" }, ctx);
+
+    const reset = await tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx);
+    expect(reset.status).toBe("PENDING");
+    expect(reset.result).toBeNull();
+  });
+
+  it("rejects re-executing a PENDING test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute PENDING", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+
+    await expect(
+      tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx)
+    ).rejects.toThrow("PENDING");
+  });
+
+  it("rejects re-executing a PASSED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute PASSED", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+
+    await expect(
+      tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx)
+    ).rejects.toThrow("PASSED");
+  });
+
+  it("rejects re-executing a SKIPPED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute SKIPPED", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.skipTestCase(tc.id, ctx);
+
+    await expect(
+      tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx)
+    ).rejects.toThrow("SKIPPED");
+  });
+
+  it("logs RE_EXECUTE audit entry", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Re-execute Audit", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "FAIL" }, ctx);
+    await tcService.reExecuteTestCase(tc.id, { confirmReExecute: true }, ctx);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { entityId: tc.id, action: "RE_EXECUTE" },
+    });
+    expect(audit).not.toBeNull();
+    expect(audit!.actorId).toBe(ctx.userId);
+  });
+
+  // ─── Update Notes ───────────────────────────────────────
+
+  it("updates notes on a PASSED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Update Notes PASS", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+
+    const updated = await tcService.updateTestCaseNotes(tc.id, { notes: "Added context" }, ctx);
+    expect(updated.notes).toBe("Added context");
+    expect(updated.status).toBe("PASSED");
+  });
+
+  it("clears notes with null", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Clear Notes", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS", notes: "Old notes" }, ctx);
+
+    const updated = await tcService.updateTestCaseNotes(tc.id, { notes: null }, ctx);
+    expect(updated.notes).toBeNull();
+  });
+
+  it("updates notes on a FAILED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Update Notes FAIL", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "FAIL" }, ctx);
+
+    const updated = await tcService.updateTestCaseNotes(tc.id, { notes: "Bug details" }, ctx);
+    expect(updated.notes).toBe("Bug details");
+    expect(updated.status).toBe("FAILED");
+  });
+
+  it("rejects updating notes on a PENDING test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Notes PENDING", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+
+    await expect(
+      tcService.updateTestCaseNotes(tc.id, { notes: "Nope" }, ctx)
+    ).rejects.toThrow("PENDING");
+  });
+
+  it("rejects updating notes on a SKIPPED test case", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Notes SKIPPED", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.skipTestCase(tc.id, ctx);
+
+    await expect(
+      tcService.updateTestCaseNotes(tc.id, { notes: "Nope" }, ctx)
+    ).rejects.toThrow("SKIPPED");
+  });
+
+  it("logs UPDATE_NOTES audit entry", async () => {
+    const tc = await tcService.createTestCase(
+      { title: "Notes Audit", description: "Desc", testProcedureVersionId: approvedVersionId },
+      ctx
+    );
+    await tcService.recordTestResult(tc.id, { result: "PASS" }, ctx);
+    await tcService.updateTestCaseNotes(tc.id, { notes: "Post-execution note" }, ctx);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { entityId: tc.id, action: "UPDATE_NOTES" },
+    });
+    expect(audit).not.toBeNull();
+    expect(audit!.actorId).toBe(ctx.userId);
+  });
 });
 
 // ─── Cascade Cancellation ───────────────────────────────

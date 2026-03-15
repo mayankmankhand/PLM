@@ -55,9 +55,9 @@ Test procedures use **two-entity versioning**: a logical procedure (the containe
 | Status | Meaning | What you can do | Rationale |
 |--------|---------|-----------------|-----------|
 | **PENDING** | Waiting to be executed | Edit title and description. Record a result (PASS, FAIL, BLOCKED, or SKIPPED) or skip it | Default state for newly created test cases. Editable until a result is recorded |
-| **PASSED** | Test executed successfully | Done | Records a positive result against the procedure version |
-| **FAILED** | Test found a defect | Done | Flags the defect for follow-up without losing the test record |
-| **BLOCKED** | Cannot execute due to external dependency | Record a result when unblocked | Distinguishes "can't test yet" from "chose not to test" (SKIPPED) |
+| **PASSED** | Test executed successfully | Correct result, update notes | Records a positive result against the procedure version. Not fully terminal - result can be corrected if recorded wrong, and notes can be updated |
+| **FAILED** | Test found a defect | Correct result, re-execute, update notes | Flags the defect for follow-up. Can be corrected if the wrong result was recorded, or re-executed (reset to PENDING) after a fix |
+| **BLOCKED** | Cannot execute due to external dependency | Record a result when unblocked, correct result, re-execute, update notes | Distinguishes "can't test yet" from "chose not to test" (SKIPPED). Can also be corrected or re-executed |
 | **SKIPPED** | Intentionally not executed | Cannot record results, but attachments can still be added | Permanent opt-out so skipped tests don't show up as incomplete work |
 
 **Rules:**
@@ -71,6 +71,34 @@ Test procedures use **two-entity versioning**: a logical procedure (the containe
 | Skipping a test case is permanent | Prevents gaming metrics by skipping failures and then un-skipping later |
 | You cannot record results on a skipped test case | Once a test is opted out, its status should not change - create a new test case if needed |
 | BLOCKED is re-executable (not terminal) | A blocked test should eventually be run once the blocker is resolved |
+| Results on PASSED, FAILED, and BLOCKED test cases can be corrected | Mistakes happen - recording the wrong result should not require creating a new test case |
+| FAILED and BLOCKED test cases can be re-executed (reset to PENDING) | After fixing a defect or resolving a blocker, re-running the same test case keeps history cleaner than creating a new one |
+| Notes on executed test cases can be updated without changing the result | Allows adding context (e.g., linking a bug ticket) after execution without disrupting the recorded outcome |
+
+### Recovery Operations
+
+PASSED, FAILED, and BLOCKED test cases are not fully terminal. Three recovery operations are available:
+
+| Operation | Applies to | What it does | Requires confirmation |
+|-----------|-----------|-------------|----------------------|
+| **Correct result** | PASSED, FAILED, BLOCKED | Changes the recorded result to a different one (e.g., FAIL to PASS). All pairwise transitions are allowed. Keeps execution data intact. | Yes |
+| **Re-execute** | FAILED, BLOCKED | Resets the test case to PENDING, clearing all execution data (result, executor, notes). Used after a fix or when a blocker is resolved. | Yes |
+| **Update notes** | PASSED, FAILED, BLOCKED | Adds or edits notes on an executed test case without changing the result. | No |
+
+**Why not PASSED for re-execute?** A passing test does not need re-execution. If the result was wrong, use "correct result" instead.
+
+**Why not SKIPPED?** SKIPPED is a permanent opt-out. Recovery operations do not apply. If you need to run a skipped test, create a new test case.
+
+### Result vs Status Mapping
+
+The user provides a **result** (the input), and the system derives the **status** (the stored state) automatically:
+
+| Result (input) | Status (derived) | Notes |
+|----------------|-----------------|-------|
+| PASS | PASSED | Successful execution |
+| FAIL | FAILED | Defect found |
+| BLOCKED | BLOCKED | External dependency prevents execution |
+| SKIPPED | PENDING | Temporary deferment only (via recordTestResult). The permanent skip is a separate action (skipTestCase) that sets status to SKIPPED |
 
 ## Attachments
 
@@ -120,7 +148,7 @@ The service layer enforces lifecycle rules, but the database provides a second l
 
 Destructive or hard-to-reverse actions require explicit user confirmation before execution. This applies to both the API (via Zod validation) and the AI chat assistant (via prompt engineering).
 
-**Actions that require confirmation:** approve, cancel, skip, remove attachment
+**Actions that require confirmation:** approve, cancel, skip, remove attachment, correct result, re-execute
 
 **How it works:**
 1. The user requests an action (e.g., "cancel this requirement")
@@ -143,6 +171,8 @@ Every change in the system is logged in the same database transaction as the cha
 | SKIP | A test case is skipped | Test Cases | Distinguishes intentional skip from incomplete work |
 | CREATE_VERSION | A new version is created on a test procedure | Test Procedure Versions | Tracks the version history of a procedure |
 | RECORD_RESULT | A test result (PASS/FAIL/BLOCKED) is recorded | Test Cases | Captures the outcome and who executed the test |
+| CORRECT_RESULT | A previously recorded result is changed | Test Cases | Tracks what the old and new results were |
+| RE_EXECUTE | A failed or blocked test case is reset to PENDING | Test Cases | Records that execution data was cleared for a re-run |
 | ADD_ATTACHMENT | A file is attached to an entity | Attachments | Records file additions with metadata |
 | REMOVE_ATTACHMENT | A file attachment is removed (soft-deleted) | Attachments | Records who removed the file and when |
 
