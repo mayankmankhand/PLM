@@ -1,7 +1,7 @@
 // Confirmation UI shown when the AI asks before a destructive action.
 // Wrapped in a surface container with border. After the user clicks
 // Accept/Reject, collapses to a one-liner with icon and timestamp.
-// See plm-redesign-spec-v3.md Section 6.4.
+// See docs/design/plm-redesign-spec-v3.md Section 6.4.
 
 "use client";
 

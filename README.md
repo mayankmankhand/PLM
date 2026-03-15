@@ -6,7 +6,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 
 - **Framework**: Next.js 16 (App Router, TypeScript)
 - **Database**: Neon PostgreSQL via Prisma ORM
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 29 LLM tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 31 LLM tools)
 - **UI**: Tailwind CSS v4, Zustand, react-markdown, lucide-react, @ai-sdk/react, mermaid, dompurify
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest (isolated test database via `vitest.global-setup.ts`)
@@ -63,7 +63,7 @@ ProductRequirement (org-wide)
 POST /api/chat   # Streaming natural language interface to manage PLM entities
 ```
 
-Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 29 tools (16 mutation, 4 read, 4 query, 1 search, 4 UI intent) and confirms before destructive actions.
+Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 31 tools (18 mutation, 4 read, 4 query, 1 search, 4 UI intent) and confirms before destructive actions.
 
 ### Named Queries
 
@@ -101,7 +101,7 @@ V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to sw
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (124 tests, uses .env.test database)
+npm run test         # Run tests (128 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -119,7 +119,7 @@ src/
   hooks/             # Shared React hooks (useDesktopBreakpoint)
   stores/            # Zustand stores (panel state + width)
   types/             # Shared TypeScript types + Zod schemas (panel payloads)
-  lib/ai/            # LLM layer: system prompt, 29 tools, trace logger
+  lib/ai/            # LLM layer: system prompt, 31 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
   schemas/           # Zod validation schemas
   services/          # Business logic with lifecycle enforcement + audit logging
@@ -131,10 +131,10 @@ prisma/
 
 ## Documentation
 
-- [USER-GUIDE.md](USER-GUIDE.md) - What the app does, how to use the chat, example prompts
+- [USER-GUIDE.md](docs/USER-GUIDE.md) - What the app does, how to use the chat, example prompts
 - [ROADMAP.md](ROADMAP.md) - V1 summary, V2/V3 planned features
-- [STATUS-GUIDE.md](STATUS-GUIDE.md) - Full lifecycle status reference
-- [DATABASE.md](DATABASE.md) - Schema documentation and seed data
+- [STATUS-GUIDE.md](docs/STATUS-GUIDE.md) - Full lifecycle status reference
+- [DATABASE.md](docs/DATABASE.md) - Schema documentation and seed data
 
 ## Issues & Roadmap
 
@@ -163,7 +163,9 @@ prisma/
 - **Issue #30**: Chat endpoint hardening - streaming error recovery, input limits (DONE)
 - **Issue #31**: Audit source threading - distinguish chat vs API mutations (DONE)
 - **Issue #32**: Team data isolation - scope queries by user's team (planned)
-- **Issue #33**: Attachment hardening - file size limits, type validation (planned)
+- **Issue #33**: LLM attachment tools + CANCELED parent validation (DONE)
 - **Issue #34**: Frontend resilience - error boundaries, retry logic (planned)
 - **Issue #35**: Configurable AI model via env var (DONE)
 - **Issue #37**: Human-readable short IDs for entities (planned)
+- **Issue #38**: Mermaid diagram text labels - DOMPurify ADD_TAGS fix (DONE)
+- **Issue #42**: Show attachments in entity detail panel (DONE)

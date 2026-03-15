@@ -1,6 +1,6 @@
 // Context panel wrapper - slides in from the right when the AI
 // calls a UI intent tool. Frosted glass surface with drag-to-resize.
-// See plm-redesign-spec-v3.md Sections 6.3 and 5.1.
+// See docs/design/plm-redesign-spec-v3.md Sections 6.3 and 5.1.
 
 "use client";
 

@@ -1,6 +1,6 @@
 // Renders a single chat message row.
 // Assistant messages sit directly on background (no card). User messages in cool gray bubble.
-// See plm-redesign-spec-v3.md Section 6.1 for design rules.
+// See docs/design/plm-redesign-spec-v3.md Section 6.1 for design rules.
 
 "use client";
 

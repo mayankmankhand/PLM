@@ -2,7 +2,7 @@
 // Nine lifecycle states with distinct visual treatments.
 // Badge colors are component-local hex values (not @theme tokens)
 // because they're warm-tinted semantic colors used only here.
-// See plm-redesign-spec-v3.md Section 3.3 for the Slate+Teal palette colors.
+// See docs/design/plm-redesign-spec-v3.md Section 3.3 for the Slate+Teal palette colors.
 
 "use client";
 

@@ -1,7 +1,7 @@
 // Shows tool execution status as vertical rows with icon, label, and elapsed time.
 // Multiple tools are grouped under a collapsible "Used N tools" header.
 // Completed tools are expandable to show raw JSON output.
-// See plm-redesign-spec-v3.md Section 6.2 for design rules.
+// See docs/design/plm-redesign-spec-v3.md Section 6.2 for design rules.
 
 "use client";
 
