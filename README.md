@@ -127,6 +127,12 @@ src/
 prisma/
   schema.prisma      # Database schema (9 models, 7 enums)
   seed.ts            # Demo data seeder
+docs/
+  DATABASE.md        # Schema documentation and seed data
+  STATUS-GUIDE.md    # Lifecycle status reference
+  USER-GUIDE.md      # End-user guide
+  design/            # Design specs and HTML prototype
+  archive/           # Completed audits and investigations
 ```
 
 ## Documentation
