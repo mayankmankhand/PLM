@@ -7,6 +7,7 @@ import type { RequestContext } from "@/lib/request-context";
 import {
   createTestProcedure,
   createTestProcedureVersion,
+  updateTestProcedure,
   updateTestProcedureVersion,
   approveTestProcedureVersion,
   cancelTestProcedure,
@@ -84,10 +85,39 @@ export function createTestProcedureTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Update a draft version --
+    // -- Update a test procedure title --
+    updateTestProcedure: tool({
+      description:
+        "Update the title of a test procedure. " +
+        "Only ACTIVE procedures can be updated (not CANCELED).",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the test procedure to update"),
+        title: z.string().trim().min(1).max(255).describe("New title"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await updateTestProcedure(
+            args.id,
+            { title: args.title },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Update a procedure version (DRAFT or APPROVED) --
     updateTestProcedureVersion: tool({
       description:
-        "Update a test procedure version that is still in DRAFT status. " +
+        "Update a test procedure version. " +
+        "DRAFT: description and steps can be changed. " +
+        "APPROVED: only description can be changed (for typo fixes). Steps are locked. " +
         "At least one of description or steps must be provided.",
       inputSchema: z.object({
         versionId: z.string().uuid().describe("ID of the version to update"),

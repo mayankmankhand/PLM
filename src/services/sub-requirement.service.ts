@@ -100,7 +100,7 @@ export async function createSubRequirement(
   });
 }
 
-// ─── Update (draft only) ─────────────────────────────────
+// ─── Update (DRAFT: all fields, APPROVED: title + description only) ──
 
 export async function updateSubRequirement(
   id: string,
@@ -112,10 +112,21 @@ export async function updateSubRequirement(
       where: { id },
     });
 
-    if (existing.status !== "DRAFT") {
+    if (existing.status !== "DRAFT" && existing.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot update sub-requirement in ${existing.status} status. Only DRAFT sub-requirements can be edited.`
+        `Cannot update sub-requirement in ${existing.status} status. Only DRAFT or APPROVED sub-requirements can be edited.`
       );
+    }
+
+    // APPROVED sub-requirements can only update title and description.
+    if (existing.status === "APPROVED") {
+      const allowedKeys = new Set(["title", "description"]);
+      const extraKeys = Object.keys(input).filter((k) => !allowedKeys.has(k) && input[k as keyof typeof input] !== undefined);
+      if (extraKeys.length > 0) {
+        throw new LifecycleError(
+          `Cannot update fields [${extraKeys.join(", ")}] on an APPROVED sub-requirement. Only title and description can be edited.`
+        );
+      }
     }
 
     const changes: Record<string, unknown> = {};
@@ -198,13 +209,25 @@ export async function cancelSubRequirement(
       where: { id },
     });
 
-    if (existing.status !== "APPROVED") {
+    if (existing.status !== "DRAFT" && existing.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot cancel sub-requirement in ${existing.status} status. Only APPROVED sub-requirements can be canceled.`
+        `Cannot cancel sub-requirement in ${existing.status} status. Only DRAFT or APPROVED sub-requirements can be canceled.`
       );
     }
 
-    // Cancel SR (skip the re-fetch since we already checked status)
+    // DRAFT cancellation: block if children exist (user must remove them first)
+    if (existing.status === "DRAFT") {
+      const childCount = await tx.testProcedure.count({
+        where: { subRequirementId: id },
+      });
+      if (childCount > 0) {
+        throw new LifecycleError(
+          "Cannot cancel DRAFT sub-requirement with existing test procedures. Remove or cancel test procedures first."
+        );
+      }
+    }
+
+    // Cancel SR
     await tx.subRequirement.update({
       where: { id },
       data: { status: "CANCELED" },
@@ -217,18 +240,20 @@ export async function cancelSubRequirement(
       entityId: id,
       source: ctx.source,
       requestId: ctx.requestId,
-      changes: { status: { from: "APPROVED", to: "CANCELED" } },
+      changes: { status: { from: existing.status, to: "CANCELED" } },
     });
 
-    // Cascade to all child TPs and TCs
-    const procedures = await tx.testProcedure.findMany({
-      where: { subRequirementId: id },
-      select: { id: true },
-    });
+    // Cascade to all child TPs and TCs (only relevant for APPROVED)
+    if (existing.status === "APPROVED") {
+      const procedures = await tx.testProcedure.findMany({
+        where: { subRequirementId: id },
+        select: { id: true },
+      });
 
-    await Promise.all(
-      procedures.map((tp) => cascadeCancelTestProcedure(tx, tp.id, ctx))
-    );
+      await Promise.all(
+        procedures.map((tp) => cascadeCancelTestProcedure(tx, tp.id, ctx))
+      );
+    }
 
     return tx.subRequirement.findUniqueOrThrow({ where: { id } });
   });

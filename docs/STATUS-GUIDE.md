@@ -7,19 +7,20 @@ How statuses and lifecycle transitions work in the PLM system, and *why* each ru
 | Status | Meaning | What you can do | Rationale |
 |--------|---------|-----------------|-----------|
 | **DRAFT** | Work in progress, not yet finalized | Edit freely, then approve when ready | Allows iteration before committing to a baseline |
-| **APPROVED** | Finalized and locked for edits | Create sub-requirements or test procedures against it. Cancel if no longer needed | Locks the baseline so downstream work (tests, sub-requirements) builds on a stable foundation |
+| **APPROVED** | Finalized, structurally locked | Edit title and description (for typo fixes). Create sub-requirements or test procedures against it. Cancel if no longer needed | Locks the baseline so downstream work builds on a stable foundation. Title/description edits are allowed because they don't affect downstream structure |
 | **CANCELED** | No longer relevant | Nothing - this is a terminal state | Preserves history instead of deleting, so audit trail stays intact |
 
-**Flow:** DRAFT -> APPROVED -> CANCELED
+**Flow:** DRAFT -> APPROVED -> CANCELED (DRAFT can also be canceled directly)
 
 **Rules:**
 
 | Rule | Rationale |
 |------|-----------|
 | Sub-requirements can only be approved when their parent product requirement is already approved | Prevents finalizing child work against a requirement that might still change |
-| You cannot edit a requirement after it's approved - create a new one instead | Protects downstream test procedures and test cases that depend on the approved text |
+| Approved requirements allow title and description edits only (no structural changes) | Fixes typos without breaking downstream dependencies. All edits are logged in the audit trail |
 | Canceling is permanent and cannot be undone | Prevents flip-flopping that would confuse downstream status tracking |
-| Only APPROVED requirements can be canceled (not DRAFT) | DRAFT requirements haven't been committed to yet - just edit them directly |
+| DRAFT requirements can be canceled only if they have no children | Prevents orphaning sub-requirements. Clean up children first, then cancel |
+| Canceling an APPROVED requirement cascades to all children | Children lose their purpose when the parent is retired |
 
 ## Test Procedures
 
@@ -29,7 +30,7 @@ Test procedures use **two-entity versioning**: a logical procedure (the containe
 
 | Status | Meaning | Rationale |
 |--------|---------|-----------|
-| **ACTIVE** | The procedure is in use | Default state - the procedure exists and can hold versions |
+| **ACTIVE** | The procedure is in use | Default state - the procedure exists and can hold versions. Title can be edited |
 | **CANCELED** | The procedure is retired | Soft-retirement preserves history while signaling the procedure should not be used |
 
 ### Procedure Version (content snapshot)
@@ -37,7 +38,7 @@ Test procedures use **two-entity versioning**: a logical procedure (the containe
 | Status | Meaning | What you can do | Rationale |
 |--------|---------|-----------------|-----------|
 | **DRAFT** | Version is being written | Edit description and steps, then approve when ready | Allows iteration on test steps before they become the official procedure |
-| **APPROVED** | Version is locked and ready for testing | Create test cases against it. Cannot be edited | Ensures test cases execute against a fixed set of steps - no moving target |
+| **APPROVED** | Version is locked and ready for testing | Create test cases against it. Description can be edited for typo fixes, but steps are locked | Ensures test cases execute against a fixed set of steps - no moving target. Description edits are safe because they don't change what testers execute |
 
 **Flow:** DRAFT -> APPROVED (per version)
 
@@ -46,14 +47,14 @@ Test procedures use **two-entity versioning**: a logical procedure (the containe
 | Rule | Rationale |
 |------|-----------|
 | Only one draft version is allowed per procedure at a time | Prevents confusion about which draft is "current" and avoids merge conflicts between parallel edits |
-| Approving a version locks it permanently - to make changes, create a new version | Guarantees test results can always be traced back to the exact steps that were executed |
+| Approving a version locks the steps permanently - description can still be edited for typo fixes. To change steps, create a new version | Guarantees test results can always be traced back to the exact steps that were executed |
 | You cannot create versions on a canceled procedure | A retired procedure should not accumulate new work - create a new procedure instead |
 
 ## Test Cases
 
 | Status | Meaning | What you can do | Rationale |
 |--------|---------|-----------------|-----------|
-| **PENDING** | Waiting to be executed | Record a result (PASS, FAIL, BLOCKED, or SKIPPED) or skip it | Default state for newly created test cases |
+| **PENDING** | Waiting to be executed | Edit title and description. Record a result (PASS, FAIL, BLOCKED, or SKIPPED) or skip it | Default state for newly created test cases. Editable until a result is recorded |
 | **PASSED** | Test executed successfully | Done | Records a positive result against the procedure version |
 | **FAILED** | Test found a defect | Done | Flags the defect for follow-up without losing the test record |
 | **BLOCKED** | Cannot execute due to external dependency | Record a result when unblocked | Distinguishes "can't test yet" from "chose not to test" (SKIPPED) |
@@ -101,7 +102,8 @@ When a parent entity is canceled, its children are automatically canceled or ski
 
 **How cascades work:**
 - Cascades skip children that are already in the target terminal state (no duplicate operations)
-- Cascade cancellation bypasses the normal status guards - for example, a DRAFT sub-requirement can be cascade-canceled even though direct cancellation requires APPROVED status. This is because the parent's cancellation makes the child's current status irrelevant.
+- Cascade cancellation bypasses the normal status guards - for example, a DRAFT sub-requirement can be cascade-canceled even though direct DRAFT cancellation would normally be blocked if it has children. This is because the parent's cancellation makes the child's current status irrelevant.
+- Direct DRAFT cancellation (not cascade) does NOT cascade - it is blocked if the entity has children. This forces the user to clean up intentionally.
 - Cascades run inside the same database transaction as the parent's status change, so either everything succeeds or nothing does
 
 ## Database Safety Nets
@@ -135,7 +137,7 @@ Every change in the system is logged in the same database transaction as the cha
 | Action | When it's logged | Which entities | Rationale |
 |--------|-----------------|----------------|-----------|
 | CREATE | A new entity is created | All entity types | Tracks who created what and when |
-| UPDATE | A draft entity is edited | Requirements, Sub-Requirements, Procedure Versions | Records what changed so edits can be reviewed |
+| UPDATE | An entity is edited | Requirements, Sub-Requirements, Test Procedures, Procedure Versions, Test Cases | Records what changed so edits can be reviewed (applies to both draft and approved edits) |
 | APPROVE | A draft is approved (locked) | Requirements, Sub-Requirements, Procedure Versions | Marks the moment content became the official baseline |
 | CANCEL | An entity is canceled (retired) | Requirements, Sub-Requirements, Test Procedures | Records the retirement decision and who made it |
 | SKIP | A test case is skipped | Test Cases | Distinguishes intentional skip from incomplete work |

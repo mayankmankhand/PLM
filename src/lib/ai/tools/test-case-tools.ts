@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { RequestContext } from "@/lib/request-context";
 import {
   createTestCase,
+  updateTestCase,
   recordTestResult,
   skipTestCase,
 } from "@/services/test-case.service";
@@ -39,6 +40,39 @@ export function createTestCaseTools(ctx: RequestContext) {
             status: result.status,
             testProcedureVersionId: result.testProcedureVersionId,
             createdAt: result.createdAt,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Update a pending test case --
+    updateTestCase: tool({
+      description:
+        "Update a test case that is still in PENDING status. " +
+        "Once a result has been recorded or the test case has been skipped, it cannot be edited. " +
+        "At least one of title or description must be provided.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the test case to update"),
+        title: z.string().trim().min(1).max(255).optional().describe("New title (optional)"),
+        description: z.string().trim().min(1).optional().describe("New description (optional)"),
+      }).refine(
+        (data) => data.title !== undefined || data.description !== undefined,
+        { message: "At least one of title or description must be provided" }
+      ),
+      execute: async (args) => {
+        try {
+          const input: { title?: string; description?: string } = {};
+          if (args.title !== undefined) input.title = args.title;
+          if (args.description !== undefined) input.description = args.description;
+
+          const result = await updateTestCase(args.id, input, ctx);
+          return {
+            id: result.id,
+            title: result.title,
+            description: result.description,
+            status: result.status,
           };
         } catch (error) {
           return { error: formatToolError(error) };

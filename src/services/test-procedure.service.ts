@@ -9,6 +9,7 @@ import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
 import type {
   CreateTestProcedureInput,
+  UpdateTestProcedureInput,
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
 } from "@/schemas/test-procedure.schema";
@@ -87,6 +88,48 @@ export async function cascadeCancelTestProcedure(
   });
 
   await cascadeSkipTestCases(tx, testProcedureId, ctx);
+}
+
+// ─── Update (ACTIVE only, title only) ─────────────────────
+
+export async function updateTestProcedure(
+  id: string,
+  input: UpdateTestProcedureInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.testProcedure.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot update a canceled test procedure."
+      );
+    }
+
+    const changes: Record<string, unknown> = {};
+    if (input.title !== undefined) changes.title = { from: existing.title, to: input.title };
+
+    const updated = await tx.testProcedure.update({
+      where: { id },
+      data: {
+        ...(input.title !== undefined && { title: input.title }),
+      },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "UPDATE",
+      entityType: "TestProcedure",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes,
+    });
+
+    return updated;
+  });
 }
 
 // ─── Create (logical procedure + draft v1) ───────────────
@@ -197,7 +240,7 @@ export async function createTestProcedureVersion(
   });
 }
 
-// ─── Update version (draft only) ─────────────────────────
+// ─── Update version (DRAFT: all fields, APPROVED: description only) ──
 
 export async function updateTestProcedureVersion(
   versionId: string,
@@ -209,9 +252,16 @@ export async function updateTestProcedureVersion(
       where: { id: versionId },
     });
 
-    if (existing.status !== "DRAFT") {
+    if (existing.status !== "DRAFT" && existing.status !== "APPROVED") {
       throw new LifecycleError(
-        `Cannot update version in ${existing.status} status. Only DRAFT versions can be edited.`
+        `Cannot update version in ${existing.status} status. Only DRAFT or APPROVED versions can be edited.`
+      );
+    }
+
+    // APPROVED versions can only update description (not steps).
+    if (existing.status === "APPROVED" && input.steps !== undefined) {
+      throw new LifecycleError(
+        "Cannot update steps on an APPROVED version. Only description can be edited."
       );
     }
 

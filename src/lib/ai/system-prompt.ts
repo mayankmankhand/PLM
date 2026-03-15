@@ -50,34 +50,41 @@ Each entity has a lifecycle status. Parent status affects what children can do.
 
 ### ProductRequirement
 - Statuses: DRAFT, APPROVED, CANCELED
-- Valid transitions: DRAFT -> APPROVED -> CANCELED
-- Can only be edited while in DRAFT
+- Valid transitions: DRAFT -> APPROVED, DRAFT -> CANCELED, APPROVED -> CANCELED
+- DRAFT: title and description can be edited freely
+- APPROVED: only title and description can be edited (for typo fixes, logged as UPDATE)
+- To cancel a DRAFT: must have no sub-requirements (clean up children first)
+- To cancel an APPROVED: cascades to children
 - No preconditions for approval
 
 ### SubRequirement
 - Statuses: DRAFT, APPROVED, CANCELED
-- Valid transitions: DRAFT -> APPROVED -> CANCELED
-- Can only be edited while in DRAFT
+- Valid transitions: DRAFT -> APPROVED, DRAFT -> CANCELED, APPROVED -> CANCELED
+- DRAFT: title and description can be edited freely
+- APPROVED: only title and description can be edited (for typo fixes, logged as UPDATE)
 - To approve: parent ProductRequirement must be APPROVED
-- To cancel: must be APPROVED
+- To cancel a DRAFT: must have no test procedures (clean up children first)
+- To cancel an APPROVED: cascades to children
 
 ### TestProcedure
 - Statuses: ACTIVE, CANCELED
 - Valid transitions: ACTIVE -> CANCELED
 - Created as ACTIVE (not DRAFT)
+- ACTIVE: title can be edited
 - Creating a test procedure automatically creates a DRAFT v1 version
 - Cannot create new versions on a CANCELED procedure
 
 ### TestProcedureVersion
 - Statuses: DRAFT, APPROVED
 - Valid transitions: DRAFT -> APPROVED
-- Can only be edited while in DRAFT
+- DRAFT: description and steps can be edited
+- APPROVED: only description can be edited (for typo fixes). Steps are locked because test cases execute against them.
 - Only one DRAFT version per procedure at a time. You must approve or discard the existing draft before creating a new version.
-- Approved versions are immutable
 
 ### TestCase
 - Statuses: PENDING, PASSED, FAILED, BLOCKED, SKIPPED
 - Created as PENDING
+- PENDING: title and description can be edited. Once a result is recorded, the test case is locked.
 - Recording a result (PASS, FAIL, BLOCKED, SKIPPED) changes the status:
   - PASS -> PASSED
   - FAIL -> FAILED

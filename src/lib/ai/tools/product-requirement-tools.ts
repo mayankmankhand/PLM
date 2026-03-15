@@ -41,10 +41,11 @@ export function createProductRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Update a draft product requirement --
+    // -- Update a product requirement (DRAFT or APPROVED) --
     updateProductRequirement: tool({
       description:
-        "Update a product requirement that is still in DRAFT status. " +
+        "Update a product requirement (DRAFT or APPROVED). " +
+        "Title and description can be changed. CANCELED requirements cannot be edited. " +
         "At least one of title or description must be provided.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the product requirement to update"),
@@ -97,11 +98,12 @@ export function createProductRequirementTools(ctx: RequestContext) {
       },
     }),
 
-    // -- Cancel an approved product requirement --
+    // -- Cancel a product requirement (DRAFT or APPROVED) --
     cancelProductRequirement: tool({
       description:
-        "Mark an approved product requirement as canceled. " +
-        "Only APPROVED requirements can be canceled. " +
+        "Mark a product requirement as canceled. " +
+        "DRAFT requirements can be canceled only if they have no sub-requirements. " +
+        "APPROVED requirements can be canceled (cascades to children). " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the product requirement to cancel"),

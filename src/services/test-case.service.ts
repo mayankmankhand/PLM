@@ -9,6 +9,7 @@ import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
 import type {
   CreateTestCaseInput,
+  UpdateTestCaseInput,
   RecordTestResultInput,
 } from "@/schemas/test-case.schema";
 
@@ -48,6 +49,50 @@ export async function createTestCase(
     });
 
     return testCase;
+  });
+}
+
+// ─── Update (PENDING only, title + description) ──────────
+
+export async function updateTestCase(
+  id: string,
+  input: UpdateTestCaseInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.testCase.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.status !== "PENDING") {
+      throw new LifecycleError(
+        `Cannot update test case in ${existing.status} status. Only PENDING test cases can be edited.`
+      );
+    }
+
+    const changes: Record<string, unknown> = {};
+    if (input.title !== undefined) changes.title = { from: existing.title, to: input.title };
+    if (input.description !== undefined) changes.description = { from: existing.description, to: input.description };
+
+    const updated = await tx.testCase.update({
+      where: { id },
+      data: {
+        ...(input.title !== undefined && { title: input.title }),
+        ...(input.description !== undefined && { description: input.description }),
+      },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "UPDATE",
+      entityType: "TestCase",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes,
+    });
+
+    return updated;
   });
 }
 
