@@ -49,3 +49,25 @@ For each changed file:
 ## 5. Ask if Uncertain
 
 If you're unsure about intent behind a change or user-facing impact, **ask the user** - don't guess.
+
+## 6. Worktree Cleanup
+
+Detect if you're in a worktree: compare `git rev-parse --git-dir` with `git rev-parse --git-common-dir`. If they differ, you're in a worktree.
+
+**If NOT in a worktree** - skip this section entirely.
+
+**If in a worktree:**
+
+Walk the user through each step one at a time, confirming before proceeding to the next.
+
+1. Run `git status`. If there are uncommitted changes, ask the user whether to commit them before proceeding. Follow the commit message conventions in toolkit.md (start with a verb, under 50 characters). Do not continue with uncommitted work.
+2. Push the branch to the remote.
+3. If the branch name does not match `worktree-<number>-<label>`, ask the user: "Your branch still has its default name. Want to rename it before creating the PR?" Follow the worktree naming convention in toolkit.md if they say yes.
+4. Draft a PR title and body summarizing the branch's changes. Show it to the user for review, then create the PR:
+   ```
+   gh pr create --base main --title "..." --body "..."
+   ```
+5. Show the user the PR URL.
+6. Ask the user: "Want me to delete this worktree? The branch and PR will stay - only the local folder is removed."
+7. If they say yes, run `git worktree remove <worktree-root-path>` from outside the worktree directory. If removal fails due to untracked files (build artifacts, .env.local, etc.), let the user know they can clean up manually or use `--force`.
+8. The branch stays alive on GitHub until the PR is merged or closed. To re-create the worktree later if fixes are needed: `git worktree add <path> <branch-name>`.

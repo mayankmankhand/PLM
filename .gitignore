@@ -31,3 +31,5 @@ PLAN-*.md
 
 # IDE (local Cursor settings - shared commands are in .claude/commands/)
 .cursor/
+.claude/plans/PLAN-*.md
+.claude/worktrees/

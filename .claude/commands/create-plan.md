@@ -2,6 +2,20 @@
 
 Based on our full exchange, produce a markdown plan document.
 
+## Worktree Check
+
+<procedure>
+
+**Fallback branch rename** - `/explore` is the primary place this happens, but if the user skipped it or didn't have an issue number yet, handle it here before generating the plan.
+
+1. Detect if you're in a worktree: compare `git rev-parse --git-dir` with `git rev-parse --git-common-dir`. If they differ, you're in a worktree.
+2. Check if the current branch name does NOT already match the `worktree-<number>-<label>` pattern.
+3. If both are true AND an issue is referenced in the conversation, rename the branch following the worktree naming convention in toolkit.md.
+4. Tell the user: "Renamed your branch from `old-name` to `worktree-XX-short-label` to match the issue."
+5. If not in a worktree, or the branch is already renamed, skip silently.
+
+</procedure>
+
 ## Requirements for the Plan
 
 <rules>
@@ -49,6 +63,12 @@ Short summary of what we're building and why.
 **Current State:** Where things are now.
 **Goal State:** Where we want to end up.
 
+## UI/UX Design (optional - only when the feature involves UI)
+<!-- Include this section when the feature has a user interface. Document what was decided during /explore. -->
+- **Source:** User-provided / AI-proposed, user-approved
+- **Look:** [Layout, style, colors, visual direction - whatever was decided]
+- **Behavior:** [Interactions, flows, states - whatever was decided]
+
 ## Critical Decisions
 Key architectural/implementation choices made during exploration:
 - Decision 1: [choice] - [brief rationale]
@@ -77,8 +97,12 @@ Key architectural/implementation choices made during exploration:
 
 <rules>
 
-Again, it's still not time to build yet. Just write the clear plan document. No extra complexity or extra scope beyond what we discussed.
+Save the plan to `.claude/plans/` using this naming convention:
+- If an issue is referenced: `PLAN-issue-<number>.md` (e.g., `.claude/plans/PLAN-issue-42.md`)
+- If no issue: `PLAN-<short-name>.md` (e.g., `.claude/plans/PLAN-auth-flow.md`)
 
-If your plan includes UI work, consider running `/ui-spec` before `/execute` to set design guardrails (colors, fonts, accessibility rules).
+Create the `.claude/plans/` directory if it doesn't exist.
+
+Again, it's still not time to build yet. Just write the clear plan document. No extra complexity or extra scope beyond what we discussed.
 
 </rules>

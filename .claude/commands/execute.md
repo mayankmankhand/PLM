@@ -18,7 +18,7 @@ When the plan has steps tagged `[parallel]`, follow these rules:
 
 <conditions>
 ### Pre-flight Check
-Before spawning parallel agents, list the files each agent will touch. If any files overlap between agents, downgrade those steps to `[sequential]`.
+Before spawning parallel agents, list the files each agent will touch. If any files overlap between agents, downgrade the overlapping steps to `[sequential]`. Non-overlapping steps can still run in parallel.
 
 ### User Confirmation
 Before starting parallel work, tell the user what each task will do:
@@ -37,30 +37,6 @@ After all parallel steps finish, always run a sequential checkpoint:
 2. Run tests (if any exist)
 3. Resolve inconsistencies between parallel outputs
 4. Update the plan status
-</conditions>
-
-## UI Spec Awareness
-
-<conditions>
-When the plan has a `## UI Specification` section linking to a `UI-SPEC-*.md` file:
-
-1. **Read the UI-SPEC file** at the start of execution
-2. **The UI-SPEC is the single source of truth** for design decisions - do not read the reference files in `.claude/ui-reference/`
-
-### For `[UI]`-tagged steps:
-
-**Before writing UI code** (Design System Injection):
-- State the active palette ID and key hex codes (primary, bg, text)
-- State the active font pairing ID and font names
-
-**After writing UI code** (micro-checklist - report, don't gate):
-1. Text/background contrast meets WCAG AA (4.5:1 minimum)
-2. Spacing scale declared and applied consistently
-3. Interactive elements have visible focus indicators
-
-**If a step looks visual but has no `[UI]` tag:**
-- Warn the user: "This step appears to involve UI work but isn't tagged `[UI]` in the plan. Should I apply the UI spec here?"
-- Wait for confirmation before proceeding
 </conditions>
 
 ## When to Stop

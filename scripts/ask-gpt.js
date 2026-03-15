@@ -70,11 +70,16 @@ const CONFIG = {
   retryDelayMs: 1000,
 };
 
+// Constants
+const MAX_FILE_SIZE = 500 * 1024; // 500KB
+
 // Error messages
 const ERR = {
   MISSING_KEY: 'OPENAI_API_KEY not found. Add it to .env.local',
   MISSING_ARG: (arg) => `Missing required argument: ${arg}`,
   FILE_NOT_FOUND: (f) => `File not found: ${f}`,
+  FILE_TOO_LARGE: (f, sizeMB) =>
+    `File is too large (${sizeMB} MB). Maximum size is 500KB. Try a smaller file or use /package-review to select specific files.`,
   API_ERROR: (msg) => `OpenAI API error: ${msg}`,
   UNKNOWN_CMD: (cmd) => `Unknown command: ${cmd}. Use review, respond, or summary.`,
 };
@@ -158,8 +163,8 @@ Notable observations from the debate worth remembering`,
 function isTransientError(errorMsg) {
   const transientPatterns = [
     /timeout|timed out|ETIMEDOUT|aborted/i,
-    /429|rate.?limit|too.?many.?requests/i,
-    /50[0-9]|internal.?server|service.?unavailable|bad.?gateway/i,
+    /\b429\b|rate.?limit|too.?many.?requests/i,
+    /\b50[0-9]\b|internal.?server|service.?unavailable|bad.?gateway/i,
     /ECONNRESET|ECONNREFUSED|ENOTFOUND/i,
   ];
   return transientPatterns.some(pattern => pattern.test(errorMsg));
@@ -253,6 +258,7 @@ Examples:
 
 /**
  * Read file content.
+ * Checks file size before reading to prevent oversized payloads.
  */
 function readFile(filePath) {
   const absolutePath = path.isAbsolute(filePath)
@@ -261,6 +267,12 @@ function readFile(filePath) {
 
   if (!fs.existsSync(absolutePath)) {
     throw new Error(ERR.FILE_NOT_FOUND(filePath));
+  }
+
+  const stats = fs.statSync(absolutePath);
+  if (stats.size > MAX_FILE_SIZE) {
+    const sizeMB = (stats.size / (1024 * 1024)).toFixed(1);
+    throw new Error(ERR.FILE_TOO_LARGE(filePath, sizeMB));
   }
 
   return fs.readFileSync(absolutePath, 'utf-8');
@@ -295,9 +307,14 @@ function sleep(ms) {
  */
 async function callChatGPT(client, system, user) {
   let lastError;
-  
+
   // Try up to 2 times (initial + 1 retry)
   for (let attempt = 1; attempt <= 2; attempt++) {
+    // Progress indicator for long API calls
+    const progressTimer = setTimeout(() => {
+      console.log('⏳ Still waiting for response...');
+    }, 10000);
+
     try {
       // Using max_completion_tokens (not max_tokens) as required by newer OpenAI models (gpt-4+)
       // See: https://platform.openai.com/docs/api-reference/chat/create
@@ -310,19 +327,21 @@ async function callChatGPT(client, system, user) {
         ],
       });
 
+      clearTimeout(progressTimer);
       const text = response.choices[0]?.message?.content;
       return typeof text === 'string' ? text.trim() : '';
     } catch (error) {
+      clearTimeout(progressTimer);
       const msg = error instanceof Error ? error.message : String(error);
       lastError = msg;
-      
+
       // Check if this is a transient error worth retrying
       if (attempt === 1 && isTransientError(msg)) {
         console.log(`⚠️  Transient error detected, retrying in ${CONFIG.retryDelayMs}ms...`);
         await sleep(CONFIG.retryDelayMs);
         continue;
       }
-      
+
       // Non-transient error or second attempt failed
       if (/timeout|timed out|ETIMEDOUT|aborted/i.test(msg)) {
         throw new Error('Request timed out. Try again.');
@@ -330,7 +349,7 @@ async function callChatGPT(client, system, user) {
       throw new Error(ERR.API_ERROR(msg));
     }
   }
-  
+
   // Should not reach here, but just in case
   throw new Error(ERR.API_ERROR(lastError));
 }

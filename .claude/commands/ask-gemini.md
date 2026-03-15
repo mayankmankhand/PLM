@@ -28,10 +28,9 @@ Based on their answer, gather the relevant context:
 - **Feature**: Ask which files are involved, then read them
 - **Other**: Ask clarifying questions until you understand the scope
 
-Save all gathered context to a temporary file using the **Write tool** (not Bash):
+Save all gathered context to a temporary file:
 
-- **File path:** `/tmp/ask-gemini-context.md`
-- **Content:** The gathered context to review
+Use the **Write** tool to save all gathered context to `/tmp/ask-gemini-context.md`.
 
 ## Step 3: Get Initial Review from Gemini
 
@@ -41,7 +40,9 @@ Run the ask-gemini script to get Gemini's initial review:
 node scripts/ask-gemini.js review --context-file /tmp/ask-gemini-context.md --review-type [plan|code|branch|feature]
 ```
 
-Read the output and present Gemini's review to yourself for response.
+Read the script output. In the next step, you'll respond to this review as the author.
+
+If the script fails, show the error to the user. Common issues: missing API key in `.env.local` or environment variables, network errors, rate limits. Do not retry automatically.
 
 ## Step 4: Debate Cycle (Repeat 3 Times)
 
@@ -64,7 +65,9 @@ Clarifications needed from the reviewer
 
 ### 4b. Save the Debate History
 
-Append your response to the debate file using the **Edit tool** (append to `/tmp/ask-gemini-debate.md`), or use the **Write tool** if the file doesn't exist yet. Format:
+Append your response to a debate file:
+
+Save each round to its own file: `/tmp/ask-gemini-round-N.md` (e.g., `/tmp/ask-gemini-round-1.md`). Use the **Write** tool to create each file fresh:
 
 ```markdown
 ## Claude (Round N):
@@ -78,13 +81,17 @@ Append your response to the debate file using the **Edit tool** (append to `/tmp
 node scripts/ask-gemini.js respond --context-file /tmp/ask-gemini-context.md --debate-file /tmp/ask-gemini-debate.md
 ```
 
-Append Gemini's response to the debate file and continue to the next round.
+Save Gemini's response to its own round file (e.g., `/tmp/ask-gemini-round-1-gemini.md`), then continue to the next round.
 
 **Repeat this cycle 3 times total.**
 
 ## Step 5: Generate Summary
 
-After 3 debate cycles, generate the final summary:
+After 3 debate cycles, concatenate all round files into a single debate file, then generate the final summary:
+
+```bash
+cat /tmp/ask-gemini-round-*.md > /tmp/ask-gemini-debate.md
+```
 
 ```bash
 node scripts/ask-gemini.js summary --context-file /tmp/ask-gemini-context.md --debate-file /tmp/ask-gemini-debate.md

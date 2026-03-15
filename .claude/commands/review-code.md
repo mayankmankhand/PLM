@@ -2,6 +2,9 @@
 
 Be thorough but concise.
 
+**Use this when:** Reviewing code changes - bug fixes, new features, refactors, scripts.
+**Don't use this when:** Reviewing slash command prompts (/review-commands), checking plan completion (/review-plan), evaluating UX (/review-ux), or doing a pre-release check (/review-full).
+
 ## CRITICAL RULES
 <rules>
 1. **REPORT ONLY** - Do NOT make any changes or edits to files
@@ -13,17 +16,18 @@ Be thorough but concise.
 <procedure>
 Read the changed files. Then pick one of two modes:
 
-**Small change** (1-2 files, ~20 lines or less): Review in a single pass. No sub-agents needed.
+**Small change** (1-2 files): Review in a single pass. No sub-agents needed.
 
-**Bigger change** (3+ files or significant logic): Run three focused sub-agents in parallel using the Agent tool, then combine their results:
+**Bigger change** (3+ files or significant logic): Run four focused sub-agents in parallel using the Agent tool, then combine their results:
 
 | Sub-agent | What it checks |
 |-----------|----------------|
 | **Security** | Auth checks, input validation, secrets exposure, injection risks |
 | **Code Quality** | Naming, duplication, complexity, pattern consistency |
 | **Logic** | Edge cases, off-by-ones, missing error handling, wrong assumptions |
+| **Performance & Maintainability** | O(n) issues, memory usage, tech debt, maintainability concerns |
 
-Each sub-agent should use the severity scale and Finding ID format below.
+Each sub-agent should use the severity scale and Finding ID format below. If a sub-agent has no findings, it should report "No issues found" so the user knows it ran.
 </procedure>
 
 ## Severity Levels
@@ -31,6 +35,19 @@ Each sub-agent should use the severity scale and Finding ID format below.
 - 🚫 **Block** - Will break the app. Must fix before merging.
 - ⚠️ **Warn** - Should fix before shipping. Risk of bugs or tech debt.
 - 💡 **Suggest** - Nice to have. Improves quality but not urgent.
+
+<!-- Shared block - keep in sync with other review-*.md files -->
+**Severity anchors (apply to all review types):**
+These categories have minimum severity floors - never downgrade them:
+- Exposed secrets, insecure auth, or injection risks = always at least **Warn**, usually **Block**
+- Data loss or irreversible user harm without safeguards = always at least **Warn**
+- Accessibility failures blocking keyboard/screen-reader on primary tasks = always at least **Warn**
+- Committed requirements plainly unmet = always at least **Warn**
+
+**Code review weighting:**
+- Security vulnerabilities and data-loss risks = lean toward **Block**
+- Performance issues in hot paths = lean toward **Warn**
+- Style and naming = lean toward **Suggest** unless it harms readability
 </reference>
 
 ## Finding IDs
@@ -61,22 +78,6 @@ Every finding gets a unique ID: **R1**, **R2**, **R3**, etc. This lets the user 
   - **Why:** [Why this matters]
   - **Fix direction:** [Approach]
 </output_format>
-
-### 🎨 Design Review (only when UI-SPEC exists)
-<conditions>
-If the project has a `UI-SPEC-*.md` file linked from the plan, include a design review section. If no UI-SPEC exists, skip this section entirely.
-
-Read the UI-SPEC file, then check:
-
-- **Palette compliance** - Do the colors in the code match the spec's palette? Flag any hardcoded hex values that should use variables.
-- **Typography compliance** - Are the correct fonts loaded and applied? Check heading vs body font usage.
-- **Contrast** - Do key text/background pairs meet WCAG AA (4.5:1 minimum)?
-- **Focus states** - Do interactive elements (buttons, links, inputs) have visible focus indicators?
-- **Touch targets** - Are clickable elements at least 44x44px on mobile?
-- **Responsive** - Does the layout work at 375px, 768px, and 1024px breakpoints?
-
-Use the same severity scale (Block/Warn/Suggest) and Finding IDs (D1, D2, D3...) for design findings. Keep design findings separate from code findings so the user can address them independently.
-</conditions>
 
 ### 🏗️ Staff Engineer Check
 <guidelines>

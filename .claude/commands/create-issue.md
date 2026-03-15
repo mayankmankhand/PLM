@@ -11,10 +11,12 @@ I'll handle the rest.
 
 ## CRITICAL RULES
 
+<rules>
 1. **ASK 2-3 QUESTIONS FIRST** - Never create the issue immediately
 2. **Keep issues SHORT** - Max 10-15 lines total
 3. **NO implementation details** - No code, no file paths, no technical approach
 4. **Capture the WHAT, not the HOW**
+</rules>
 
 ## Questions to Ask
 

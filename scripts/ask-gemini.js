@@ -73,11 +73,16 @@ const CONFIG = {
   retryDelayMs: 1000,
 };
 
+// Constants
+const MAX_FILE_SIZE = 500 * 1024; // 500KB
+
 // Error messages
 const ERR = {
   MISSING_KEY: 'GEMINI_API_KEY not found. Add it to .env.local',
   MISSING_ARG: (arg) => `Missing required argument: ${arg}`,
   FILE_NOT_FOUND: (f) => `File not found: ${f}`,
+  FILE_TOO_LARGE: (f, sizeMB) =>
+    `File is too large (${sizeMB} MB). Maximum size is 500KB. Try a smaller file or use /package-review to select specific files.`,
   API_ERROR: (msg) => `Gemini API error: ${msg}`,
   UNKNOWN_CMD: (cmd) => `Unknown command: ${cmd}. Use review, respond, or summary.`,
 };
@@ -161,8 +166,8 @@ Notable observations from the debate worth remembering`,
 function isTransientError(errorMsg) {
   const transientPatterns = [
     /timeout|timed out|ETIMEDOUT|aborted/i,
-    /429|rate.?limit|too.?many.?requests/i,
-    /50[0-9]|internal.?server|service.?unavailable|bad.?gateway/i,
+    /\b429\b|rate.?limit|too.?many.?requests/i,
+    /\b50[0-9]\b|internal.?server|service.?unavailable|bad.?gateway/i,
     /ECONNRESET|ECONNREFUSED|ENOTFOUND/i,
   ];
   return transientPatterns.some(pattern => pattern.test(errorMsg));
@@ -257,6 +262,7 @@ Examples:
 
 /**
  * Read file content.
+ * Checks file size before reading to prevent oversized payloads.
  */
 function readFile(filePath) {
   const absolutePath = path.isAbsolute(filePath)
@@ -267,24 +273,34 @@ function readFile(filePath) {
     throw new Error(ERR.FILE_NOT_FOUND(filePath));
   }
 
+  const stats = fs.statSync(absolutePath);
+  if (stats.size > MAX_FILE_SIZE) {
+    const sizeMB = (stats.size / (1024 * 1024)).toFixed(1);
+    throw new Error(ERR.FILE_TOO_LARGE(filePath, sizeMB));
+  }
+
   return fs.readFileSync(absolutePath, 'utf-8');
 }
 
 /**
- * Initialize Gemini client.
- * Returns the generative model instance ready for use.
- * Uses systemInstruction when available, unless fallback mode is enabled.
+ * Initialize GoogleGenerativeAI client.
+ * Creates the client once; call getModel() to get a model for a specific prompt.
  */
-function initGemini(systemPrompt) {
+function initGemini() {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
     throw new Error(ERR.MISSING_KEY);
   }
 
   const { GoogleGenerativeAI } = require('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(apiKey);
-  
-  // Build model config
+  return new GoogleGenerativeAI(apiKey);
+}
+
+/**
+ * Get a generative model from the client with the given system prompt.
+ * Uses systemInstruction when available, unless fallback mode is enabled.
+ */
+function getModel(client, systemPrompt) {
   const modelConfig = {
     model: CONFIG.model,
     generationConfig: {
@@ -297,7 +313,7 @@ function initGemini(systemPrompt) {
     modelConfig.systemInstruction = systemPrompt;
   }
 
-  return genAI.getGenerativeModel(modelConfig);
+  return client.getGenerativeModel(modelConfig);
 }
 
 /**
@@ -312,35 +328,42 @@ function sleep(ms) {
  * Uses systemInstruction by default, falls back to concatenation if GEMINI_USE_CONCAT_PROMPT=1.
  * Includes one transparent retry on transient errors.
  */
-async function callGemini(systemPrompt, userPrompt) {
-  const model = initGemini(systemPrompt);
-  
+async function callGemini(client, systemPrompt, userPrompt) {
+  const model = getModel(client, systemPrompt);
+
   // Build the prompt based on mode
   const prompt = CONFIG.useConcatPrompt
     ? `${systemPrompt}\n\n---\n\n${userPrompt}`
     : userPrompt;
 
   let lastError;
-  
+
   // Try up to 2 times (initial + 1 retry)
   for (let attempt = 1; attempt <= 2; attempt++) {
+    // Progress indicator for long API calls
+    const progressTimer = setTimeout(() => {
+      console.log('⏳ Still waiting for response...');
+    }, 10000);
+
     try {
       const result = await model.generateContent(prompt);
+      clearTimeout(progressTimer);
       const response = result.response;
       const text = response.text();
-      
+
       return typeof text === 'string' ? text.trim() : '';
     } catch (error) {
+      clearTimeout(progressTimer);
       const msg = error instanceof Error ? error.message : String(error);
       lastError = msg;
-      
+
       // Check if this is a transient error worth retrying
       if (attempt === 1 && isTransientError(msg)) {
         console.log(`⚠️  Transient error detected, retrying in ${CONFIG.retryDelayMs}ms...`);
         await sleep(CONFIG.retryDelayMs);
         continue;
       }
-      
+
       // Non-transient error or second attempt failed
       if (/timeout|timed out|ETIMEDOUT|aborted/i.test(msg)) {
         throw new Error('Request timed out. Try again.');
@@ -348,7 +371,7 @@ async function callGemini(systemPrompt, userPrompt) {
       throw new Error(ERR.API_ERROR(msg));
     }
   }
-  
+
   // Should not reach here, but just in case
   throw new Error(ERR.API_ERROR(lastError));
 }
@@ -356,7 +379,7 @@ async function callGemini(systemPrompt, userPrompt) {
 /**
  * Command: Initial review from Gemini.
  */
-async function cmdReview(context, reviewType) {
+async function cmdReview(client, context, reviewType) {
   console.log('📝 Getting initial review from Gemini...\n');
 
   const userMessage = `Please review the following ${reviewType}:
@@ -369,7 +392,7 @@ ${context}
 
 Provide your peer review following the structure in your instructions.`;
 
-  const response = await callGemini(PROMPTS.reviewer, userMessage);
+  const response = await callGemini(client, PROMPTS.reviewer, userMessage);
 
   console.log('--- Gemini Review ---\n');
   console.log(response);
@@ -381,7 +404,7 @@ Provide your peer review following the structure in your instructions.`;
 /**
  * Command: Get Gemini's response to Claude's feedback.
  */
-async function cmdRespond(context, debateHistory) {
+async function cmdRespond(client, context, debateHistory) {
   console.log('🔄 Getting Gemini response to Claude...\n');
 
   const userMessage = `Original content under review:
@@ -402,7 +425,7 @@ ${debateHistory}
 
 Continue the peer review discussion. Respond to the author's latest points following the structure in your instructions.`;
 
-  const response = await callGemini(PROMPTS.debateFollowup, userMessage);
+  const response = await callGemini(client, PROMPTS.debateFollowup, userMessage);
 
   console.log('--- Gemini Response ---\n');
   console.log(response);
@@ -414,7 +437,7 @@ Continue the peer review discussion. Respond to the author's latest points follo
 /**
  * Command: Generate final summary.
  */
-async function cmdSummary(context, debateHistory) {
+async function cmdSummary(client, context, debateHistory) {
   console.log('📊 Generating debate summary...\n');
 
   const userMessage = `Original content reviewed:
@@ -435,7 +458,7 @@ ${debateHistory}
 
 Synthesize this debate into the structured summary format in your instructions.`;
 
-  const response = await callGemini(PROMPTS.summary, userMessage);
+  const response = await callGemini(client, PROMPTS.summary, userMessage);
 
   console.log('--- Debate Summary ---\n');
   console.log(response);
@@ -456,13 +479,15 @@ async function main() {
   }
 
   try {
+    const client = initGemini();
+
     switch (args.command) {
       case 'review': {
         if (!args.contextFile) {
           throw new Error(ERR.MISSING_ARG('--context-file'));
         }
         const context = readFile(args.contextFile);
-        await cmdReview(context, args.reviewType);
+        await cmdReview(client, context, args.reviewType);
         break;
       }
 
@@ -475,7 +500,7 @@ async function main() {
         }
         const context = readFile(args.contextFile);
         const debate = readFile(args.debateFile);
-        await cmdRespond(context, debate);
+        await cmdRespond(client, context, debate);
         break;
       }
 
@@ -488,7 +513,7 @@ async function main() {
         }
         const context = readFile(args.contextFile);
         const debate = readFile(args.debateFile);
-        await cmdSummary(context, debate);
+        await cmdSummary(client, context, debate);
         break;
       }
 
