@@ -97,6 +97,8 @@ cat /tmp/ask-gemini-round-*.md > /tmp/ask-gemini-debate.md
 node scripts/ask-gemini.js summary --context-file /tmp/ask-gemini-context.md --debate-file /tmp/ask-gemini-debate.md
 ```
 
+</procedure>
+
 ## Step 6: Present Results to User
 
 Present the summary to the user in this format:
@@ -138,8 +140,6 @@ Ask the user:
 **CRITICAL**: Do NOT implement anything until the user explicitly approves.
 
 </rules>
-
-</procedure>
 
 ---
 

@@ -3,14 +3,14 @@
 Mile wide, inch deep. Cross-domain release readiness, not a deep specialist review.
 
 **Use this when:** Pre-release gate, major milestone check, or when multiple domains changed significantly and you need a single go/no-go assessment.
-**Don't use this when:** You need deep review of one area - use /review-code, /review-commands, /review-plan, or /review-ux instead. This command will recommend which specialist review to run if it finds areas needing deeper attention.
+**Don't use this when:** You need deep review of one area - use /review-code, /review-commands, /review-plan, /review-ux, or /review-browser instead. This command will recommend which specialist review to run if it finds areas needing deeper attention.
 
 ## CRITICAL RULES
 <rules>
 1. **REPORT ONLY** - Do NOT make any changes or edits to files
 2. **Wait for approval** - Only fix things after I say "fix it"
 3. **Explain simply** - I'm a PM learning to code, use plain English
-4. **Do not try to reproduce specialist reviews** - Prioritize cross-domain issues, release blockers, and interactions between code, UX, scope, and operations
+4. **Don't duplicate specialist reviews** - Prioritize cross-domain issues, release blockers, and interactions between code, UX, scope, and operations. If something needs deeper investigation, recommend which specialist command to run next.
 </rules>
 
 ## How to Review
