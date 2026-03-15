@@ -36,6 +36,11 @@
 - **Three-model review consensus catches domain bugs.** All three reviewers (Claude, GPT, Gemini) independently flagged that SKIPPED test cases were being counted as PENDING in the aggregation query. Different signal, different meaning - SKIPPED is terminal, PENDING means not yet run. Without the review, users would see inflated "pending" counts.
 - **Fetch N+1, return N for truncation detection.** Query `take: 16` but only return 15 rows. If 16 come back, set `isTruncated: true` and tell the user more results exist. Simpler than running a separate COUNT query, and the extra row is discarded before reaching the client.
 
+- **"Documented behavior with no implementation" is a bug category.** The STATUS-GUIDE said "DRAFT = edit freely" but no edit path existed for several entities. The docs and code told different stories. When reviewing, check documented behaviors against actual implementation - not just code quality.
+- **Analyze the full state matrix before scoping.** We started thinking Issue #48 was "add DRAFT editing" but walking through every entity x every status revealed a much broader picture (approved typos, DRAFT cancel, test procedure titles, pending test cases). A table of entity x state x allowed operations catches gaps that narrative descriptions miss.
+- **"Block if children exist" is safer than cascading for DRAFT cancel.** Cascading makes sense for APPROVED cancel (committed work being retired), but for DRAFT cancel the user hasn't committed to anything yet. Forcing intentional cleanup prevents accidental data loss without adding ceremony.
+- **Review findings converge across reviewers.** The DRAFT/APPROVED description redundancy was flagged independently by both UX and Command reviews. When multiple reviewers find the same thing unprompted, fix it immediately rather than deferring.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
