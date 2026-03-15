@@ -33,22 +33,24 @@ export async function cascadeSkipTestCases(
     select: { id: true, status: true },
   });
 
-  for (const tc of testCases) {
-    await tx.testCase.update({
-      where: { id: tc.id },
-      data: { status: "SKIPPED" },
-    });
+  await Promise.all(
+    testCases.map(async (tc) => {
+      await tx.testCase.update({
+        where: { id: tc.id },
+        data: { status: "SKIPPED" },
+      });
 
-    await writeAuditLog(tx, {
-      actorId: ctx.userId,
-      action: "SKIP",
-      entityType: "TestCase",
-      entityId: tc.id,
-      source: ctx.source,
-      requestId: ctx.requestId,
-      changes: { status: { from: tc.status, to: "SKIPPED" } },
-    });
-  }
+      await writeAuditLog(tx, {
+        actorId: ctx.userId,
+        action: "SKIP",
+        entityType: "TestCase",
+        entityId: tc.id,
+        source: ctx.source,
+        requestId: ctx.requestId,
+        changes: { status: { from: tc.status, to: "SKIPPED" } },
+      });
+    })
+  );
 }
 
 /**

@@ -80,7 +80,7 @@ export function ContextPanel() {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, setPanelWidth]);
 
   const badge = content ? TYPE_BADGES[content.type] : null;
   const BadgeIcon = badge?.icon;

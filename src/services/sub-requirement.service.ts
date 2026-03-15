@@ -54,9 +54,9 @@ export async function cascadeCancelSubRequirement(
     select: { id: true },
   });
 
-  for (const tp of procedures) {
-    await cascadeCancelTestProcedure(tx, tp.id, ctx);
-  }
+  await Promise.all(
+    procedures.map((tp) => cascadeCancelTestProcedure(tx, tp.id, ctx))
+  );
 }
 
 // ─── Create ──────────────────────────────────────────────
@@ -226,9 +226,9 @@ export async function cancelSubRequirement(
       select: { id: true },
     });
 
-    for (const tp of procedures) {
-      await cascadeCancelTestProcedure(tx, tp.id, ctx);
-    }
+    await Promise.all(
+      procedures.map((tp) => cascadeCancelTestProcedure(tx, tp.id, ctx))
+    );
 
     return tx.subRequirement.findUniqueOrThrow({ where: { id } });
   });

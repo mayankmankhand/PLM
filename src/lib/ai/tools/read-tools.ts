@@ -173,7 +173,7 @@ export function createReadTools() {
         "Searches across product requirements, sub-requirements, test procedures, and test cases. " +
         "Returns up to 10 results per entity type.",
       inputSchema: z.object({
-        query: z.string().min(1).describe("Search term to match against titles"),
+        query: z.string().trim().min(1).describe("Search term to match against titles"),
         entityType: z
           .enum([
             "ProductRequirement",

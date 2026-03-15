@@ -19,8 +19,8 @@ export function createTestCaseTools(ctx: RequestContext) {
         "Create a new test case linked to a test procedure version. " +
         "Starts in PENDING status with no result.",
       inputSchema: z.object({
-        title: z.string().min(1).max(255).describe("Short title for the test case"),
-        description: z.string().min(1).describe("What this test case verifies"),
+        title: z.string().trim().min(1).max(255).describe("Short title for the test case"),
+        description: z.string().trim().min(1).describe("What this test case verifies"),
         testProcedureVersionId: z.string().uuid().describe("ID of the parent test procedure version"),
       }),
       execute: async (args) => {
@@ -55,7 +55,7 @@ export function createTestCaseTools(ctx: RequestContext) {
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the test case"),
         result: z.enum(["PASS", "FAIL", "BLOCKED", "SKIPPED"]).describe("Test result"),
-        notes: z.string().optional().describe("Optional notes about the result"),
+        notes: z.string().trim().optional().describe("Optional notes about the result"),
       }),
       execute: async (args) => {
         try {

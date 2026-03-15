@@ -20,8 +20,8 @@ export function createSubRequirementTools(ctx: RequestContext) {
         "Create a new sub-requirement linked to a parent product requirement and a team. " +
         "Starts in DRAFT status.",
       inputSchema: z.object({
-        title: z.string().min(1).max(255).describe("Short title for the sub-requirement"),
-        description: z.string().min(1).describe("Detailed description"),
+        title: z.string().trim().min(1).max(255).describe("Short title for the sub-requirement"),
+        description: z.string().trim().min(1).describe("Detailed description"),
         productRequirementId: z.string().uuid().describe("ID of the parent product requirement"),
         teamId: z.string().uuid().describe("ID of the team responsible for this sub-requirement"),
       }),
@@ -57,8 +57,8 @@ export function createSubRequirementTools(ctx: RequestContext) {
         "At least one of title or description must be provided.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the sub-requirement to update"),
-        title: z.string().min(1).max(255).optional().describe("New title (optional)"),
-        description: z.string().min(1).optional().describe("New description (optional)"),
+        title: z.string().trim().min(1).max(255).optional().describe("New title (optional)"),
+        description: z.string().trim().min(1).optional().describe("New description (optional)"),
       }).refine(
         (data) => data.title !== undefined || data.description !== undefined,
         { message: "At least one of title or description must be provided" }

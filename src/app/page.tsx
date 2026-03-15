@@ -231,7 +231,11 @@ export default function ChatPage() {
         {chat.error && (
           <div className="px-6 py-2 bg-danger/10 border-t border-danger/20">
             <p className="text-sm text-danger max-w-3xl mx-auto">
-              Something went wrong. Please try again.
+              {chat.error.message?.includes("429")
+                ? "Too many requests. Please wait a moment."
+                : chat.error.message?.match(/fetch|network|ECONNREFUSED/i)
+                  ? "Connection issue. Check your network."
+                  : "Something went wrong. Please try again."}
             </p>
           </div>
         )}

@@ -2,7 +2,7 @@
 // Tests run against the real Neon database using the DATABASE_URL from .env.
 // Each test uses a transaction that gets rolled back to keep the DB clean.
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { PrismaClient } from "@prisma/client";
 import * as prService from "@/services/product-requirement.service";
 import * as srService from "@/services/sub-requirement.service";
@@ -54,17 +54,24 @@ afterAll(async () => {
 // ─── Product Requirement Lifecycle ───────────────────────
 
 describe("ProductRequirement lifecycle", () => {
+  const createdPrIds: string[] = [];
+
+  afterEach(async () => {
+    for (const id of createdPrIds) {
+      await prisma.auditLog.deleteMany({ where: { entityId: id } });
+      await prisma.productRequirement.delete({ where: { id } }).catch(() => {});
+    }
+    createdPrIds.length = 0;
+  });
+
   it("creates a draft requirement", async () => {
     const req = await prService.createProductRequirement(
       { title: "Test PR", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     expect(req.status).toBe("DRAFT");
     expect(req.title).toBe("Test PR");
-
-    // Cleanup
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("allows updating a draft requirement", async () => {
@@ -72,15 +79,13 @@ describe("ProductRequirement lifecycle", () => {
       { title: "Original", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     const updated = await prService.updateProductRequirement(
       req.id,
       { title: "Updated" },
       ctx
     );
     expect(updated.title).toBe("Updated");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("approves a draft requirement", async () => {
@@ -88,11 +93,9 @@ describe("ProductRequirement lifecycle", () => {
       { title: "Approve Test", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     const approved = await prService.approveProductRequirement(req.id, ctx);
     expect(approved.status).toBe("APPROVED");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("rejects updating an approved requirement", async () => {
@@ -100,14 +103,12 @@ describe("ProductRequirement lifecycle", () => {
       { title: "No Edit", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     await prService.approveProductRequirement(req.id, ctx);
 
     await expect(
       prService.updateProductRequirement(req.id, { title: "Nope" }, ctx)
     ).rejects.toThrow("Only DRAFT");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("rejects approving an already approved requirement", async () => {
@@ -115,14 +116,12 @@ describe("ProductRequirement lifecycle", () => {
       { title: "Double Approve", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     await prService.approveProductRequirement(req.id, ctx);
 
     await expect(
       prService.approveProductRequirement(req.id, ctx)
     ).rejects.toThrow("Only DRAFT");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("cancels an approved requirement", async () => {
@@ -130,12 +129,10 @@ describe("ProductRequirement lifecycle", () => {
       { title: "Cancel Test", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
     await prService.approveProductRequirement(req.id, ctx);
     const canceled = await prService.cancelProductRequirement(req.id, ctx);
     expect(canceled.status).toBe("CANCELED");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 
   it("rejects canceling a draft requirement", async () => {
@@ -143,13 +140,11 @@ describe("ProductRequirement lifecycle", () => {
       { title: "Draft Cancel", description: "Desc" },
       ctx
     );
+    createdPrIds.push(req.id);
 
     await expect(
       prService.cancelProductRequirement(req.id, ctx)
     ).rejects.toThrow("Only APPROVED");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: req.id } });
-    await prisma.productRequirement.delete({ where: { id: req.id } });
   });
 });
 
@@ -157,6 +152,7 @@ describe("ProductRequirement lifecycle", () => {
 
 describe("SubRequirement lifecycle", () => {
   let parentId: string;
+  const extraPrIds: string[] = [];
 
   beforeAll(async () => {
     const parent = await prService.createProductRequirement(
@@ -167,6 +163,20 @@ describe("SubRequirement lifecycle", () => {
     parentId = parent.id;
   });
 
+  afterEach(async () => {
+    // Clean up any extra PRs created within individual tests
+    for (const prId of extraPrIds) {
+      const srs = await prisma.subRequirement.findMany({ where: { productRequirementId: prId } });
+      for (const sr of srs) {
+        await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
+        await prisma.subRequirement.delete({ where: { id: sr.id } }).catch(() => {});
+      }
+      await prisma.auditLog.deleteMany({ where: { entityId: prId } });
+      await prisma.productRequirement.delete({ where: { id: prId } }).catch(() => {});
+    }
+    extraPrIds.length = 0;
+  });
+
   afterAll(async () => {
     // Clean up sub-requirements, audit logs, and parent
     const subReqs = await prisma.subRequirement.findMany({
@@ -174,10 +184,10 @@ describe("SubRequirement lifecycle", () => {
     });
     for (const sr of subReqs) {
       await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
-      await prisma.subRequirement.delete({ where: { id: sr.id } });
+      await prisma.subRequirement.delete({ where: { id: sr.id } }).catch(() => {});
     }
     await prisma.auditLog.deleteMany({ where: { entityId: parentId } });
-    await prisma.productRequirement.delete({ where: { id: parentId } });
+    await prisma.productRequirement.delete({ where: { id: parentId } }).catch(() => {});
   });
 
   it("creates a draft sub-requirement", async () => {
@@ -213,6 +223,7 @@ describe("SubRequirement lifecycle", () => {
       { title: "Draft Parent", description: "Not approved" },
       ctx
     );
+    extraPrIds.push(draftParent.id);
 
     const sr = await srService.createSubRequirement(
       {
@@ -227,12 +238,6 @@ describe("SubRequirement lifecycle", () => {
     await expect(
       srService.approveSubRequirement(sr.id, ctx)
     ).rejects.toThrow("parent product requirement");
-
-    // Cleanup
-    await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
-    await prisma.subRequirement.delete({ where: { id: sr.id } });
-    await prisma.auditLog.deleteMany({ where: { entityId: draftParent.id } });
-    await prisma.productRequirement.delete({ where: { id: draftParent.id } });
   });
 });
 
@@ -532,12 +537,16 @@ describe("TestCase lifecycle", () => {
 // ─── Cascade Cancellation ───────────────────────────────
 
 describe("Cascade cancellation", () => {
+  // Track PR IDs created by each test for cleanup
+  const createdPrIds: string[] = [];
+
   // Helper: build a full PR -> SR -> TP (with approved version) -> TC hierarchy
   async function buildHierarchy() {
     const pr = await prService.createProductRequirement(
       { title: "Cascade PR", description: "For cascade tests" },
       ctx
     );
+    createdPrIds.push(pr.id);
     await prService.approveProductRequirement(pr.id, ctx);
 
     const sr = await srService.createSubRequirement(
@@ -596,20 +605,27 @@ describe("Cascade cancellation", () => {
         for (const ver of proc.versions) {
           for (const tc of ver.testCases) {
             await prisma.auditLog.deleteMany({ where: { entityId: tc.id } });
-            await prisma.testCase.delete({ where: { id: tc.id } });
+            await prisma.testCase.delete({ where: { id: tc.id } }).catch(() => {});
           }
           await prisma.auditLog.deleteMany({ where: { entityId: ver.id } });
-          await prisma.testProcedureVersion.delete({ where: { id: ver.id } });
+          await prisma.testProcedureVersion.delete({ where: { id: ver.id } }).catch(() => {});
         }
         await prisma.auditLog.deleteMany({ where: { entityId: proc.id } });
-        await prisma.testProcedure.delete({ where: { id: proc.id } });
+        await prisma.testProcedure.delete({ where: { id: proc.id } }).catch(() => {});
       }
       await prisma.auditLog.deleteMany({ where: { entityId: sr.id } });
-      await prisma.subRequirement.delete({ where: { id: sr.id } });
+      await prisma.subRequirement.delete({ where: { id: sr.id } }).catch(() => {});
     }
     await prisma.auditLog.deleteMany({ where: { entityId: prId } });
-    await prisma.productRequirement.delete({ where: { id: prId } });
+    await prisma.productRequirement.delete({ where: { id: prId } }).catch(() => {});
   }
+
+  afterEach(async () => {
+    for (const prId of createdPrIds) {
+      await cleanupHierarchy(prId);
+    }
+    createdPrIds.length = 0;
+  });
 
   it("cancel TP cascades to skip all TCs", async () => {
     const h = await buildHierarchy();
@@ -620,8 +636,6 @@ describe("Cascade cancellation", () => {
     const tc2 = await prisma.testCase.findUniqueOrThrow({ where: { id: h.tc2.id } });
     expect(tc1.status).toBe("SKIPPED");
     expect(tc2.status).toBe("SKIPPED");
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cancel TP silently skips already-SKIPPED TCs", async () => {
@@ -642,8 +656,6 @@ describe("Cascade cancellation", () => {
       where: { entityId: h.tc1.id, action: "SKIP" },
     });
     expect(tc1Logs).toHaveLength(1);
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cancel SR cascades to TPs and TCs", async () => {
@@ -660,8 +672,6 @@ describe("Cascade cancellation", () => {
     expect(tp.status).toBe("CANCELED");
     expect(tc1.status).toBe("SKIPPED");
     expect(tc2.status).toBe("SKIPPED");
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cancel PR cascades to SRs, TPs, and TCs", async () => {
@@ -678,8 +688,6 @@ describe("Cascade cancellation", () => {
     expect(sr.status).toBe("CANCELED");
     expect(tp.status).toBe("CANCELED");
     expect(tc1.status).toBe("SKIPPED");
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cascade silently skips already-CANCELED children", async () => {
@@ -699,8 +707,6 @@ describe("Cascade cancellation", () => {
       where: { entityId: h.tp.id, action: "CANCEL" },
     });
     expect(tpLogs).toHaveLength(1);
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cascade creates audit logs for every changed entity", async () => {
@@ -735,8 +741,6 @@ describe("Cascade cancellation", () => {
     });
     expect(tc1Logs).toHaveLength(1);
     expect(tc2Logs).toHaveLength(1);
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cancel TP skips TCs across multiple versions", async () => {
@@ -766,8 +770,6 @@ describe("Cascade cancellation", () => {
     expect(tc1.status).toBe("SKIPPED");
     expect(tc2.status).toBe("SKIPPED");
     expect(tc3After.status).toBe("SKIPPED");
-
-    await cleanupHierarchy(h.pr.id);
   });
 
   it("cancel PR with no children succeeds", async () => {
@@ -776,15 +778,13 @@ describe("Cascade cancellation", () => {
       { title: "Empty PR", description: "No children" },
       ctx
     );
+    createdPrIds.push(pr.id);
     await prService.approveProductRequirement(pr.id, ctx);
 
     await prService.cancelProductRequirement(pr.id, ctx);
 
     const result = await prisma.productRequirement.findUniqueOrThrow({ where: { id: pr.id } });
     expect(result.status).toBe("CANCELED");
-
-    await prisma.auditLog.deleteMany({ where: { entityId: pr.id } });
-    await prisma.productRequirement.delete({ where: { id: pr.id } });
   });
 
   it("cancel PR cascades to multiple SRs and their children", async () => {
@@ -810,7 +810,5 @@ describe("Cascade cancellation", () => {
     expect(sr1After.status).toBe("CANCELED");
     expect(sr2After.status).toBe("CANCELED"); // DRAFT SR also gets cascade-canceled
     expect(tpAfter.status).toBe("CANCELED");
-
-    await cleanupHierarchy(h.pr.id);
   });
 });

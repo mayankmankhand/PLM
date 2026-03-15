@@ -246,13 +246,13 @@ export function createUIIntentTools() {
           "coverageByTeam",
           "testCasesForRequirement",
         ]).describe("Which query to run"),
-        searchQuery: z.string().optional()
+        searchQuery: z.string().trim().optional()
           .describe("Search term (only for searchResults queryType)"),
         entityType: z
           .enum(["ProductRequirement", "SubRequirement", "TestProcedure", "TestCase"])
           .optional()
           .describe("Entity type filter (only for searchResults queryType)"),
-        team: z.string().optional()
+        team: z.string().trim().optional()
           .describe("Team name filter (for allSubRequirements, allTestProcedures)"),
         requirementId: z.string().uuid().optional()
           .describe("Product requirement ID (required for testCasesForRequirement). Use searchByTitle first if user gives a name."),
@@ -778,6 +778,13 @@ export function createUIIntentTools() {
                 isTruncated,
               };
             }
+
+            default: {
+              // Exhaustive check - TypeScript will error if a new enum value is added
+              // but not handled above.
+              const _exhaustive: never = args.queryType;
+              return { error: `ValidationError: Unknown query type: ${_exhaustive}` };
+            }
           }
         } catch (error) {
           return { error: formatToolError(error) };
@@ -799,8 +806,8 @@ export function createUIIntentTools() {
         "(5) Do NOT use emoji in node labels. " +
         "(6) Keep labels concise (under ~50 characters per node).",
       inputSchema: z.object({
-        title: z.string().describe("Title for the diagram"),
-        mermaidSyntax: z.string().describe("Valid Mermaid diagram syntax"),
+        title: z.string().trim().describe("Title for the diagram"),
+        mermaidSyntax: z.string().trim().describe("Valid Mermaid diagram syntax"),
       }),
       execute: async (args): Promise<DiagramPayload | { error: string }> => {
         try {

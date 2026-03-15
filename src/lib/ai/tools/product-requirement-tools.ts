@@ -20,8 +20,8 @@ export function createProductRequirementTools(ctx: RequestContext) {
         "Create a new product requirement. It starts in DRAFT status. " +
         "Requires a title and description.",
       inputSchema: z.object({
-        title: z.string().min(1).max(255).describe("Short title for the requirement"),
-        description: z.string().min(1).describe("Detailed description of what is required"),
+        title: z.string().trim().min(1).max(255).describe("Short title for the requirement"),
+        description: z.string().trim().min(1).describe("Detailed description of what is required"),
       }),
       execute: async (args) => {
         try {
@@ -48,8 +48,8 @@ export function createProductRequirementTools(ctx: RequestContext) {
         "At least one of title or description must be provided.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the product requirement to update"),
-        title: z.string().min(1).max(255).optional().describe("New title (optional)"),
-        description: z.string().min(1).optional().describe("New description (optional)"),
+        title: z.string().trim().min(1).max(255).optional().describe("New title (optional)"),
+        description: z.string().trim().min(1).optional().describe("New description (optional)"),
       }).refine(
         (data) => data.title !== undefined || data.description !== undefined,
         { message: "At least one of title or description must be provided" }

@@ -108,6 +108,7 @@ export const MessageBubble = memo(function MessageBubble({
                   <span />
                   <span />
                 </span>
+                <span className="sr-only">Assistant is typing...</span>
               </div>
             )}
           </div>

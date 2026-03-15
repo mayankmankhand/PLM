@@ -21,10 +21,10 @@ export function createTestProcedureTools(ctx: RequestContext) {
         "Create a new test procedure linked to a sub-requirement. " +
         "This also creates the first draft version (v1) with the provided description and steps.",
       inputSchema: z.object({
-        title: z.string().min(1).max(255).describe("Short title for the procedure"),
+        title: z.string().trim().min(1).max(255).describe("Short title for the procedure"),
         subRequirementId: z.string().uuid().describe("ID of the parent sub-requirement"),
-        description: z.string().min(1).describe("What this procedure tests"),
-        steps: z.string().min(1).describe("Step-by-step instructions for executing the test"),
+        description: z.string().trim().min(1).describe("What this procedure tests"),
+        steps: z.string().trim().min(1).describe("Step-by-step instructions for executing the test"),
       }),
       execute: async (args) => {
         try {
@@ -62,8 +62,8 @@ export function createTestProcedureTools(ctx: RequestContext) {
         "The version number is assigned automatically.",
       inputSchema: z.object({
         procedureId: z.string().uuid().describe("ID of the test procedure"),
-        description: z.string().min(1).describe("What changed in this version"),
-        steps: z.string().min(1).describe("Updated step-by-step instructions"),
+        description: z.string().trim().min(1).describe("What changed in this version"),
+        steps: z.string().trim().min(1).describe("Updated step-by-step instructions"),
       }),
       execute: async (args) => {
         try {
@@ -91,8 +91,8 @@ export function createTestProcedureTools(ctx: RequestContext) {
         "At least one of description or steps must be provided.",
       inputSchema: z.object({
         versionId: z.string().uuid().describe("ID of the version to update"),
-        description: z.string().min(1).optional().describe("New description (optional)"),
-        steps: z.string().min(1).optional().describe("New steps (optional)"),
+        description: z.string().trim().min(1).optional().describe("New description (optional)"),
+        steps: z.string().trim().min(1).optional().describe("New steps (optional)"),
       }).refine(
         (data) => data.description !== undefined || data.steps !== undefined,
         { message: "At least one of description or steps must be provided" }

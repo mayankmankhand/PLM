@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useRef, useEffect, type KeyboardEvent, type FormEvent } from "react";
+import { useRef, useEffect, useState, type KeyboardEvent, type FormEvent } from "react";
 import { ArrowUp, Paperclip } from "lucide-react";
 
 interface ChatInputProps {
@@ -25,6 +25,11 @@ export function ChatInput({
   const internalRef = useRef<HTMLTextAreaElement>(null);
   // Use external ref if provided, otherwise use internal
   const textareaRef = composerRef ?? internalRef;
+
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/Mac/.test(navigator.platform));
+  }, []);
 
   // Auto-focus the textarea on mount.
   useEffect(() => {
@@ -104,7 +109,7 @@ export function ChatInput({
         <div className="flex items-center gap-2">
           {/* Cmd+K keyboard hint - visual only, shortcut already works */}
           <span className="text-[11px] text-text-subtle hidden sm:inline">
-            <kbd className="px-1.5 py-0.5 rounded bg-surface text-text-muted font-mono text-[10px]">⌘K</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface text-text-muted font-mono text-[10px]">{isMac ? "⌘K" : "Ctrl+K"}</kbd>
             {" "}to focus
           </span>
 
