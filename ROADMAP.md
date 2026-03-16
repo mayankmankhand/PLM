@@ -4,7 +4,7 @@ What's built, what's next, and what's out of scope for the PLM system.
 
 ## V1 - Current Release
 
-- AI chat assistant with 29 tools for managing requirements, test procedures, and test cases
+- AI chat assistant with 41 tools for managing requirements, test procedures, and test cases
 - Context panel with detail views, data tables, Mermaid diagrams, and audit logs
 - Status workflows with lifecycle rules (Draft -> Approved -> Canceled)
 - Attachment metadata tracking with soft-delete
@@ -22,11 +22,19 @@ What's built, what's next, and what's out of scope for the PLM system.
 
 **Requirements Traceability Matrix** - A single table view mapping every requirement to its sub-requirements, test procedures, and test results. Shows coverage gaps at a glance across the entire project.
 
-**Role-Based Access Control (RBAC)** - Replace the demo user dropdown with real authentication and role-based permissions. Control who can view, edit, and approve entities based on their role and team.
+**User Authentication (#62)** - Replace the demo user dropdown with real sign-in. Users create accounts with email/password or OAuth (Google, GitHub). The hardcoded demo users go away in production.
+
+**Role-Based Permissions (#63)** - Three roles scoped by team: admin (full control), editor (create and modify within their team), commenter (view and add notes only). Depends on authentication shipping first.
 
 **Notifications** - In-app and/or email alerts when entities you care about change status, need your approval, or get assigned to you.
 
 **Document Version Control** - Version uploaded documents (not just test procedures). Upload a new revision of a spec and see the full version history. Know which version is current.
+
+**AI Observability (#64)** - Structured logging and tracing for model inputs, outputs, and tool call sequences. See exactly what the AI received and why it made each decision. Currently only a development trace logger exists.
+
+**AI Evals (#65)** - Automated tests that check AI response quality, detect recurring errors, and track metrics over time. Different from unit tests - these measure whether the AI's behavior is actually good, not just whether code runs.
+
+**AI Maintenance (#66)** - A plan for handling model version upgrades, prompt tuning, and data drift. Ensures the system stays reliable as models change and real-world usage patterns evolve.
 
 ## V3 - Future
 

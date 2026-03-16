@@ -46,10 +46,10 @@ PLM replaces all of that with a chat interface. You type "create a requirement f
 
 ## What's Missing (Known Limitations)
 
-- **No real authentication** - 6 demo users (the cast of Friends) are hardcoded. You pick a user from a dropdown. Real auth is not built yet.
+- **No real authentication** - 6 demo users (the cast of Friends) are hardcoded. You pick a user from a dropdown. Real sign-in with email/password or OAuth is planned (#62).
+- **No permissions** - All users see all data and can do everything. Role-based access control (admin, editor, commenter) scoped by team is planned (#63).
 - **No file attachments** - The data model supports attachments, but there's no upload UI. No upload UI yet.
 - **No real-time panel editing** - You can view entity details in the side panel, but can't edit directly in the panel. Changes go through the chat. Low priority.
-- **No team data isolation** - All users see all data. Planned but not built.
 
 ## Demo Users
 
@@ -66,7 +66,12 @@ The app ships with a smartwatch PLM dataset and 6 demo users. Switch users from 
 
 ## What's Coming
 
-- **Team data isolation** - Scope queries so users only see their team's data
+- **User authentication** - Sign in with email/password or OAuth, replacing the demo user picker (#62)
+- **Role-based permissions** - Admin, editor, and commenter roles scoped by team (#63)
+- **Team data isolation** - Scope queries so users only see their team's data (#32)
+- **AI observability** - Structured logging and tracing for model inputs, outputs, and decisions (#64)
+- **AI evals** - Automated tests for AI response quality and recurring error detection (#65)
+- **AI maintenance** - Plan for model upgrades, prompt tuning, and data drift (#66)
 - **Frontend resilience** - Error boundaries and retry logic
 - **Human-readable IDs** - Short IDs instead of UUIDs (e.g., PR-001)
 - **Document parsing** - Upload PDFs or Word docs and extract requirements automatically
@@ -121,6 +126,40 @@ The system has 161+ automated tests covering lifecycle transitions, schema valid
 | Two-entity versioning | Test procedures evolve while past versions stay immutable |
 | Exclusive arc for attachments | Polymorphic ownership with database-enforced constraints |
 | Spec-driven UI design | Explicit hex values and spacing rules instead of "make it look better" |
+
+---
+
+## How Do AI Products Work?
+
+Building an AI product is more than picking a model and calling an API. There are four things you need to get right, and they build on each other.
+
+### 1. Context Engineering - Done
+
+The model only knows what you show it. Context engineering is figuring out what information the model needs to see - and in what format - to produce useful outputs. This includes the system prompt (background instructions), the conversation history, tool descriptions, and any data you pull from the database to include in the request.
+
+In PLM, the system prompt gives the model its role, the lifecycle rules, and guidance on when to confirm before acting. Every tool has a description that tells the model when and how to use it. When the model calls a tool, the result (formatted data from the database) becomes part of the context for its next response. Getting this right is the difference between an AI that fumbles through tasks and one that handles them confidently.
+
+### 2. Orchestration - Done
+
+Orchestration is how you sequence model calls, combine their outputs, and handle failures. A single user message might trigger multiple tool calls - the model reads a requirement, checks its status, finds related test procedures, and then summarizes everything. You need to decide: does the model handle all of this in one turn, or do you break it into steps? What happens if a tool call fails halfway through?
+
+In PLM, the model handles orchestration itself through the Vercel AI SDK's multi-step tool calling. It can chain up to 25 tool calls in a single response, deciding on its own which tools to call and in what order. The confirm-before-act pattern is part of orchestration too - the model proposes a change, waits for the user to confirm, then executes it.
+
+### 3. Observability - Planned (#64)
+
+Once the AI is running, you need to see what it's doing. Observability means logging the model's inputs, outputs, and decision path so you can understand why it gave a particular answer or made a particular tool call. Without this, debugging AI behavior is guesswork.
+
+PLM currently has a basic trace logger for development, but no structured way to inspect conversations after the fact. The next step is proper logging and tracing that captures every model interaction in a reviewable format.
+
+### 4. Evals and Maintenance - Planned (#65, #66)
+
+Evals are automated tests for AI behavior - they detect recurring errors and measure quality over time. Unlike regular unit tests (which check if code runs correctly), evals check if the AI's responses are actually good. Does it use the right tool? Does it ask for confirmation before destructive actions? Does it give accurate answers about entity status?
+
+Maintenance is the ongoing work of keeping the system reliable as models get updated and real-world usage patterns change. A new model version might handle prompts differently. Users might ask questions the system wasn't designed for. You need a plan for prompt tuning, model upgrades, and monitoring for drift.
+
+
+
+**Where PLM stands today:** Context engineering and orchestration are built and working. Observability, evals, and maintenance are the remaining pieces to make this a complete AI product.
 
 ---
 
@@ -276,8 +315,16 @@ docs/
 | #56 | Show thinking phrases during tool execution | Done |
 | #59 | Confirm buttons appear only after streaming completes | Done |
 | #60 | Duplicate React key fix in message-list | Done |
+| #57 | AI misinterprets conversational cancel as domain command | Open |
+| #58 | Reactivation does not clear previous test result | Open |
+| #61 | Test: edit SKIPPED TC and re-parent CANCELED entity | Open |
 | #9 | Document parsing pipeline - PDF, Word, URL | Planned |
 | #10 | V2 panel features - clickable rows, history | Planned |
 | #32 | Team data isolation | Planned |
 | #34 | Frontend resilience - error boundaries, retry | Planned |
 | #37 | Human-readable short IDs | Planned |
+| #62 | User authentication - email/password + OAuth | Planned |
+| #63 | Role-based permissions - admin, editor, commenter | Planned |
+| #64 | AI observability - logging and tracing | Planned |
+| #65 | AI evals - automated quality testing | Planned |
+| #66 | AI maintenance - model updates and data drift | Planned |
