@@ -10,6 +10,7 @@ import type { ToolPartShape } from "@/types/panel";
 import ReactMarkdown from "react-markdown";
 import { ToolIndicator, ToolGroup } from "./tool-indicator";
 import { ConfirmButtons } from "./confirm-buttons";
+import { ThinkingIndicator } from "./thinking-indicator";
 
 // Keywords that signal the AI is asking for confirmation.
 // Used to show accept/reject buttons on the message.
@@ -51,9 +52,20 @@ export const MessageBubble = memo(function MessageBubble({
   // Combine all text parts into one string for rendering.
   const fullText = textParts.map((p) => p.text).join("");
 
+  // Check if any tools are still executing (for thinking indicator).
+  // Tool parts start as "input-streaming"/"input-available" then become "output-available"/"output-error".
+  const hasRunningTools =
+    toolParts.length > 0 &&
+    toolParts.some((p) => {
+      const state = (p as ToolPartShape).state;
+      return state === "input-streaming" || state === "input-available";
+    });
+
   // Check if this message is asking for confirmation (only for assistant).
+  // Gate on !isStreaming so buttons appear after the full explanation is visible (#59).
   const isAskingConfirmation =
     !isUser &&
+    !isStreaming &&
     showConfirmButtons &&
     CONFIRM_KEYWORDS.some((kw) => fullText.toLowerCase().includes(kw));
 
@@ -78,6 +90,8 @@ export const MessageBubble = memo(function MessageBubble({
                 );
               })}
             </ToolGroup>
+            {/* Show cycling PLM phrases while tools are running (#56). */}
+            {hasRunningTools && <ThinkingIndicator />}
           </div>
         )}
 

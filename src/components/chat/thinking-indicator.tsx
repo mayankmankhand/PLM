@@ -56,14 +56,16 @@ function ThinkingIndicatorBase() {
 
   return (
     <div className="max-w-3xl min-h-[24px]" role="status" aria-label="AI is thinking">
-      <div className="flex items-center gap-2 text-[14px] text-text italic">
+      {/* aria-hidden on the visual content so screen readers only hear the
+          outer aria-label ("AI is thinking") once, not every 2.5s phrase change. */}
+      <div className="flex items-center gap-2 text-[14px] text-text italic" aria-hidden="true">
         {/* key={currentIndex} forces React to remount the span on each phrase change,
             retriggering the thinking-text CSS animation (slide-up-and-fade-in). */}
         <span key={currentIndex} className="thinking-text">
           {currentPhrase}
         </span>
         {/* Three animated dots using the existing streaming-dots CSS class. */}
-        <span className="streaming-dots" aria-hidden="true">
+        <span className="streaming-dots">
           <span /><span /><span />
         </span>
       </div>

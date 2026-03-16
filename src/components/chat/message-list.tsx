@@ -118,12 +118,20 @@ export function MessageList({
   // Used to show confirm/reject buttons on only the latest message.
   const lastAssistantIndex = findLastAssistantIndex(messages);
 
+  // Suppress the list-level ThinkingIndicator once the latest assistant message
+  // has tool parts - the bubble-level indicator inside MessageBubble takes over.
+  // This prevents two ThinkingIndicators from showing simultaneously.
+  const lastAssistant = lastAssistantIndex >= 0 ? messages[lastAssistantIndex] : null;
+  const lastMessageHasTools = lastAssistant?.parts.some(
+    (p) => p.type === "dynamic-tool" || p.type.startsWith("tool-"),
+  ) ?? false;
+
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
       <div className="max-w-3xl mx-auto px-5 py-6 space-y-5">
         {messages.map((message, index) => (
           <MessageBubble
-            key={message.id}
+            key={`${message.id}-${index}`}
             message={message}
             isStreaming={
               status === "streaming" && index === lastAssistantIndex
@@ -133,8 +141,9 @@ export function MessageList({
             onReject={onReject}
           />
         ))}
-        {/* Show thinking indicator while waiting for first AI token */}
-        {status === "submitted" && <ThinkingIndicator />}
+        {/* Show thinking indicator while waiting for first AI token.
+            Suppressed when the latest message already has tools (bubble-level indicator handles it). */}
+        {status === "submitted" && !lastMessageHasTools && <ThinkingIndicator />}
         <div ref={bottomRef} />
       </div>
 
