@@ -11,6 +11,7 @@ import {
   updateTestProcedureVersion,
   approveTestProcedureVersion,
   cancelTestProcedure,
+  reParentTestProcedure,
 } from "@/services/test-procedure.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -175,6 +176,7 @@ export function createTestProcedureTools(ctx: RequestContext) {
       description:
         "Mark an entire test procedure as canceled. " +
         "Cannot cancel a procedure that is already canceled. " +
+        "If the user wants to move this entity instead of canceling it, use reParentTestProcedure instead. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the test procedure to cancel"),
@@ -187,6 +189,49 @@ export function createTestProcedureTools(ctx: RequestContext) {
             id: result.id,
             title: result.title,
             status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Re-parent a test procedure (move to different SR) --
+    reParentTestProcedure: tool({
+      description:
+        "Move a test procedure to a different sub-requirement. " +
+        "All versions and test cases stay attached. " +
+        "CANCELED procedures cannot be moved. " +
+        "ACTIVE procedures can move to both DRAFT and APPROVED sub-requirements. " +
+        "Note: if the target SR is under a different product requirement, " +
+        "tell the user this also changes which PR scope the procedure falls under. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the test procedure to move"),
+        newSubRequirementId: z
+          .string()
+          .uuid()
+          .describe("ID of the target sub-requirement"),
+        confirmReParent: z
+          .literal(true)
+          .describe("Must be true to confirm the move"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await reParentTestProcedure(
+            args.id,
+            {
+              newSubRequirementId: args.newSubRequirementId,
+              confirmReParent: args.confirmReParent,
+            },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+            previousSubRequirementId: result.previousSubRequirementId,
+            subRequirementId: result.subRequirementId,
           };
         } catch (error) {
           return { error: formatToolError(error) };

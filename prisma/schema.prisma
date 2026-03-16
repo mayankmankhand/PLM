@@ -56,6 +56,7 @@ enum AuditAction {
   CORRECT_RESULT
   RE_EXECUTE
   UPDATE_NOTES
+  RE_PARENT
 }
 
 enum AttachmentStatus {

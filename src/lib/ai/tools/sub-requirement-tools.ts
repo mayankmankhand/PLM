@@ -9,6 +9,7 @@ import {
   updateSubRequirement,
   approveSubRequirement,
   cancelSubRequirement,
+  reParentSubRequirement,
 } from "@/services/sub-requirement.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -113,6 +114,7 @@ export function createSubRequirementTools(ctx: RequestContext) {
         "Mark a sub-requirement as canceled. " +
         "DRAFT sub-requirements can be canceled only if they have no test procedures. " +
         "APPROVED sub-requirements can be canceled (cascades to children). " +
+        "If the user wants to move this entity instead of canceling it, use reParentSubRequirement instead. " +
         "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
       inputSchema: z.object({
         id: z.string().uuid().describe("ID of the sub-requirement to cancel"),
@@ -125,6 +127,48 @@ export function createSubRequirementTools(ctx: RequestContext) {
             id: result.id,
             title: result.title,
             status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Re-parent a sub-requirement (move to different PR) --
+    reParentSubRequirement: tool({
+      description:
+        "Move a sub-requirement to a different product requirement. " +
+        "The SR keeps its team, and all child test procedures stay attached. " +
+        "CANCELED SRs cannot be moved. APPROVED SRs cannot move to a DRAFT PR. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the sub-requirement to move"),
+        newProductRequirementId: z
+          .string()
+          .uuid()
+          .describe("ID of the target product requirement"),
+        confirmReParent: z
+          .literal(true)
+          .describe("Must be true to confirm the move"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await reParentSubRequirement(
+            args.id,
+            {
+              newProductRequirementId: args.newProductRequirementId,
+              confirmReParent: args.confirmReParent,
+            },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+            previousProductRequirementId: result.previousProductRequirementId,
+            productRequirementId: result.productRequirementId,
+            teamId: result.teamId,
+            teamName: result.team.name,
           };
         } catch (error) {
           return { error: formatToolError(error) };
