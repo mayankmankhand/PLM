@@ -12,6 +12,7 @@ import {
   approveTestProcedureVersion,
   cancelTestProcedure,
   reParentTestProcedure,
+  reactivateTestProcedure,
 } from "@/services/test-procedure.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -232,6 +233,36 @@ export function createTestProcedureTools(ctx: RequestContext) {
             status: result.status,
             previousSubRequirementId: result.previousSubRequirementId,
             subRequirementId: result.subRequirementId,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Reactivate a canceled test procedure --
+    reactivateTestProcedure: tool({
+      description:
+        "Reactivate a canceled test procedure, returning it to ACTIVE status. " +
+        "All skipped test cases are also reactivated to PENDING. " +
+        "The parent sub-requirement must not be CANCELED (reactivate it first). " +
+        "If the user wants to undo a cancellation, use this tool. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the test procedure to reactivate"),
+        confirmReactivate: z.literal(true).describe("Must be true to confirm reactivation"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await reactivateTestProcedure(
+            args.id,
+            { confirmReactivate: args.confirmReactivate },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
           };
         } catch (error) {
           return { error: formatToolError(error) };

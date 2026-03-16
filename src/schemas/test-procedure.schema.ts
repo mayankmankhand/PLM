@@ -89,6 +89,19 @@ export type CancelTestProcedureInput = z.infer<
   typeof CancelTestProcedureInput
 >;
 
+// ─── Reactivate Procedure ───────────────────────────
+// Transitions CANCELED -> ACTIVE. Same confirmation pattern.
+
+export const ReactivateTestProcedureInput = z.object({
+  confirmReactivate: z.literal(true, {
+    errorMap: () => ({ message: "confirmReactivate must be true" }),
+  }),
+});
+
+export type ReactivateTestProcedureInput = z.infer<
+  typeof ReactivateTestProcedureInput
+>;
+
 // ─── Re-Parent Procedure ────────────────────────────────
 // Moves this test procedure to a different sub-requirement.
 // Confirm-before-act: structural change affects hierarchy visibility.

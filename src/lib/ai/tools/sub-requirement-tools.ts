@@ -10,6 +10,7 @@ import {
   approveSubRequirement,
   cancelSubRequirement,
   reParentSubRequirement,
+  reactivateSubRequirement,
 } from "@/services/sub-requirement.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -169,6 +170,37 @@ export function createSubRequirementTools(ctx: RequestContext) {
             productRequirementId: result.productRequirementId,
             teamId: result.teamId,
             teamName: result.team.name,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Reactivate a canceled sub-requirement --
+    reactivateSubRequirement: tool({
+      description:
+        "Reactivate a canceled sub-requirement, returning it to DRAFT status. " +
+        "All canceled child test procedures and skipped test cases are also reactivated " +
+        "(TPs to ACTIVE, TCs to PENDING). " +
+        "The parent product requirement must not be CANCELED (reactivate it first). " +
+        "If the user wants to undo a cancellation, use this tool. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the sub-requirement to reactivate"),
+        confirmReactivate: z.literal(true).describe("Must be true to confirm reactivation"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await reactivateSubRequirement(
+            args.id,
+            { confirmReactivate: args.confirmReactivate },
+            ctx
+          );
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
           };
         } catch (error) {
           return { error: formatToolError(error) };

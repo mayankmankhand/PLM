@@ -6,7 +6,7 @@ A lightweight PLM system for managing product requirements, test procedures, and
 
 - **Framework**: Next.js 16 (App Router, TypeScript)
 - **Database**: Neon PostgreSQL via Prisma ORM
-- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 31 LLM tools)
+- **AI**: Vercel AI SDK v6 + Anthropic Claude (streaming chat with 41 LLM tools)
 - **UI**: Tailwind CSS v4, Zustand, react-markdown, lucide-react, @ai-sdk/react, mermaid, dompurify
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest (isolated test database via `vitest.global-setup.ts`)
@@ -63,7 +63,7 @@ ProductRequirement (org-wide)
 POST /api/chat   # Streaming natural language interface to manage PLM entities
 ```
 
-Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 31 tools (18 mutation, 4 read, 4 query, 1 search, 4 UI intent) and confirms before destructive actions.
+Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a Vercel AI SDK stream. The LLM has 41 tools (24 mutation, 5 read, 4 query, 4 UI intent, 2 attachment) and confirms before destructive actions.
 
 ### Named Queries
 
@@ -77,11 +77,13 @@ GET /api/queries/recent-audit
 ### Lifecycle Rules
 
 - **Draft** entities are fully editable
-- **Approved** requirements are immutable (except cancel transition)
-- **Approved** procedure versions are fully immutable
+- **Approved** requirements allow title/description edits (audited)
+- **Approved** procedure versions allow description edits only (steps locked)
 - Sub-requirements can only be approved if their parent requirement is approved
 - Test results can only be recorded against approved procedure versions
 - Only one draft version per test procedure at a time
+- **Canceled** entities can be reactivated (cascades to children, confirm-before-act)
+- Entities can be re-parented to a different parent (confirm-before-act)
 
 ### Auth
 
@@ -101,7 +103,7 @@ V1 uses 6 hardcoded demo users (Friends cast). Set `x-demo-user-id` header to sw
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (128 tests, uses .env.test database)
+npm run test         # Run tests (192 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -111,7 +113,7 @@ npm run lint         # ESLint
 ```
 src/
   app/               # Next.js pages + API routes
-    api/             # 32 route handlers (domain commands + queries + chat)
+    api/             # 38 route handlers (domain commands + queries + chat)
     page.tsx         # Chat UI (dual-panel, streaming)
     globals.css      # Tailwind v4 + design tokens
   components/chat/   # Chat UI components (8 files)
@@ -119,7 +121,7 @@ src/
   hooks/             # Shared React hooks (useDesktopBreakpoint)
   stores/            # Zustand stores (panel state + width)
   types/             # Shared TypeScript types + Zod schemas (panel payloads)
-  lib/ai/            # LLM layer: system prompt, 31 tools, trace logger
+  lib/ai/            # LLM layer: system prompt, 41 tools, trace logger
   lib/               # Shared utilities (prisma, errors, auth, demo-users)
   schemas/           # Zod validation schemas
   services/          # Business logic with lifecycle enforcement + audit logging
@@ -175,3 +177,7 @@ docs/
 - **Issue #37**: Human-readable short IDs for entities (planned)
 - **Issue #38**: Mermaid diagram text labels - DOMPurify ADD_TAGS fix (DONE)
 - **Issue #42**: Show attachments in entity detail panel (DONE)
+- **Issue #48**: Lifecycle editing - DRAFT/APPROVED edits, DRAFT cancellation (DONE)
+- **Issue #49**: Test case recovery - correct result, re-execute, update notes (DONE)
+- **Issue #50**: Re-parenting - move SRs/TPs to different parents (DONE)
+- **Issue #54**: Reactivate canceled entities with cascade (DONE)

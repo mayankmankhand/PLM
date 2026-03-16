@@ -58,6 +58,18 @@ export type CancelSubRequirementInput = z.infer<
   typeof CancelSubRequirementInput
 >;
 
+// ─── Reactivate ─────────────────────────────────────
+
+export const ReactivateSubRequirementInput = z.object({
+  confirmReactivate: z.literal(true, {
+    errorMap: () => ({ message: "confirmReactivate must be true" }),
+  }),
+});
+
+export type ReactivateSubRequirementInput = z.infer<
+  typeof ReactivateSubRequirementInput
+>;
+
 // ─── Re-Parent ──────────────────────────────────────────
 // Moves this sub-requirement to a different product requirement.
 // Confirm-before-act: structural change affects hierarchy visibility.

@@ -5,10 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
-import { cascadeCancelSubRequirement } from "./sub-requirement.service";
+import { cascadeCancelSubRequirement, cascadeReactivateSubRequirement } from "./sub-requirement.service";
 import type {
   CreateProductRequirementInput,
   UpdateProductRequirementInput,
+  ReactivateProductRequirementInput,
 } from "@/schemas/product-requirement.schema";
 
 // ─── Create ──────────────────────────────────────────────
@@ -187,6 +188,62 @@ export async function cancelProductRequirement(
       for (const sr of subReqs) {
         await cascadeCancelSubRequirement(tx, sr.id, ctx);
       }
+    }
+
+    return tx.productRequirement.findUniqueOrThrow({ where: { id } });
+  });
+}
+
+// ─── Reactivate (CANCELED -> DRAFT, with cascade to SRs, TPs, TCs) ──
+
+/**
+ * Reactivate a canceled product requirement and cascade to all children.
+ * PR has no parent, so no parent guard is needed.
+ *
+ * Cascade: CANCELED SRs -> DRAFT, CANCELED TPs -> ACTIVE, SKIPPED TCs -> PENDING
+ *
+ * Guard: PR must be CANCELED
+ */
+export async function reactivateProductRequirement(
+  id: string,
+  _input: ReactivateProductRequirementInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.productRequirement.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.status !== "CANCELED") {
+      throw new LifecycleError(
+        `Cannot reactivate product requirement in ${existing.status} status. Only CANCELED requirements can be reactivated.`
+      );
+    }
+
+    // Reactivate the PR itself
+    await tx.productRequirement.update({
+      where: { id },
+      data: { status: "DRAFT" },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "REACTIVATE",
+      entityType: "ProductRequirement",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes: { status: { from: "CANCELED", to: "DRAFT" } },
+    });
+
+    // Cascade to all child sub-requirements (and their TPs and TCs)
+    const subReqs = await tx.subRequirement.findMany({
+      where: { productRequirementId: id },
+      select: { id: true },
+    });
+
+    for (const sr of subReqs) {
+      await cascadeReactivateSubRequirement(tx, sr.id, ctx);
     }
 
     return tx.productRequirement.findUniqueOrThrow({ where: { id } });

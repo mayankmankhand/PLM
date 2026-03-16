@@ -9,6 +9,7 @@ import {
   updateProductRequirement,
   approveProductRequirement,
   cancelProductRequirement,
+  reactivateProductRequirement,
 } from "@/services/product-requirement.service";
 import { formatToolError } from "./tool-wrapper";
 
@@ -112,6 +113,36 @@ export function createProductRequirementTools(ctx: RequestContext) {
       execute: async (args) => {
         try {
           const result = await cancelProductRequirement(args.id, ctx);
+          return {
+            id: result.id,
+            title: result.title,
+            status: result.status,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Reactivate a canceled product requirement --
+    reactivateProductRequirement: tool({
+      description:
+        "Reactivate a canceled product requirement, returning it to DRAFT status. " +
+        "All canceled child sub-requirements, test procedures, and skipped test cases " +
+        "are also reactivated (SRs to DRAFT, TPs to ACTIVE, TCs to PENDING). " +
+        "If the user wants to undo a cancellation, use this tool. " +
+        "IMPORTANT: Only call this tool after the user has explicitly confirmed this action in their last message.",
+      inputSchema: z.object({
+        id: z.string().uuid().describe("ID of the product requirement to reactivate"),
+        confirmReactivate: z.literal(true).describe("Must be true to confirm reactivation"),
+      }),
+      execute: async (args) => {
+        try {
+          const result = await reactivateProductRequirement(
+            args.id,
+            { confirmReactivate: args.confirmReactivate },
+            ctx
+          );
           return {
             id: result.id,
             title: result.title,
