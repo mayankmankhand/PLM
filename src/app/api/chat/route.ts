@@ -51,8 +51,10 @@ export async function POST(request: NextRequest) {
 
     // Real enforcement: read body as text and check actual byte length.
     // Catches cases where Content-Length is missing, spoofed, or stripped by proxies.
+    // Uses TextEncoder to measure UTF-8 bytes (not JS string length, which counts
+    // UTF-16 code units and would undercount multi-byte characters).
     const rawBody = await request.text();
-    if (rawBody.length > MAX_BODY_BYTES) {
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
       return new Response(
         JSON.stringify({ error: "Request too large. Maximum size is 50KB." }),
         { status: 413, headers: { "Content-Type": "application/json" } },

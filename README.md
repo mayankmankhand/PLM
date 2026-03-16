@@ -135,7 +135,7 @@ The system has 161+ automated tests covering lifecycle transitions, schema valid
 - **Validation**: Zod schemas (shared between API routes and LLM tools)
 - **Testing**: Vitest (isolated test database)
 - **Auth**: Demo users via Edge Middleware (V1)
-- **Security**: Rate limiting (chat endpoint), security headers, HTML stripping, UUID validation
+- **Security**: Rate limiting (chat endpoint, kill switch via env var), security headers, HTML stripping, UUID validation, generic error responses (no DB detail leakage), robots.txt
 
 ### Quick Start
 
@@ -194,7 +194,7 @@ Send `{ messages: [{ role, content }] }` with `x-demo-user-id` header. Returns a
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm run test         # Run tests (192 tests, uses .env.test database)
+npm run test         # Run tests (229 tests, uses .env.test database)
 npm run test:watch   # Watch mode
 npm run lint         # ESLint
 ```
@@ -254,7 +254,7 @@ docs/
 | #17 | Test database isolation | Done |
 | #19 | Migration drift reset | Done |
 | #20 | UI redesign - slate+teal palette, drag-to-resize, keyboard shortcuts | Done |
-| #21 | Deploy + README rewrite | In Progress |
+| #21 | Deploy + README rewrite | Done |
 | #22 | Security audit - rate limiting, headers, XSS hardening | Done |
 | #23 | Usable Mermaid diagrams - zoom controls, compact syntax | Done |
 | #24 | Cross-entity panel data - enriched queries, aggregations | Done |
@@ -273,6 +273,9 @@ docs/
 | #50 | Re-parenting - move SRs/TPs to different parents | Done |
 | #51 | Manual DB integration walkthrough | Done |
 | #54 | Reactivate canceled entities with cascade | Done |
+| #56 | Show thinking phrases during tool execution | Done |
+| #59 | Confirm buttons appear only after streaming completes | Done |
+| #60 | Duplicate React key fix in message-list | Done |
 | #9 | Document parsing pipeline - PDF, Word, URL | Planned |
 | #10 | V2 panel features - clickable rows, history | Planned |
 | #32 | Team data isolation | Planned |

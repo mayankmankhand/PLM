@@ -2,6 +2,16 @@
 // Tracks request timestamps per IP and enforces a max request count
 // within a rolling time window. Designed for the chat endpoint to
 // protect the Anthropic API bill from abuse.
+//
+// LIMITATION: On Vercel serverless, each function invocation gets its
+// own memory. The in-memory Map does not persist across invocations,
+// so this provides per-instance throttling only (not global). For
+// stronger protection, set spending limits in the Anthropic dashboard
+// and consider switching to a persistent backend (Vercel KV, Upstash
+// Redis, or a database table) if abuse becomes an issue.
+//
+// Kill switch: Set RATE_LIMIT_DISABLED=true to bypass rate limiting
+// (useful for load testing or if the limiter causes issues).
 
 const DEFAULT_MAX_REQUESTS = 10;
 const DEFAULT_WINDOW_MS = 60_000; // 60 seconds
@@ -39,6 +49,11 @@ export function checkRateLimit(
   maxRequests = DEFAULT_MAX_REQUESTS,
   windowMs = DEFAULT_WINDOW_MS,
 ): { allowed: boolean; retryAfter?: number } {
+  // Kill switch - bypass rate limiting when explicitly disabled
+  if (process.env.RATE_LIMIT_DISABLED === "true") {
+    return { allowed: true };
+  }
+
   // Start cleanup on first call
   startCleanup(windowMs);
 

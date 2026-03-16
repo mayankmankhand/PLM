@@ -50,8 +50,10 @@ export function handleApiError(error: unknown): NextResponse {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2025"
   ) {
+    // Return generic message instead of Prisma's detailed error
+    // which can leak schema details (table names, constraint names).
     return NextResponse.json(
-      { error: error.message },
+      { error: "Record not found" },
       { status: 404 }
     );
   }
@@ -59,9 +61,11 @@ export function handleApiError(error: unknown): NextResponse {
   if (error instanceof Error) {
     const msg = error.message.toLowerCase();
     if (msg.includes("not found")) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
+      return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    // Generic message for unrecognized errors - don't leak internal details
+    // like Prisma constraint names or stack traces to the client.
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
   return NextResponse.json(
