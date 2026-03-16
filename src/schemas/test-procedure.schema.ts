@@ -88,3 +88,18 @@ export const CancelTestProcedureInput = z.object({
 export type CancelTestProcedureInput = z.infer<
   typeof CancelTestProcedureInput
 >;
+
+// ─── Re-Parent Procedure ────────────────────────────────
+// Moves this test procedure to a different sub-requirement.
+// Confirm-before-act: structural change affects hierarchy visibility.
+
+export const ReParentTestProcedureInput = z.object({
+  newSubRequirementId: z.string().uuid("Must be a valid UUID"),
+  confirmReParent: z.literal(true, {
+    errorMap: () => ({ message: "confirmReParent must be true" }),
+  }),
+});
+
+export type ReParentTestProcedureInput = z.infer<
+  typeof ReParentTestProcedureInput
+>;

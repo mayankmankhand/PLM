@@ -5,13 +5,14 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
-import { LifecycleError } from "@/lib/errors";
+import { LifecycleError, NotFoundError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
 import type {
   CreateTestProcedureInput,
   UpdateTestProcedureInput,
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
+  ReParentTestProcedureInput,
 } from "@/schemas/test-procedure.schema";
 
 // ─── Cascade helpers (used by parent cancel functions) ──────
@@ -361,5 +362,86 @@ export async function cancelTestProcedure(
     await cascadeSkipTestCases(tx, id, ctx);
 
     return tx.testProcedure.findUniqueOrThrow({ where: { id } });
+  });
+}
+
+// ─── Re-Parent (move to different SR) ───────────────────
+
+/**
+ * Move a test procedure to a different sub-requirement.
+ * Only the TP's subRequirementId FK changes - child TPVs/TCs stay attached
+ * to this TP via their own FKs (lineage changes transitively).
+ * TP lifecycle is independent of SR approval state, so ACTIVE TPs
+ * can move to both DRAFT and APPROVED SRs (matches creation rules).
+ *
+ * Status guards:
+ *   - TP must not be CANCELED
+ *   - Target SR must exist and not be CANCELED
+ *   - No-op moves are rejected (already under this parent)
+ */
+export async function reParentTestProcedure(
+  id: string,
+  input: ReParentTestProcedureInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.testProcedure.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot re-parent a canceled test procedure."
+      );
+    }
+
+    // Validate target parent exists and is not canceled (before no-op check
+    // so that a CANCELED same-parent gets the more informative error message)
+    const targetSr = await tx.subRequirement.findUnique({
+      where: { id: input.newSubRequirementId },
+    });
+
+    if (!targetSr) {
+      throw new NotFoundError(
+        `Target sub-requirement ${input.newSubRequirementId} not found.`
+      );
+    }
+
+    if (targetSr.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot move test procedure to a canceled sub-requirement."
+      );
+    }
+
+    // No-op guard (after target validation for better error messages)
+    if (existing.subRequirementId === input.newSubRequirementId) {
+      throw new LifecycleError(
+        "Test procedure is already under this sub-requirement."
+      );
+    }
+
+    const previousSubRequirementId = existing.subRequirementId;
+
+    const updated = await tx.testProcedure.update({
+      where: { id },
+      data: { subRequirementId: input.newSubRequirementId },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "RE_PARENT",
+      entityType: "TestProcedure",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes: {
+        subRequirementId: {
+          from: previousSubRequirementId,
+          to: input.newSubRequirementId,
+        },
+      },
+    });
+
+    return { ...updated, previousSubRequirementId };
   });
 }

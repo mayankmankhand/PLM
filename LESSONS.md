@@ -43,6 +43,10 @@
 - **System prompt and schema guards must agree.** If the system prompt references a confirmation field name (`confirmCorrection`), the tool schema must have that field. A phantom reference confuses the LLM - it might try to pass a field that doesn't exist or skip confirmation entirely. Prompt engineering and `z.literal(true)` guards are two layers of the same pattern; they should reinforce each other, not contradict.
 - **Error messages should suggest alternatives, not just reject.** When related operations exist (correctTestResult vs reExecuteTestCase), an error from one should point the user to the other. "Cannot re-execute PASSED test case" is a dead end. "Cannot re-execute PASSED test case - use correctTestResult instead" keeps the user moving. Costs one extra sentence, saves a round-trip of confusion.
 
+- **Validation order matters for error quality.** When a service has multiple guards (entity status, target validation, no-op detection), put target-exists and target-status checks before the no-op check. If you check no-op first, a user who passes the same CANCELED parent gets "already under this parent" instead of the more useful "cannot move to a canceled parent." Small reordering, big UX improvement.
+- **Return old + new values from structural mutation tools.** When an LLM tool moves an entity, returning only the updated state forces the LLM to remember prior context to compose a "moved from X to Y" message. Returning `previousParentId` alongside the new parent makes the response self-contained. Same principle applies to any correction/transition tool.
+- **Re-parenting is simpler than it looks (when the data model is clean).** Moving an entity to a different parent is just a FK update when there are no lineage-based auth rules, no denormalized parent-derived data, no per-parent ordering, and no cached aggregates. Document these assumptions explicitly so future maintainers know what to re-evaluate if the system grows.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 

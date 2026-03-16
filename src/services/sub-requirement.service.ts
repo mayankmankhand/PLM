@@ -4,12 +4,13 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
-import { LifecycleError } from "@/lib/errors";
+import { LifecycleError, NotFoundError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
 import { cascadeCancelTestProcedure } from "./test-procedure.service";
 import type {
   CreateSubRequirementInput,
   UpdateSubRequirementInput,
+  ReParentSubRequirementInput,
 } from "@/schemas/sub-requirement.schema";
 
 // ─── Cascade helper (used by PR cancel) ─────────────────
@@ -256,5 +257,93 @@ export async function cancelSubRequirement(
     }
 
     return tx.subRequirement.findUniqueOrThrow({ where: { id } });
+  });
+}
+
+// ─── Re-Parent (move to different PR) ───────────────────
+
+/**
+ * Move a sub-requirement to a different product requirement.
+ * Only the SR's productRequirementId FK changes - child TPs/TPVs/TCs
+ * stay attached to this SR via their own FKs (lineage changes transitively).
+ *
+ * Status guards:
+ *   - SR must not be CANCELED
+ *   - Target PR must exist and not be CANCELED
+ *   - APPROVED SR cannot move to a DRAFT PR (breaks approval hierarchy)
+ *   - No-op moves are rejected (already under this parent)
+ */
+export async function reParentSubRequirement(
+  id: string,
+  input: ReParentSubRequirementInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.subRequirement.findUniqueOrThrow({
+      where: { id },
+    });
+
+    if (existing.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot re-parent a canceled sub-requirement."
+      );
+    }
+
+    // Validate target parent exists and is not canceled (before no-op check
+    // so that a CANCELED same-parent gets the more informative error message)
+    const targetPr = await tx.productRequirement.findUnique({
+      where: { id: input.newProductRequirementId },
+    });
+
+    if (!targetPr) {
+      throw new NotFoundError(
+        `Target product requirement ${input.newProductRequirementId} not found.`
+      );
+    }
+
+    if (targetPr.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot move sub-requirement to a canceled product requirement."
+      );
+    }
+
+    // No-op guard (after target validation for better error messages)
+    if (existing.productRequirementId === input.newProductRequirementId) {
+      throw new LifecycleError(
+        "Sub-requirement is already under this product requirement."
+      );
+    }
+
+    // APPROVED SR cannot move to DRAFT PR (would break approval hierarchy)
+    if (existing.status === "APPROVED" && targetPr.status === "DRAFT") {
+      throw new LifecycleError(
+        "Cannot move an approved sub-requirement to a draft product requirement. The target must be approved."
+      );
+    }
+
+    const previousProductRequirementId = existing.productRequirementId;
+
+    const updated = await tx.subRequirement.update({
+      where: { id },
+      data: { productRequirementId: input.newProductRequirementId },
+      include: { team: { select: { name: true } } },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "RE_PARENT",
+      entityType: "SubRequirement",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes: {
+        productRequirementId: {
+          from: previousProductRequirementId,
+          to: input.newProductRequirementId,
+        },
+      },
+    });
+
+    return { ...updated, previousProductRequirementId };
   });
 }

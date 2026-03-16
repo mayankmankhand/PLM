@@ -57,3 +57,18 @@ export const CancelSubRequirementInput = z.object({
 export type CancelSubRequirementInput = z.infer<
   typeof CancelSubRequirementInput
 >;
+
+// ─── Re-Parent ──────────────────────────────────────────
+// Moves this sub-requirement to a different product requirement.
+// Confirm-before-act: structural change affects hierarchy visibility.
+
+export const ReParentSubRequirementInput = z.object({
+  newProductRequirementId: z.string().uuid("Must be a valid UUID"),
+  confirmReParent: z.literal(true, {
+    errorMap: () => ({ message: "confirmReParent must be true" }),
+  }),
+});
+
+export type ReParentSubRequirementInput = z.infer<
+  typeof ReParentSubRequirementInput
+>;
