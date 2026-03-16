@@ -6,11 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { RequestContext } from "@/lib/request-context";
 import { LifecycleError, NotFoundError } from "@/lib/errors";
 import { writeAuditLog } from "./audit.service";
-import { cascadeCancelTestProcedure } from "./test-procedure.service";
+import { cascadeCancelTestProcedure, cascadeReactivateTestProcedure } from "./test-procedure.service";
 import type {
   CreateSubRequirementInput,
   UpdateSubRequirementInput,
   ReParentSubRequirementInput,
+  ReactivateSubRequirementInput,
 } from "@/schemas/sub-requirement.schema";
 
 // ─── Cascade helper (used by PR cancel) ─────────────────
@@ -57,6 +58,50 @@ export async function cascadeCancelSubRequirement(
 
   await Promise.all(
     procedures.map((tp) => cascadeCancelTestProcedure(tx, tp.id, ctx))
+  );
+}
+
+// ─── Cascade reactivation helper (used by PR reactivate) ─
+
+/**
+ * Reactivate a single sub-requirement and cascade to its TPs and TCs.
+ * Already non-CANCELED SRs are silently skipped. Call within an existing transaction.
+ */
+export async function cascadeReactivateSubRequirement(
+  tx: Prisma.TransactionClient,
+  subRequirementId: string,
+  ctx: RequestContext
+) {
+  const sr = await tx.subRequirement.findUniqueOrThrow({
+    where: { id: subRequirementId },
+  });
+
+  // Already non-canceled - skip silently
+  if (sr.status !== "CANCELED") return;
+
+  await tx.subRequirement.update({
+    where: { id: subRequirementId },
+    data: { status: "DRAFT" },
+  });
+
+  await writeAuditLog(tx, {
+    actorId: ctx.userId,
+    action: "REACTIVATE",
+    entityType: "SubRequirement",
+    entityId: subRequirementId,
+    source: ctx.source,
+    requestId: ctx.requestId,
+    changes: { status: { from: "CANCELED", to: "DRAFT" } },
+  });
+
+  // Cascade to all child test procedures (and their test cases)
+  const procedures = await tx.testProcedure.findMany({
+    where: { subRequirementId },
+    select: { id: true },
+  });
+
+  await Promise.all(
+    procedures.map((tp) => cascadeReactivateTestProcedure(tx, tp.id, ctx))
   );
 }
 
@@ -345,5 +390,69 @@ export async function reParentSubRequirement(
     });
 
     return { ...updated, previousProductRequirementId };
+  });
+}
+
+// ─── Reactivate (CANCELED -> DRAFT, with cascade to TPs and TCs) ──
+
+/**
+ * Reactivate a canceled sub-requirement and cascade to its TPs and TCs.
+ * Entry point for direct SR reactivation (not cascade).
+ *
+ * Guards:
+ *   - SR must be CANCELED
+ *   - Parent PR must not be CANCELED (top-down reactivation required)
+ */
+export async function reactivateSubRequirement(
+  id: string,
+  _input: ReactivateSubRequirementInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.subRequirement.findUniqueOrThrow({
+      where: { id },
+      include: { productRequirement: { select: { status: true } } },
+    });
+
+    if (existing.status !== "CANCELED") {
+      throw new LifecycleError(
+        `Cannot reactivate sub-requirement in ${existing.status} status. Only CANCELED sub-requirements can be reactivated.`
+      );
+    }
+
+    // Parent PR must be non-canceled (top-down reactivation)
+    if (existing.productRequirement.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot reactivate sub-requirement: parent product requirement is CANCELED. Reactivate the parent first."
+      );
+    }
+
+    // Reactivate SR
+    await tx.subRequirement.update({
+      where: { id },
+      data: { status: "DRAFT" },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "REACTIVATE",
+      entityType: "SubRequirement",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes: { status: { from: "CANCELED", to: "DRAFT" } },
+    });
+
+    // Cascade to all child TPs and TCs
+    const procedures = await tx.testProcedure.findMany({
+      where: { subRequirementId: id },
+      select: { id: true },
+    });
+
+    await Promise.all(
+      procedures.map((tp) => cascadeReactivateTestProcedure(tx, tp.id, ctx))
+    );
+
+    return tx.subRequirement.findUniqueOrThrow({ where: { id } });
   });
 }

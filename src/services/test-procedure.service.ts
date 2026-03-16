@@ -13,6 +13,7 @@ import type {
   CreateTestProcedureVersionInput,
   UpdateTestProcedureVersionInput,
   ReParentTestProcedureInput,
+  ReactivateTestProcedureInput,
 } from "@/schemas/test-procedure.schema";
 
 // ─── Cascade helpers (used by parent cancel functions) ──────
@@ -89,6 +90,79 @@ export async function cascadeCancelTestProcedure(
   });
 
   await cascadeSkipTestCases(tx, testProcedureId, ctx);
+}
+
+// ─── Cascade reactivation helpers (used by parent reactivate functions) ──
+
+/**
+ * Un-skip all SKIPPED test cases under a test procedure, resetting them to PENDING.
+ * Non-SKIPPED TCs are silently skipped. Call within an existing transaction.
+ */
+export async function cascadeReactivateTestCases(
+  tx: Prisma.TransactionClient,
+  testProcedureId: string,
+  ctx: RequestContext
+) {
+  const testCases = await tx.testCase.findMany({
+    where: {
+      testProcedureVersion: { testProcedureId },
+      status: "SKIPPED",
+    },
+    select: { id: true },
+  });
+
+  await Promise.all(
+    testCases.map(async (tc) => {
+      await tx.testCase.update({
+        where: { id: tc.id },
+        data: { status: "PENDING" },
+      });
+
+      await writeAuditLog(tx, {
+        actorId: ctx.userId,
+        action: "REACTIVATE",
+        entityType: "TestCase",
+        entityId: tc.id,
+        source: ctx.source,
+        requestId: ctx.requestId,
+        changes: { status: { from: "SKIPPED", to: "PENDING" } },
+      });
+    })
+  );
+}
+
+/**
+ * Reactivate a single test procedure and un-skip all its test cases.
+ * Already-ACTIVE TPs are silently skipped. Call within an existing transaction.
+ */
+export async function cascadeReactivateTestProcedure(
+  tx: Prisma.TransactionClient,
+  testProcedureId: string,
+  ctx: RequestContext
+) {
+  const tp = await tx.testProcedure.findUniqueOrThrow({
+    where: { id: testProcedureId },
+  });
+
+  // Already active - skip silently
+  if (tp.status === "ACTIVE") return;
+
+  await tx.testProcedure.update({
+    where: { id: testProcedureId },
+    data: { status: "ACTIVE" },
+  });
+
+  await writeAuditLog(tx, {
+    actorId: ctx.userId,
+    action: "REACTIVATE",
+    entityType: "TestProcedure",
+    entityId: testProcedureId,
+    source: ctx.source,
+    requestId: ctx.requestId,
+    changes: { status: { from: "CANCELED", to: "ACTIVE" } },
+  });
+
+  await cascadeReactivateTestCases(tx, testProcedureId, ctx);
 }
 
 // ─── Update (ACTIVE only, title only) ─────────────────────
@@ -443,5 +517,61 @@ export async function reParentTestProcedure(
     });
 
     return { ...updated, previousSubRequirementId };
+  });
+}
+
+// ─── Reactivate (CANCELED -> ACTIVE, with cascade to TCs) ──
+
+/**
+ * Reactivate a canceled test procedure and un-skip all its SKIPPED test cases.
+ * Entry point for direct TP reactivation (not cascade).
+ *
+ * Guards:
+ *   - TP must be CANCELED
+ *   - Parent SR must not be CANCELED (top-down reactivation required)
+ */
+export async function reactivateTestProcedure(
+  id: string,
+  _input: ReactivateTestProcedureInput,
+  ctx: RequestContext
+) {
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.testProcedure.findUniqueOrThrow({
+      where: { id },
+      include: { subRequirement: { select: { status: true } } },
+    });
+
+    if (existing.status !== "CANCELED") {
+      throw new LifecycleError(
+        `Cannot reactivate test procedure in ${existing.status} status. Only CANCELED procedures can be reactivated.`
+      );
+    }
+
+    // Parent SR must be non-canceled (top-down reactivation)
+    if (existing.subRequirement.status === "CANCELED") {
+      throw new LifecycleError(
+        "Cannot reactivate test procedure: parent sub-requirement is CANCELED. Reactivate the parent first."
+      );
+    }
+
+    // Reactivate TP + un-skip all child TCs
+    await tx.testProcedure.update({
+      where: { id },
+      data: { status: "ACTIVE" },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: ctx.userId,
+      action: "REACTIVATE",
+      entityType: "TestProcedure",
+      entityId: id,
+      source: ctx.source,
+      requestId: ctx.requestId,
+      changes: { status: { from: "CANCELED", to: "ACTIVE" } },
+    });
+
+    await cascadeReactivateTestCases(tx, id, ctx);
+
+    return tx.testProcedure.findUniqueOrThrow({ where: { id } });
   });
 }

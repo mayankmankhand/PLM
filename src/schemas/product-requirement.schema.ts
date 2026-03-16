@@ -58,3 +58,16 @@ export const CancelProductRequirementInput = z.object({
 export type CancelProductRequirementInput = z.infer<
   typeof CancelProductRequirementInput
 >;
+
+// ─── Reactivate ─────────────────────────────────────
+// Transitions CANCELED -> DRAFT. Same confirmation pattern.
+
+export const ReactivateProductRequirementInput = z.object({
+  confirmReactivate: z.literal(true, {
+    errorMap: () => ({ message: "confirmReactivate must be true" }),
+  }),
+});
+
+export type ReactivateProductRequirementInput = z.infer<
+  typeof ReactivateProductRequirementInput
+>;
