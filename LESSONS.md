@@ -47,6 +47,10 @@
 - **Return old + new values from structural mutation tools.** When an LLM tool moves an entity, returning only the updated state forces the LLM to remember prior context to compose a "moved from X to Y" message. Returning `previousParentId` alongside the new parent makes the response self-contained. Same principle applies to any correction/transition tool.
 - **Re-parenting is simpler than it looks (when the data model is clean).** Moving an entity to a different parent is just a FK update when there are no lineage-based auth rules, no denormalized parent-derived data, no per-parent ordering, and no cached aggregates. Document these assumptions explicitly so future maintainers know what to re-evaluate if the system grows.
 
+- **Frontend tool registration is easy to miss.** We built 3 new backend tools that worked perfectly (279 tests passing, TypeScript clean), but the panel didn't open. Root cause: `UI_INTENT_TOOLS` in `tool-labels.ts` is a name-based allowlist that gates which tool results get pushed to the panel store. Six parallel reviews (code, UX, full, browser, Gemini, GPT) all missed it. Only live user testing caught it. When adding new tools, check the full pipeline from backend execution to frontend rendering.
+- **Shell env vars override .env.local silently.** A `~/.bashrc` export of `ANTHROPIC_MODEL=claude-opus-4-6` overrode the `.env.local` setting of Haiku. Next.js does not override environment variables that already exist in the shell. The app was using a more expensive model with lower rate limits without anyone realizing it. After debugging rate limit errors, `echo $ANTHROPIC_MODEL` in the terminal revealed the override instantly.
+- **"No frontend changes needed" can be a trap.** The plan correctly noted the `DiagramPayload` type was unchanged (no new Zod schema, no new React components). But the routing layer had a name-based allowlist that DID need updating. "Same type" does not mean "same registration." Always grep for the old tool name to find everywhere it's referenced before declaring the frontend unchanged.
+
 ## Mistakes to Avoid
 <!-- Add patterns that caused problems so they don't repeat -->
 
