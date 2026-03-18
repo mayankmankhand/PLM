@@ -21,6 +21,7 @@ import { usePanelStore } from "@/stores/panel-store";
 import { PanelContentSchema } from "@/types/panel";
 import type { ToolPartShape } from "@/types/panel";
 import { useDesktopBreakpoint } from "@/hooks/use-desktop-breakpoint";
+import { usePanelActions } from "@/hooks/use-panel-actions";
 
 export default function ChatPage() {
   // Desktop breakpoint for panel-aware padding
@@ -48,6 +49,14 @@ export default function ChatPage() {
   // useChat manages message state, streaming, and API communication.
   // Changing the id resets the conversation (fresh messages).
   const chat = useChat({ id: userId, transport });
+
+  // Panel-to-chat communication: injects system notes when the user
+  // performs mutations (edits, approvals) directly in the panel UI.
+  const { notifyChat } = usePanelActions({
+    messages: chat.messages,
+    setMessages: chat.setMessages,
+    status: chat.status,
+  });
 
   // Local input state (useChat v6 doesn't manage input for us).
   const [input, setInput] = useState("");
@@ -255,7 +264,7 @@ export default function ChatPage() {
       </div>
 
       {/* Context panel - slides in from right, controlled by AI tools */}
-      <ContextPanel />
+      <ContextPanel notifyChat={notifyChat} />
     </div>
   );
 }

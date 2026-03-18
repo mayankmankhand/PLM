@@ -4,6 +4,98 @@
 
 import { prisma, ACTIVE_ATTACHMENT_FILTER } from "@/lib/prisma";
 
+// ---------------------------------------------------------------------------
+// Editable fields + available actions helpers for detail payloads
+// ---------------------------------------------------------------------------
+
+type EditableField = {
+  key: string;
+  label: string;
+  value: string;
+  fieldType: "text" | "textarea";
+};
+
+type ActionMeta = {
+  action: string;
+  label: string;
+  requiresConfirmation: boolean;
+  variant: "default" | "destructive";
+};
+
+/** Determine which fields are editable based on entity type and status. */
+export function computeEditableFields(
+  entityType: string,
+  status: string,
+  entity: { title?: string; description?: string | null },
+): EditableField[] | undefined {
+  const title: EditableField = {
+    key: "title",
+    label: "Title",
+    value: entity.title ?? "",
+    fieldType: "text",
+  };
+  const description: EditableField = {
+    key: "description",
+    label: "Description",
+    value: entity.description ?? "",
+    fieldType: "textarea",
+  };
+
+  switch (entityType) {
+    case "ProductRequirement":
+    case "SubRequirement":
+      if (status === "DRAFT" || status === "APPROVED") return [title, description];
+      return undefined;
+    case "TestProcedure":
+      if (status === "ACTIVE") return [title];
+      return undefined;
+    case "TestProcedureVersion":
+      if (status === "DRAFT") return [description];
+      if (status === "APPROVED") return [description];
+      return undefined;
+    case "TestCase":
+      if (status === "PENDING") return [title, description];
+      return undefined;
+    default:
+      return undefined;
+  }
+}
+
+/** Determine which lifecycle actions are available based on entity type and status. */
+export function computeAvailableActions(
+  entityType: string,
+  status: string,
+): ActionMeta[] | undefined {
+  const approve: ActionMeta = { action: "approve", label: "Approve", requiresConfirmation: true, variant: "default" };
+  const cancel: ActionMeta = { action: "cancel", label: "Cancel", requiresConfirmation: true, variant: "destructive" };
+  const reactivate: ActionMeta = { action: "reactivate", label: "Reactivate", requiresConfirmation: true, variant: "default" };
+  const skip: ActionMeta = { action: "skip", label: "Skip", requiresConfirmation: true, variant: "destructive" };
+  const correct: ActionMeta = { action: "correct", label: "Correct Result", requiresConfirmation: true, variant: "default" };
+  const reExecute: ActionMeta = { action: "re-execute", label: "Re-execute", requiresConfirmation: true, variant: "default" };
+
+  switch (entityType) {
+    case "ProductRequirement":
+    case "SubRequirement":
+      if (status === "DRAFT") return [approve, cancel];
+      if (status === "APPROVED") return [cancel];
+      if (status === "CANCELED") return [reactivate];
+      return undefined;
+    case "TestProcedure":
+      if (status === "ACTIVE") return [cancel];
+      if (status === "CANCELED") return [reactivate];
+      return undefined;
+    case "TestProcedureVersion":
+      if (status === "DRAFT") return [approve];
+      return undefined;
+    case "TestCase":
+      if (status === "PENDING") return [skip];
+      if (status === "PASSED" || status === "FAILED" || status === "BLOCKED") return [correct, reExecute];
+      return undefined;
+    default:
+      return undefined;
+  }
+}
+
 // Shared attachment select block used by all entity fetch functions.
 // fileUrl is deliberately excluded - no blob storage in V1, avoid leaking stub URLs.
 const ATTACHMENT_SELECT = {

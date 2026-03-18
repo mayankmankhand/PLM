@@ -38,6 +38,7 @@ describe("usePanelStore", () => {
   it("showDetail opens panel with detail content", () => {
     const payload: DetailPayload = {
       type: "detail",
+      entityId: "pr-001",
       entityType: "ProductRequirement",
       title: "Test Requirement",
       fields: [
@@ -101,6 +102,7 @@ describe("usePanelStore", () => {
   it("close hides the panel but keeps content", () => {
     const payload: DetailPayload = {
       type: "detail",
+      entityId: "tc-001",
       entityType: "TestCase",
       title: "Test",
       fields: [],
@@ -117,6 +119,7 @@ describe("usePanelStore", () => {
   it("reset clears everything", () => {
     usePanelStore.getState().showDetail({
       type: "detail",
+      entityId: "tc-001",
       entityType: "TestCase",
       title: "Test",
       fields: [],
@@ -158,6 +161,7 @@ describe("usePanelStore", () => {
   it("new tool call replaces previous content", () => {
     usePanelStore.getState().showDetail({
       type: "detail",
+      entityId: "tc-001",
       entityType: "TestCase",
       title: "First",
       fields: [],
@@ -185,6 +189,7 @@ describe("DetailPayloadSchema", () => {
   it("accepts valid detail payload", () => {
     const result = DetailPayloadSchema.safeParse({
       type: "detail",
+      entityId: "pr-001",
       entityType: "ProductRequirement",
       title: "My Req",
       fields: [{ label: "Status", value: "DRAFT" }],
@@ -195,6 +200,7 @@ describe("DetailPayloadSchema", () => {
   it("accepts detail with related entities", () => {
     const result = DetailPayloadSchema.safeParse({
       type: "detail",
+      entityId: "sr-001",
       entityType: "SubRequirement",
       title: "Sub Req",
       fields: [],
@@ -208,6 +214,7 @@ describe("DetailPayloadSchema", () => {
   it("rejects invalid entity type", () => {
     const result = DetailPayloadSchema.safeParse({
       type: "detail",
+      entityId: "bad-001",
       entityType: "InvalidType",
       title: "Bad",
       fields: [],
@@ -227,8 +234,8 @@ describe("TablePayloadSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects more than 15 rows", () => {
-    const rows = Array.from({ length: 16 }, (_, i) => ({ name: `Row ${i}` }));
+  it("rejects more than 200 rows", () => {
+    const rows = Array.from({ length: 201 }, (_, i) => ({ name: `Row ${i}` }));
     const result = TablePayloadSchema.safeParse({
       type: "table",
       title: "Too Many",
@@ -401,6 +408,7 @@ describe("PanelContentSchema discriminated union", () => {
   it("narrows to detail type", () => {
     const input = {
       type: "detail",
+      entityId: "tc-001",
       entityType: "TestCase",
       title: "TC-001",
       fields: [{ label: "Status", value: "PENDING" }],

@@ -15,6 +15,8 @@ export const DetailPayloadSchema = z.object({
     "TestCase",
   ]),
   title: z.string(),
+  // The entity's database ID (used for API calls like edits and actions)
+  entityId: z.string(),
   // Key-value fields to display (e.g. status, description, createdAt).
   // Values are stringified for display - keeps the schema simple.
   fields: z.array(
@@ -46,6 +48,28 @@ export const DetailPayloadSchema = z.object({
       }),
     )
     .optional(),
+  // Fields the user can edit inline (populated based on entity status and lifecycle rules)
+  editableFields: z
+    .array(
+      z.object({
+        key: z.string(),
+        label: z.string(),
+        value: z.string(),
+        fieldType: z.enum(["text", "textarea"]),
+      }),
+    )
+    .optional(),
+  // Lifecycle actions available for this entity (e.g. approve, cancel)
+  availableActions: z
+    .array(
+      z.object({
+        action: z.string(),
+        label: z.string(),
+        requiresConfirmation: z.boolean(),
+        variant: z.enum(["default", "destructive"]),
+      }),
+    )
+    .optional(),
 });
 
 // -- Table payload: shows rows and columns (query results, search results) --
@@ -62,8 +86,12 @@ export const TablePayloadSchema = z.object({
   ),
   rows: z
     .array(z.record(z.string(), z.unknown()))
-    .max(15, "Tables are capped at 15 rows in V1"),
+    .max(200, "Rows accumulate client-side via Show More; capped to prevent runaway"),
   isTruncated: z.boolean().optional(),
+  // Identifies the query type for "Show more" pagination
+  queryType: z.string().optional(),
+  // Query parameters for replaying the query (e.g. filters, team)
+  queryParams: z.record(z.string(), z.unknown()).optional(),
 });
 
 // -- Diagram payload: Mermaid syntax string for visual rendering --

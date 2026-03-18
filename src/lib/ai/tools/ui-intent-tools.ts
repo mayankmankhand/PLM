@@ -10,6 +10,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { formatToolError } from "./tool-wrapper";
+import { formatDate } from "@/lib/format-utils";
 import { AuditEntityTypeEnum } from "@/schemas/query.schema";
 import {
   fetchProductRequirement,
@@ -21,6 +22,8 @@ import {
   fetchTraceabilityForDiagram,
   fetchStatusDistribution,
   fetchTeamCoverage,
+  computeEditableFields,
+  computeAvailableActions,
 } from "./shared-queries";
 import {
   buildTraceabilityDiagram,
@@ -29,15 +32,6 @@ import {
   buildTeamCoverageDiagram,
 } from "@/lib/ai/diagram-templates";
 import type { DetailPayload, TablePayload, DiagramPayload, AuditPayload } from "@/types/panel";
-
-// Helper to format dates for display
-function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 // Helper to format generation timestamp for diagram titles
 function diagramTimestamp(): string {
@@ -122,6 +116,7 @@ export function createUIIntentTools() {
               return {
                 type: "detail" as const,
                 entityType: args.entityType,
+                entityId: data.id,
                 title: data.title,
                 fields: [
                   { label: "ID", value: data.id },
@@ -136,6 +131,8 @@ export function createUIIntentTools() {
                   entityType: "SubRequirement",
                 })),
                 attachments: mapAttachments(data.attachments),
+                editableFields: computeEditableFields(args.entityType, data.status, data),
+                availableActions: computeAvailableActions(args.entityType, data.status),
               };
             }
 
@@ -144,6 +141,7 @@ export function createUIIntentTools() {
               return {
                 type: "detail" as const,
                 entityType: args.entityType,
+                entityId: data.id,
                 title: data.title,
                 fields: [
                   { label: "ID", value: data.id },
@@ -160,6 +158,8 @@ export function createUIIntentTools() {
                   entityType: "TestProcedure",
                 })),
                 attachments: mapAttachments(data.attachments),
+                editableFields: computeEditableFields(args.entityType, data.status, data),
+                availableActions: computeAvailableActions(args.entityType, data.status),
               };
             }
 
@@ -168,6 +168,7 @@ export function createUIIntentTools() {
               return {
                 type: "detail" as const,
                 entityType: args.entityType,
+                entityId: data.id,
                 title: data.title,
                 fields: [
                   { label: "ID", value: data.id },
@@ -182,6 +183,8 @@ export function createUIIntentTools() {
                   entityType: "TestProcedureVersion",
                 })),
                 attachments: mapAttachments(data.attachments),
+                editableFields: computeEditableFields(args.entityType, data.status, data),
+                availableActions: computeAvailableActions(args.entityType, data.status),
               };
             }
 
@@ -191,6 +194,7 @@ export function createUIIntentTools() {
               return {
                 type: "detail" as const,
                 entityType: args.entityType,
+                entityId: data.id,
                 title: `${data.testProcedure.title} v${data.versionNumber}`,
                 fields: [
                   { label: "ID", value: data.id },
@@ -207,6 +211,8 @@ export function createUIIntentTools() {
                   status: tc.status,
                   entityType: "TestCase",
                 })),
+                editableFields: computeEditableFields(args.entityType, data.status, data),
+                availableActions: computeAvailableActions(args.entityType, data.status),
               };
             }
 
@@ -226,9 +232,12 @@ export function createUIIntentTools() {
               return {
                 type: "detail" as const,
                 entityType: args.entityType,
+                entityId: data.id,
                 title: data.title,
                 fields,
                 attachments: mapAttachments(data.attachments),
+                editableFields: computeEditableFields(args.entityType, data.status, data),
+                availableActions: computeAvailableActions(args.entityType, data.status),
               };
             }
 
@@ -301,6 +310,7 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: "Uncovered Sub-Requirements",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "team", label: "Team" },
@@ -308,6 +318,7 @@ export function createUIIntentTools() {
                   { key: "parentStatus", label: "PR Status" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   team: d.team.name,
@@ -315,6 +326,8 @@ export function createUIIntentTools() {
                   parentStatus: d.productRequirement.status,
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -326,6 +339,7 @@ export function createUIIntentTools() {
                   versionNumber: true,
                   testProcedure: {
                     select: {
+                      id: true,
                       title: true,
                       subRequirement: {
                         select: {
@@ -345,18 +359,22 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: "Untested Procedure Versions",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "procedure", label: "Procedure" },
                   { key: "version", label: "Version" },
                   { key: "subRequirement", label: "Sub-Requirement" },
                   { key: "team", label: "Team" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.testProcedure.id,
                   procedure: d.testProcedure.title,
                   version: `v${d.versionNumber}`,
                   subRequirement: d.testProcedure.subRequirement.title,
                   team: d.testProcedure.subRequirement.team.name,
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -378,18 +396,22 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: "Product Requirements",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "created", label: "Created" },
                   { key: "createdBy", label: "Created By" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   created: formatDate(d.createdAt),
                   createdBy: d.creator.name,
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -417,6 +439,7 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: args.team ? `Sub-Requirements - ${args.team}` : "Sub-Requirements",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "team", label: "Team" },
@@ -425,6 +448,7 @@ export function createUIIntentTools() {
                   { key: "createdBy", label: "Created By" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   team: d.team.name,
@@ -433,6 +457,8 @@ export function createUIIntentTools() {
                   createdBy: d.creator.name,
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: { ...(args.team && { team: args.team }) },
               };
             }
 
@@ -465,6 +491,7 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: args.team ? `Test Procedures - ${args.team}` : "Test Procedures",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "subRequirement", label: "Sub-Requirement" },
@@ -473,6 +500,7 @@ export function createUIIntentTools() {
                   { key: "createdBy", label: "Created By" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   subRequirement: d.subRequirement.title,
@@ -481,6 +509,8 @@ export function createUIIntentTools() {
                   createdBy: d.creator.name,
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: { ...(args.team && { team: args.team }) },
               };
             }
 
@@ -513,6 +543,7 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: "Test Cases",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "result", label: "Result" },
@@ -522,6 +553,7 @@ export function createUIIntentTools() {
                   { key: "executedAt", label: "Executed" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   result: d.result ?? "-",
@@ -531,6 +563,8 @@ export function createUIIntentTools() {
                   executedAt: d.executedAt ? formatDate(d.executedAt) : "-",
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -551,7 +585,7 @@ export function createUIIntentTools() {
                 types.includes("ProductRequirement")
                   ? prisma.productRequirement.findMany({
                       where: filter,
-                      select: { title: true, status: true },
+                      select: { id: true, title: true, status: true },
                       take: 5,
                       orderBy: { createdAt: "desc" },
                     })
@@ -559,7 +593,7 @@ export function createUIIntentTools() {
                 types.includes("SubRequirement")
                   ? prisma.subRequirement.findMany({
                       where: filter,
-                      select: { title: true, status: true },
+                      select: { id: true, title: true, status: true },
                       take: 5,
                       orderBy: { createdAt: "desc" },
                     })
@@ -567,7 +601,7 @@ export function createUIIntentTools() {
                 types.includes("TestProcedure")
                   ? prisma.testProcedure.findMany({
                       where: filter,
-                      select: { title: true, status: true },
+                      select: { id: true, title: true, status: true },
                       take: 5,
                       orderBy: { createdAt: "desc" },
                     })
@@ -575,7 +609,7 @@ export function createUIIntentTools() {
                 types.includes("TestCase")
                   ? prisma.testCase.findMany({
                       where: filter,
-                      select: { title: true, status: true },
+                      select: { id: true, title: true, status: true },
                       take: 5,
                       orderBy: { createdAt: "desc" },
                     })
@@ -584,10 +618,10 @@ export function createUIIntentTools() {
 
               // Flatten in fixed order: Requirements, Sub-Reqs, Procedures, Test Cases
               const allRows: Record<string, unknown>[] = [
-                ...reqs.map((d) => ({ type: "Requirement", title: d.title, status: d.status })),
-                ...subs.map((d) => ({ type: "Sub-Req", title: d.title, status: d.status })),
-                ...procs.map((d) => ({ type: "Procedure", title: d.title, status: d.status })),
-                ...cases.map((d) => ({ type: "Test Case", title: d.title, status: d.status })),
+                ...reqs.map((d) => ({ id: d.id, type: "Requirement", entityType: "ProductRequirement", title: d.title, status: d.status })),
+                ...subs.map((d) => ({ id: d.id, type: "Sub-Req", entityType: "SubRequirement", title: d.title, status: d.status })),
+                ...procs.map((d) => ({ id: d.id, type: "Procedure", entityType: "TestProcedure", title: d.title, status: d.status })),
+                ...cases.map((d) => ({ id: d.id, type: "Test Case", entityType: "TestCase", title: d.title, status: d.status })),
               ];
               const isTruncated = allRows.length > 15;
 
@@ -595,12 +629,18 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: `Search: "${args.searchQuery}"`,
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "type", label: "Type" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                 ],
                 rows: allRows.slice(0, 15),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {
+                  searchQuery: args.searchQuery,
+                  ...(args.entityType && { entityType: args.entityType }),
+                },
               };
             }
 
@@ -628,6 +668,7 @@ export function createUIIntentTools() {
                     },
                   },
                 },
+                orderBy: { createdAt: "desc" },
               });
 
               // Aggregate test case statuses per procedure
@@ -676,6 +717,8 @@ export function createUIIntentTools() {
                 ],
                 rows: summaryRows.slice(0, 15),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -693,6 +736,7 @@ export function createUIIntentTools() {
                   },
                 },
                 take: 16, // Fetch one extra to detect truncation
+                orderBy: { name: "asc" },
               });
 
               const coverageRows = teams.map((t) => {
@@ -730,6 +774,8 @@ export function createUIIntentTools() {
                 ],
                 rows: coverageRows.slice(0, 15),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: {},
               };
             }
 
@@ -751,6 +797,7 @@ export function createUIIntentTools() {
                   },
                 },
                 select: {
+                  id: true,
                   title: true,
                   status: true,
                   result: true,
@@ -778,6 +825,7 @@ export function createUIIntentTools() {
                 type: "table" as const,
                 title: "Test Cases for Requirement",
                 columns: [
+                  { key: "id", label: "ID" },
                   { key: "title", label: "Title" },
                   { key: "status", label: "Status" },
                   { key: "result", label: "Result" },
@@ -787,6 +835,7 @@ export function createUIIntentTools() {
                   { key: "executedAt", label: "Executed" },
                 ],
                 rows: rows.map((d) => ({
+                  id: d.id,
                   title: d.title,
                   status: d.status,
                   result: d.result ?? "-",
@@ -796,6 +845,8 @@ export function createUIIntentTools() {
                   executedAt: d.executedAt ? formatDate(d.executedAt) : "-",
                 })),
                 isTruncated,
+                queryType: args.queryType,
+                queryParams: { requirementId: args.requirementId },
               };
             }
 

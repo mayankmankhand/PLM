@@ -7,7 +7,7 @@ import { getUserById } from "./demo-users";
 
 // Source tracks where a mutation originated, so audit logs can distinguish
 // API calls from chat-initiated actions.
-export type AuditSource = "api" | "chat";
+export type AuditSource = "api" | "chat" | "panel";
 export interface RequestContext {
   userId: string;
   teamId: string;
@@ -43,11 +43,20 @@ export function getRequestContext(request: Request): RequestContext {
     throw new AuthError("Invalid user credentials");
   }
 
+  // Allow callers to override the audit source via header.
+  // The panel UI sends X-Audit-Source: "panel" so audit logs can
+  // distinguish panel-initiated mutations from raw API calls.
+  const auditSourceHeader = request.headers.get("x-audit-source");
+  let source: AuditSource = "api";
+  if (auditSourceHeader === "panel" || auditSourceHeader === "chat") {
+    source = auditSourceHeader;
+  }
+
   return {
     userId: user.id,
     teamId: user.teamId,
     role: user.role,
     requestId,
-    source: "api",
+    source,
   };
 }

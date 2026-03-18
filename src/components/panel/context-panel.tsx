@@ -5,9 +5,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { X, Table2, FileText, GitBranch, AlertCircle, History, FileCode, GitCompare, CalendarDays } from "lucide-react";
+import { X, ArrowLeft, Table2, FileText, GitBranch, AlertCircle, History, FileCode, GitCompare, CalendarDays } from "lucide-react";
 import { usePanelStore, DEFAULT_PANEL_WIDTH } from "@/stores/panel-store";
 import { useDesktopBreakpoint } from "@/hooks/use-desktop-breakpoint";
+import { fetchPanelDetail } from "@/lib/panel-utils";
 import { DetailView } from "./detail-view";
 import { TableView } from "./table-view";
 import { DiagramView } from "./diagram-view";
@@ -34,7 +35,12 @@ const TYPE_BADGES: Record<PanelState["type"], BadgeConfig> = {
 const MIN_WIDTH = 360;
 const MAX_WIDTH = 800;
 
-export function ContextPanel() {
+interface ContextPanelProps {
+  /** Inject a system note into the chat transcript (used by detail-view for mutations). */
+  notifyChat: (message: string) => void;
+}
+
+export function ContextPanel({ notifyChat }: ContextPanelProps) {
   const isDesktop = useDesktopBreakpoint();
   const isOpen = usePanelStore((s) => s.isOpen);
   const content = usePanelStore((s) => s.content);
@@ -82,6 +88,25 @@ export function ContextPanel() {
     };
   }, [isDragging, setPanelWidth]);
 
+  const showDetail = usePanelStore((s) => s.showDetail);
+  const showError = usePanelStore((s) => s.showError);
+  const canGoBack = usePanelStore((s) => s.canGoBack);
+  const navigateBack = usePanelStore((s) => s.navigateBack);
+
+  // Navigate from a table row to the entity's detail view.
+  // Fetches the detail payload, then pushes it onto the panel (with history).
+  const handleTableNavigate = useCallback(
+    async (entityType: string, entityId: string) => {
+      try {
+        const detail = await fetchPanelDetail(entityType, entityId);
+        showDetail(detail);
+      } catch (err) {
+        showError("showTable", err instanceof Error ? err.message : "Failed to load detail");
+      }
+    },
+    [showDetail, showError],
+  );
+
   const badge = content ? TYPE_BADGES[content.type] : null;
   const BadgeIcon = badge?.icon;
   const title =
@@ -126,6 +151,19 @@ export function ContextPanel() {
         {/* Header - transparent, sits on the frosted panel surface */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 flex-shrink-0">
           <div className="flex items-center gap-2 min-w-0">
+            {/* Back button - shown when navigation history exists */}
+            {canGoBack && (
+              <button
+                onClick={navigateBack}
+                aria-label="Go back"
+                title="Go back"
+                className="p-1 rounded-md text-text-muted hover:text-text hover:bg-surface-hover
+                           transition-colors duration-150
+                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <ArrowLeft size={16} />
+              </button>
+            )}
             {badge && (
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-primary bg-primary-subtle px-2.5 py-0.5 rounded-full">
                 {BadgeIcon && <BadgeIcon size={12} />}
@@ -148,8 +186,8 @@ export function ContextPanel() {
 
         {/* Content area */}
         <div className="flex-1 overflow-y-auto p-5">
-          {content?.type === "detail" && <DetailView payload={content} />}
-          {content?.type === "table" && <TableView payload={content} />}
+          {content?.type === "detail" && <DetailView payload={content} notifyChat={notifyChat} onNavigate={handleTableNavigate} />}
+          {content?.type === "table" && <TableView payload={content} onNavigate={handleTableNavigate} />}
           {content?.type === "diagram" && <DiagramView payload={content} />}
           {content?.type === "audit" && <AuditView payload={content} />}
           {content?.type === "error" && <ErrorView payload={content} />}

@@ -12,6 +12,12 @@ import { ToolIndicator, ToolGroup } from "./tool-indicator";
 import { ConfirmButtons } from "./confirm-buttons";
 import { ThinkingIndicator } from "./thinking-indicator";
 
+// Prefix and suffix for system notes injected by panel actions.
+// These are assistant messages that log UI mutations (e.g. edits, approvals)
+// without triggering an LLM response. Rendered as muted centered text.
+const SYSTEM_NOTE_PREFIX = "[System Note: ";
+const SYSTEM_NOTE_SUFFIX = "]";
+
 // Keywords that signal the AI is asking for confirmation.
 // Used to show accept/reject buttons on the message.
 const CONFIRM_KEYWORDS = [
@@ -51,6 +57,26 @@ export const MessageBubble = memo(function MessageBubble({
 
   // Combine all text parts into one string for rendering.
   const fullText = textParts.map((p) => p.text).join("");
+
+  // System notes are assistant messages injected by panel actions (not the LLM).
+  // Render them as muted, centered, inline notifications instead of chat bubbles.
+  if (
+    !isUser &&
+    fullText.startsWith(SYSTEM_NOTE_PREFIX) &&
+    fullText.endsWith(SYSTEM_NOTE_SUFFIX)
+  ) {
+    const noteText = fullText.slice(
+      SYSTEM_NOTE_PREFIX.length,
+      -SYSTEM_NOTE_SUFFIX.length,
+    );
+    return (
+      <div className="flex justify-center py-1">
+        <span className="text-xs italic text-text-muted">
+          {noteText}
+        </span>
+      </div>
+    );
+  }
 
   // Check if any tools are still executing (for thinking indicator).
   // Tool parts start as "input-streaming"/"input-available" then become "output-available"/"output-error".
