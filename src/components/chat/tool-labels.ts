@@ -47,6 +47,9 @@ const TOOL_LABELS: Record<string, string> = {
   showEntityDetail: "Showing in panel",
   showTable: "Showing table in panel",
   showDiagram: "Showing diagram in panel",
+  showTraceabilityDiagram: "Showing traceability diagram",
+  showStatusDiagram: "Showing status diagram",
+  showCoverageDiagram: "Showing coverage diagram",
   showAuditLog: "Showing audit log in panel",
 };
 
@@ -56,6 +59,9 @@ export const UI_INTENT_TOOLS = new Set([
   "showEntityDetail",
   "showTable",
   "showDiagram",
+  "showTraceabilityDiagram",
+  "showStatusDiagram",
+  "showCoverageDiagram",
   "showAuditLog",
 ]);
 

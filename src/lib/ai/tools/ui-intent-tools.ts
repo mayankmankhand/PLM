@@ -3,7 +3,8 @@
 // UI intent tools return structured payloads that the frontend
 // renders in the context panel for the user to see.
 //
-// 4 tools: showEntityDetail, showTable, showDiagram, showAuditLog
+// 7 tools: showEntityDetail, showTable, showDiagram, showAuditLog,
+//           showTraceabilityDiagram, showStatusDiagram, showCoverageDiagram
 
 import { tool } from "ai";
 import { z } from "zod";
@@ -17,7 +18,16 @@ import {
   fetchTestProcedureVersion,
   fetchTestCase,
   fetchAuditLogForPanel,
+  fetchTraceabilityForDiagram,
+  fetchStatusDistribution,
+  fetchTeamCoverage,
 } from "./shared-queries";
+import {
+  buildTraceabilityDiagram,
+  buildStatusDistributionDiagram,
+  buildMultiStatusDiagram,
+  buildTeamCoverageDiagram,
+} from "@/lib/ai/diagram-templates";
 import type { DetailPayload, TablePayload, DiagramPayload, AuditPayload } from "@/types/panel";
 
 // Helper to format dates for display
@@ -26,6 +36,16 @@ function formatDate(date: Date | string): string {
     year: "numeric",
     month: "short",
     day: "numeric",
+  });
+}
+
+// Helper to format generation timestamp for diagram titles
+function diagramTimestamp(): string {
+  return new Date().toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
@@ -795,16 +815,18 @@ export function createUIIntentTools() {
     // -- Show a Mermaid diagram in the context panel --
     showDiagram: tool({
       description:
-        "Display a Mermaid diagram in the context panel. " +
-        "Use for traceability trees, status overviews, or relationship maps. " +
+        "Display a custom Mermaid diagram in the context panel. " +
+        "Use ONLY for custom visualizations that don't fit traceability, status, or coverage templates. " +
+        "For traceability diagrams, use showTraceabilityDiagram instead. " +
+        "For status distribution, use showStatusDiagram instead. " +
+        "For team coverage, use showCoverageDiagram instead. " +
         "Generate valid Mermaid syntax (flowchart, graph, or stateDiagram). " +
         "Diagram style rules: " +
         "(1) Prefer `flowchart LR` for trees - left-to-right fits the narrow panel better than top-down. " +
-        "(2) Short node labels - use ID + brief title (e.g. `PR1[PR-001 Core Features]`), not full descriptions. " +
-        "(3) Show status as a short suffix when relevant (e.g. `TC1[TC-001 GPS Power - FAILED]`). " +
-        "(4) Do NOT use classDef or style directives - the neutral theme handles colors. " +
-        "(5) Do NOT use emoji in node labels. " +
-        "(6) Keep labels concise (under ~50 characters per node).",
+        "(2) Short node labels - use ID + brief title, not full descriptions. " +
+        "(3) Do NOT use classDef or style directives - the neutral theme handles colors. " +
+        "(4) Do NOT use emoji in node labels. " +
+        "(5) Keep labels concise (under ~50 characters per node).",
       inputSchema: z.object({
         title: z.string().trim().describe("Title for the diagram"),
         mermaidSyntax: z.string().trim().describe("Valid Mermaid diagram syntax"),
@@ -902,6 +924,127 @@ export function createUIIntentTools() {
               createdAt: entry.createdAt.toISOString(),
               changes: normalizeChanges(entry.changes),
             })),
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    // -- Template-based diagram tools (Issue #67) --
+    // These produce deterministic Mermaid syntax from DB data.
+    // The LLM picks which tool to use; code controls the visual format.
+
+    showTraceabilityDiagram: tool({
+      description:
+        "Display a traceability diagram showing PR -> SR -> TP -> TC relationships. " +
+        "Use this for any traceability, hierarchy, or coverage visualization request. " +
+        "Default mode is 'summary' (rolled-up status counts per TP). " +
+        "Use 'detailed' mode when the user asks about a specific requirement (shows individual TCs). " +
+        "If mode is 'detailed', requirementId is required - defaults to 'summary' if omitted.",
+      inputSchema: z.object({
+        requirementId: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Product requirement ID. Required for detailed mode, optional for summary."),
+        mode: z
+          .enum(["summary", "detailed"])
+          .default("summary")
+          .describe("'summary' shows aggregated status counts per TP. 'detailed' shows individual TC nodes."),
+      }),
+      execute: async (args): Promise<DiagramPayload | { error: string }> => {
+        try {
+          // Enforce: detailed mode requires a requirementId to prevent huge graphs
+          const effectiveMode =
+            args.mode === "detailed" && !args.requirementId
+              ? "summary"
+              : args.mode;
+
+          const data = await fetchTraceabilityForDiagram(args.requirementId);
+
+          if (data.requirements.length === 0) {
+            return { error: "NotFoundError: No product requirements found." };
+          }
+
+          const mermaidSyntax = buildTraceabilityDiagram(data, effectiveMode);
+          const title = args.requirementId
+            ? `Traceability - ${data.requirements[0].id} ${data.requirements[0].title} (${diagramTimestamp()})`
+            : `Traceability Overview (${diagramTimestamp()})`;
+
+          return {
+            type: "diagram" as const,
+            title,
+            mermaidSyntax,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    showStatusDiagram: tool({
+      description:
+        "Display a status distribution diagram showing entity counts by status. " +
+        "Use this when the user asks about status breakdown, distribution, or overview. " +
+        "Optionally filter to a single entity type (PR, SR, TP, TC).",
+      inputSchema: z.object({
+        entityType: z
+          .enum(["PR", "SR", "TP", "TC"])
+          .optional()
+          .describe("Filter to one entity type. Omit to show all types."),
+      }),
+      execute: async (args): Promise<DiagramPayload | { error: string }> => {
+        try {
+          const entries = await fetchStatusDistribution(args.entityType);
+
+          if (entries.length === 0) {
+            return { error: "NotFoundError: No entities found." };
+          }
+
+          // Single entity type: build one diagram.
+          // Multiple entity types: build combined subgraph diagram.
+          if (entries.length === 1) {
+            const mermaidSyntax = buildStatusDistributionDiagram(entries[0]);
+            return {
+              type: "diagram" as const,
+              title: `Status Distribution - ${entries[0].entityType} (${diagramTimestamp()})`,
+              mermaidSyntax,
+            };
+          }
+
+          const mermaidSyntax = buildMultiStatusDiagram(entries);
+
+          return {
+            type: "diagram" as const,
+            title: `Status Distribution - All Entity Types (${diagramTimestamp()})`,
+            mermaidSyntax,
+          };
+        } catch (error) {
+          return { error: formatToolError(error) };
+        }
+      },
+    }),
+
+    showCoverageDiagram: tool({
+      description:
+        "Display a team coverage diagram showing SR, TP, and uncovered counts per team. " +
+        "Use this when the user asks about test coverage by team, team metrics, or coverage gaps.",
+      inputSchema: z.object({}),
+      execute: async (): Promise<DiagramPayload | { error: string }> => {
+        try {
+          const data = await fetchTeamCoverage();
+
+          if (data.teams.length === 0) {
+            return { error: "NotFoundError: No teams found." };
+          }
+
+          const mermaidSyntax = buildTeamCoverageDiagram(data);
+
+          return {
+            type: "diagram" as const,
+            title: `Test Coverage by Team (${diagramTimestamp()})`,
+            mermaidSyntax,
           };
         } catch (error) {
           return { error: formatToolError(error) };

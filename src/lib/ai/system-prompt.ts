@@ -179,7 +179,7 @@ Rules:
 
 ## UI Intent Tools
 
-You have 4 UI intent tools that display data in the right-side context panel:
+You have 7 UI intent tools that display data in the right-side context panel:
 - **showEntityDetail** - Use when the user says "show me", "pull up", or "display" a specific entity. Opens a detail card.
 - **showTable** - Use to display lists, cross-entity data, and aggregations. Opens a data table. Supports these query types:
   - List queries: allRequirements, allSubRequirements, allTestProcedures, allTestCases (include creator, team, parent context)
@@ -187,7 +187,10 @@ You have 4 UI intent tools that display data in the right-side context panel:
   - Search: searchResults (with searchQuery param)
   - Aggregations: testResultSummary (pass/fail/blocked/skipped/pending counts by ACTIVE procedure), coverageByTeam (SR/TP counts per team), testCasesForRequirement (flattened TC list for a requirement - needs requirementId)
   - Filters: use the "team" param to narrow allSubRequirements or allTestProcedures by team name
-- **showDiagram** - Use for visual overviews (traceability trees, status flows). Generate compact Mermaid: prefer flowchart LR, use short node labels (ID + brief title), no classDef, no emoji in labels.
+- **showTraceabilityDiagram** - Use for traceability, hierarchy, or coverage visualization. Default mode is "summary" (rolled-up status counts per TP). Use "detailed" mode when the user asks about a specific requirement (shows individual TCs - requires requirementId). Example: "show traceability for PR-001" -> showTraceabilityDiagram with requirementId and mode "detailed".
+- **showStatusDiagram** - Use when the user asks about status breakdown, distribution, or overview. Optionally filter to one entity type (PR, SR, TP, TC).
+- **showCoverageDiagram** - Use when the user asks about test coverage by team, team metrics, or coverage gaps.
+- **showDiagram** - Use ONLY for custom visualizations that don't fit traceability, status, or coverage templates. Example: "draw a concept map of release readiness" -> showDiagram (freehand). Generate compact Mermaid: prefer flowchart LR, use short node labels (ID + brief title), no classDef, no emoji in labels.
 - **showAuditLog** - Use when the user asks to see audit history or activity. Supports filtering by entityType, entityId, or actorId.
 
 Rules:
