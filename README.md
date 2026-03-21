@@ -56,7 +56,7 @@ PLM replaces all of that with a chat interface. You type "create a requirement f
 
 - **No real authentication** - 6 demo users (the cast of Friends) are hardcoded. You pick a user from a dropdown. Real sign-in with email/password or OAuth is planned (#62).
 - **No permissions** - All users see all data and can do everything. Role-based access control (admin, editor, commenter) scoped by team is planned (#63).
-- **No file attachments** - The data model supports attachments, but there's no upload UI. No upload UI yet.
+- **No file attachments** - The data model supports attachments, but there's no upload UI yet.
 
 ## Demo Users
 
@@ -162,8 +162,6 @@ PLM currently has a basic trace logger for development, but no structured way to
 Evals are automated tests for AI behavior - they detect recurring errors and measure quality over time. Unlike regular unit tests (which check if code runs correctly), evals check if the AI's responses are actually good. Does it use the right tool? Does it ask for confirmation before destructive actions? Does it give accurate answers about entity status?
 
 Maintenance is the ongoing work of keeping the system reliable as models get updated and real-world usage patterns change. A new model version might handle prompts differently. Users might ask questions the system wasn't designed for. You need a plan for prompt tuning, model upgrades, and monitoring for drift.
-
-
 
 **Where PLM stands today:** Context engineering and orchestration are built and working. Observability, evals, and maintenance are the remaining pieces to make this a complete AI product.
 
