@@ -4,6 +4,14 @@ A chat-based tool for managing product requirements, test procedures, and test c
 
 **Try it:** [plm-app.vercel.app](https://plm-app.vercel.app)
 
+<img src="docs/images/plm-chat-table.png" alt="PLM chat interface showing a list of product requirements in the side panel table" width="800">
+
+*Chat interface with product requirements table in the side panel*
+
+<img src="docs/images/plm-chat-diagram.png" alt="PLM chat interface showing a traceability diagram connecting requirements to test procedures and test cases" width="800">
+
+*Traceability diagram generated from a product requirement*
+
 ## Why This Exists
 
 The biggest pain with traditional lifecycle management tools is the clicking. Creating a requirement, approving it, writing test procedures, recording results - every action means navigating through multiple screens. Nobody wants to do it, and things fall behind.
@@ -49,7 +57,6 @@ PLM replaces all of that with a chat interface. You type "create a requirement f
 - **No real authentication** - 6 demo users (the cast of Friends) are hardcoded. You pick a user from a dropdown. Real sign-in with email/password or OAuth is planned (#62).
 - **No permissions** - All users see all data and can do everything. Role-based access control (admin, editor, commenter) scoped by team is planned (#63).
 - **No file attachments** - The data model supports attachments, but there's no upload UI. No upload UI yet.
-- **No real-time panel editing** - You can view entity details in the side panel, but can't edit directly in the panel. Changes go through the chat. Low priority.
 
 ## Demo Users
 
@@ -75,7 +82,6 @@ The app ships with a smartwatch PLM dataset and 6 demo users. Switch users from 
 - **Frontend resilience** - Error boundaries and retry logic
 - **Human-readable IDs** - Short IDs instead of UUIDs (e.g., PR-001)
 - **Document parsing** - Upload PDFs or Word docs and extract requirements automatically
-- **Interactive panel** - Click table rows to navigate, edit entities directly in the panel
 
 ## Journey
 
@@ -319,7 +325,7 @@ docs/
 | #58 | Reactivation does not clear previous test result | Open |
 | #61 | Test: edit SKIPPED TC and re-parent CANCELED entity | Open |
 | #9 | Document parsing pipeline - PDF, Word, URL | Planned |
-| #10 | V2 panel features - clickable rows, history | Planned |
+| #10 | V2 panel features - clickable rows, history, inline editing | Done |
 | #32 | Team data isolation | Planned |
 | #34 | Frontend resilience - error boundaries, retry | Planned |
 | #37 | Human-readable short IDs | Planned |
