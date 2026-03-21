@@ -334,3 +334,9 @@ docs/
 | #64 | AI observability - logging and tracing | Planned |
 | #65 | AI evals - automated quality testing | Planned |
 | #66 | AI maintenance - model updates and data drift | Planned |
+
+---
+
+## License
+
+[MIT](LICENSE)
